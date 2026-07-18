@@ -1,0 +1,16 @@
+# All lightweight, no torch, no external model downloads at runtime.
+openpyxl>=3.1
+python-docx>=1.1
+pdfplumber>=0.11
+pymupdf>=1.24
+rapidocr-onnxruntime>=1.4
+pytesseract>=0.3.10   # Latin-script fallback for RapidOCR's CJK-model glued-word issue
+                      # requires the `tesseract-ocr` system binary (apt), not just the pip wrapper
+charset-normalizer>=3.3
+msoffcrypto-tool>=5.4
+
+# Optional fallback engines (only used for pptx / unrecognized extensions)
+markitdown>=0.0.1a2
+
+# Pandoc is a system binary, not a pip package - install via apt/conda,
+# or check `which pandoc` and skip that format path if unavailable.
