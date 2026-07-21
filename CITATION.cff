@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Universal File to Markdown"
+type: software
+version: 1.6.0
+date-released: 2026-07-21
+authors:
+  - family-names: "SmartyJohnway"
+repository-code: "https://github.com/SmartyJohnway/universal-file-to-markdown"
+url: "https://github.com/SmartyJohnway/universal-file-to-markdown"
+license: Apache-2.0
+abstract: >-
+  A deterministic, offline-first document normalization skill that converts
+  supported files into Markdown and a schema-validated bundle for AI analysis,
+  retrieval-augmented generation, auditing, and downstream automation.
+keywords:
+  - markdown
+  - document-conversion
+  - OCR
+  - RAG
+  - AI-agent
+  - document-normalization
