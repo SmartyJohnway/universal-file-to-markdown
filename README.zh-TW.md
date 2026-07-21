@@ -6,6 +6,23 @@
 
 本專案重視透明度與可追溯性，不會只把 `document.md` 視為成功證據。每次轉換還會產出品質報告、來源 manifest、canonical elements、受限長度 chunks、表格資產與 bundle 驗證結果。
 
+## 文件索引
+
+- [English README](README.md)
+- [繁體中文 README](README.zh-TW.md)
+- [English changelog](CHANGELOG.md)
+- [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
+- [AI 技能操作合約](SKILL.md)
+- [格式能力矩陣](references/capability_matrix.md)
+- [引擎說明與升級指引](references/engine_notes.md)
+- [貢獻指南](CONTRIBUTING.md)
+- [安全政策](SECURITY.md)
+- [支援政策](SUPPORT.md)
+- [治理方式](GOVERNANCE.md)
+- [發布流程](RELEASING.md)
+- [發布檢查清單](RELEASE_CHECKLIST.md)
+- [授權說明](docs/LICENSING.md)
+
 ## 主要特色
 
 - 支援 PDF、掃描圖片、DOCX、XLSX/XLSM、PPTX、CSV/TSV、JSON、EML，以及 Pandoc 可處理的 markup 格式。
@@ -145,7 +162,7 @@ python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
 
-GitHub Actions 會在 push 與 pull request 時執行上述檢查。
+GitHub Actions 會在 push 與 pull request 時執行上述檢查。發布專用檢查請參考 `RELEASING.md` 與 `RELEASE_CHECKLIST.md`。
 
 ## 專案結構
 
@@ -160,4 +177,6 @@ requirements.txt            Runtime 與測試 dependencies
 
 ## 授權
 
-目前 repository 尚未包含授權檔案。在正式加入 License 前，仍適用一般著作權規則，並不自動授予重製、修改或散布權利。
+本專案採用 [Apache License 2.0](LICENSE)。
+
+此授權允許商業使用、修改與再散布，但須遵守授權條款，並包含明確的 contributor patent grant。第三方 dependencies 仍適用各自授權，請參考 `THIRD_PARTY_NOTICES.md` 與 `LICENSES.md`。
