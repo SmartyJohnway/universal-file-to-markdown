@@ -1,0 +1,40 @@
+name: Validate repository metadata
+
+on:
+  pull_request:
+    paths:
+      - ".github/**/*.yml"
+      - ".github/**/*.yaml"
+      - "CITATION.cff"
+  push:
+    branches: [main]
+    paths:
+      - ".github/**/*.yml"
+      - ".github/**/*.yaml"
+      - "CITATION.cff"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml
+      - name: Parse YAML and CFF
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          paths = list(Path('.github').rglob('*.yml')) + list(Path('.github').rglob('*.yaml'))
+          paths.append(Path('CITATION.cff'))
+          for path in paths:
+              with path.open('r', encoding='utf-8') as handle:
+                  yaml.safe_load(handle)
+              print(f'validated {path}')
+          PY
