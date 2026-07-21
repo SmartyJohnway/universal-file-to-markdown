@@ -1,6 +1,47 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyd
+*.so
 .pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local dependency caches
 .venv/
+venv/
+env/
 .deps/
+.cache/
+models/
+
+# IDE and operating-system files
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# Build and package artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated conversion bundles
+output/
+outputs/
+conversion-output/
+document.md
+document.json
+chunks.jsonl
+manifest.json
+conversion-report.json
+assets/
+tables/
+
+# Local or confidential fixtures
+private-fixtures/
+local-fixtures/
+.env
+.env.*

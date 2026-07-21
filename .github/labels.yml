@@ -1,0 +1,33 @@
+# Reference list for repository labels.
+# GitHub does not automatically create labels from this file.
+labels:
+  - name: bug
+    description: Reproducible defect or incorrect behavior
+    color: d73a4a
+  - name: enhancement
+    description: New capability or improvement
+    color: a2eeef
+  - name: documentation
+    description: Documentation-only change
+    color: 0075ca
+  - name: security
+    description: Security-related change or advisory
+    color: b60205
+  - name: dependencies
+    description: Dependency update
+    color: 0366d6
+  - name: github-actions
+    description: GitHub Actions and CI maintenance
+    color: 000000
+  - name: breaking-change
+    description: Backward-incompatible behavior or schema change
+    color: e11d21
+  - name: maintenance
+    description: Internal maintenance without user-visible feature change
+    color: fef2c0
+  - name: question
+    description: Usage or design question
+    color: d876e3
+  - name: skip-changelog
+    description: Exclude from generated release notes
+    color: cfd3d7

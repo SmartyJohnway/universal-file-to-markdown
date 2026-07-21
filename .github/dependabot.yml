@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      python-runtime:
+        patterns:
+          - openpyxl
+          - python-docx
+          - python-pptx
+          - pdfplumber
+          - pymupdf
+          - rapidocr-onnxruntime
+          - pytesseract
+          - charset-normalizer
+          - msoffcrypto-tool
+          - markitdown
+      python-test:
+        patterns:
+          - pytest
+          - jsonschema
+          - reportlab
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions

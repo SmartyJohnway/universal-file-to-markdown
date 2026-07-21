@@ -1,0 +1,25 @@
+name: Dependency review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review dependency changes
+        id: dependency-review
+        continue-on-error: true
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+      - name: Explain advisory mode
+        if: steps.dependency-review.outcome == 'failure'
+        run: |
+          echo "::warning::Dependency Review is advisory until the repository dependency graph and related security features are enabled."
+          echo "See docs/REPOSITORY_SETTINGS.md before making this workflow a required check."

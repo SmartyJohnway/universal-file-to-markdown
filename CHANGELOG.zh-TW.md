@@ -12,7 +12,6 @@
 
 - 增加真實加密 Office、SmartArt、embedded OLE 與複雜掃描表格的 integration fixtures。
 - 在維持 schema 1.0 相容性的前提下，持續改善各格式的 canonical granularity 與 provenance。
-- 確認預期授權條款後，加入明確的開源 License。
 
 ## [1.6.0] - 2026-07-21
 
@@ -32,6 +31,10 @@
 - 新增 runtime capability probe，檢查必要 Python dependencies 與選配系統工具。
 - 新增 GitHub Actions workflow，執行依賴安裝、capability preflight、測試與 Python source compilation。
 - 增加 release-hardening regression tests，測試數量擴充至約 65 項。
+- 加入 Apache License 2.0、授權範圍、第三方 dependency 說明與 citation metadata。
+- 加入貢獻、治理、安全、支援、行為準則、maintainer 與作者資訊文件。
+- 加入 Issue/PR templates、CODEOWNERS、Dependabot、CodeQL、dependency review、metadata validation、Markdown link check、release gate 與 clean release package workflows。
+- 加入發布流程、發布檢查清單、release notes 草稿、repository settings 指引，以及安全與 dependency policy 文件。
 
 ### 變更
 
@@ -43,6 +46,7 @@
 - 圖片 OCR provenance 會記錄實際使用 RapidOCR 或 Tesseract，不再繼承錯誤引擎標籤。
 - 失敗的 rerun 會先清除已知產物，避免舊 canonical outputs 殘留。
 - Source locator schema 增加 page、slide、sheet、shape、table index 與 bbox 型別約束。
+- 中英文 README 已更新 Apache-2.0、發布治理與 release-quality checks。
 
 ### 修正
 

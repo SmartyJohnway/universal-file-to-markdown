@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/SmartyJohnway/universal-file-to-markdown/security/advisories/new
+    about: Report security vulnerabilities privately instead of opening a public issue.
+  - name: Usage and support guidance
+    url: https://github.com/SmartyJohnway/universal-file-to-markdown/blob/main/SUPPORT.md
+    about: Read the support policy and required diagnostic information.
