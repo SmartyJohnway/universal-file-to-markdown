@@ -1,0 +1,32 @@
+name: License files
+
+on:
+  pull_request:
+    paths:
+      - "LICENSE"
+      - "LICENSES.md"
+      - "THIRD_PARTY_NOTICES.md"
+      - "README*.md"
+      - ".github/workflows/license-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "LICENSE"
+      - "LICENSES.md"
+      - "THIRD_PARTY_NOTICES.md"
+      - "README*.md"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Apache-2.0 metadata
+        run: |
+          grep -q "Apache License" LICENSE
+          grep -q "Version 2.0" LICENSE
+          grep -q "Apache-2.0" LICENSES.md
+          grep -q "Apache License 2.0" THIRD_PARTY_NOTICES.md
