@@ -426,7 +426,7 @@ class TestV16FailureIsolation:
         broken.write_bytes(b"PK-not-a-real-workbook")
         second = _run(str(broken), tmp_out)
         assert second["status"] == "failed"
-        assert second["reason"] == "conversion_error"
+        assert second["reason"] == "corrupt_or_invalid_office_container"
         assert not os.path.exists(os.path.join(tmp_out, "document.json"))
         assert not os.path.exists(os.path.join(tmp_out, "chunks.jsonl"))
         assert not os.path.exists(os.path.join(tmp_out, "tables"))
