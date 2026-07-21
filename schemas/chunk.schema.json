@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chunk.schema.json",
+  "title": "RAG chunk",
+  "type": "object",
+  "required": ["schema_version", "chunk_id", "chunk_index", "heading_path", "element_ids", "text", "char_count", "part_index", "part_count", "source_file", "source_sha256", "page_start", "page_end", "sheet_name", "slide_start", "slide_end"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "chunk_id": {"type": "string"},
+    "chunk_index": {"type": "integer", "minimum": 1},
+    "heading_path": {"type": "array", "items": {"type": "string"}},
+    "element_ids": {"type": "array", "items": {"type": "string"}},
+    "text": {"type": "string"},
+    "char_count": {"type": "integer", "minimum": 0, "maximum": 2000},
+    "part_index": {"type": "integer", "minimum": 1},
+    "part_count": {"type": "integer", "minimum": 1},
+    "source_file": {"type": ["string", "null"]},
+    "source_sha256": {"type": ["string", "null"]},
+    "page_start": {"type": ["integer", "null"]},
+    "page_end": {"type": ["integer", "null"]},
+    "sheet_name": {"type": ["string", "null"]},
+    "slide_start": {"type": ["integer", "null"]},
+    "slide_end": {"type": ["integer", "null"]}
+  },
+  "additionalProperties": true
+}

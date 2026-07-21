@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "document.schema.json",
+  "title": "Universal File to Markdown canonical document",
+  "type": "object",
+  "required": ["schema_version", "source_file", "source_sha256", "file_type", "root_element_id", "element_count", "elements"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source_file": {"type": "string"},
+    "source_sha256": {"type": ["string", "null"]},
+    "file_type": {"type": "string"},
+    "root_element_id": {"type": "string"},
+    "element_count": {"type": "integer", "minimum": 1},
+    "elements": {"type": "array", "items": {"$ref": "element.schema.json"}}
+  },
+  "additionalProperties": true
+}

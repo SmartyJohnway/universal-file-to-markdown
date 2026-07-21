@@ -1,53 +1,24 @@
 """
 pdf_converter.py
-Routes PDFs by whether they carry a real text layer:
-  - digital PDF  -> pdfplumber (text + line-based table detection)
-  - scanned PDF  -> rasterize each page with PyMuPDF, OCR with RapidOCR,
-                    with a Tesseract fallback for Latin-script pages
-                    (see "glued word" fix below), plus a bounding-box
-                    column-clustering pass for table reconstruction.
+Classifies PDFs PAGE BY PAGE (not as a whole document) and routes each
+page to the right extractor:
+  - digital page  -> pdfplumber (text + line-based table detection)
+  - scanned page  -> rasterize with PyMuPDF, OCR with RapidOCR, with a
+                    Tesseract fallback for glued Latin-script text.
 
---- Revision history / why this file looks the way it does -----------------
-
-v1 shipped RapidOCR as the only scanned-page engine and a flat
-`TABLE_STRUCTURE_UNVERIFIED` warning on every scanned page regardless of
-whether the page actually contained a table. Real-world testing (a mixed
-Chinese/English scanned invoice with a fee table) surfaced two concrete,
-root-caused problems, not just "quality is imperfect":
-
-1. GLUED WORDS ON LATIN-SCRIPT TEXT (root cause, not random noise):
-   RapidOCR's bundled recognition model (PP-OCRv4) is trained for
-   CJK text, where there is no inter-word spacing to begin with. Its
-   recognition head was never trained to predict a space token the way
-   an English-trained model is, so when the *same detection box*
-   actually spans multiple English words, the recognizer transcribes
-   them as one glued string. Adding spaces *between* detection boxes
-   (which is all v1 did) does not fix this, because the missing spaces
-   are *inside* a single box's output, not between boxes.
-   FIX: detect the symptom directly in the recognized text (very long
-   average token length is diagnostic of this specific failure mode),
-   and only for pages whose content is mostly Latin script, re-OCR that
-   page with Tesseract, which detects at word granularity and does not
-   have this failure mode. CJK pages are untouched and keep using
-   RapidOCR, which is the right tool for that content.
-
-2. NO TABLE DETECTION ON THE SCANNED PATH: the digital-PDF path uses
-   pdfplumber's real table/line detection; the scanned path had no
-   equivalent and just poured every text box through a reading-order
-   text reconstruction, which silently misaligns multi-column tables.
-   FIX: a column-clustering pass on OCR box x-coordinates. If a
-   repeated set of column start-positions appears across several lines,
-   treat that region as a table and render it as a real Markdown table
-   instead of flattened prose.
-
-3. THE WARNING SYSTEM DIDN'T ACTUALLY CHECK THE OUTPUT: v1's
-   `TABLE_STRUCTURE_UNVERIFIED` fired unconditionally on every scanned
-   page, and average OCR confidence (which was high, ~0.94) didn't
-   catch the glued-word problem because RapidOCR was confident about
-   its (wrong) glued transcription. FIX: content-level heuristics
-   (average token length, long-token ratio) that inspect what actually
-   came out, not just which code path ran.
-------------------------------------------------------------------------- """
+Why page-level, not document-level (bug found in real-world testing):
+v1 summed text-layer character count across up to 3 sample pages and
+compared it to a single threshold (50 chars) for the WHOLE document. A
+short, genuinely digital PDF (e.g. a one-page cover sheet with ~33 total
+characters) fell under that threshold and got mis-routed into the OCR
+path - wasted work at best, and a hard failure if RapidOCR wasn't
+installed in that environment, for a file that never needed OCR at all.
+Per-page classification with a near-zero threshold (any extractable text
+at all -> digital) fixes both the short-document case and the genuinely
+mixed-mode case (e.g. a digital report with one scanned signature page
+attached), which a single document-level verdict could never handle
+correctly regardless of where the threshold was set.
+"""
 
 import re
 import statistics
@@ -58,19 +29,13 @@ _CJK_RANGE = re.compile(
 )
 _LATIN_LETTER = re.compile(r"[A-Za-z]")
 _NON_ALPHA = re.compile(r"[^A-Za-z]")
-# lower-follows-by-upper inside a token is the single strongest signature of
-# two glued English words (e.g. "eTotalAmount" from "e" + "Total Amount");
-# a page-wide average token length is NOT a reliable signal on its own,
-# because a handful of short function words ("the", "a", "30") dilute the
-# average even when a page clearly has glued tokens - this is exactly the
-# gap that let a real glued-word page through undetected during testing.
 _CASE_TRANSITION = re.compile(r"[a-z][A-Z]")
 
-VERY_LONG_TOKEN_THRESHOLD = 14      # a single token this long, alone, is suspicious
-MEDIUM_TOKEN_THRESHOLD = 9          # two or more tokens this long is suspicious
+VERY_LONG_TOKEN_THRESHOLD = 14
+MEDIUM_TOKEN_THRESHOLD = 9
 MEDIUM_TOKEN_MIN_COUNT = 2
-COLUMN_TOLERANCE_PX = 20            # x-coordinates within this are "the same column"
-MIN_ROWS_FOR_TABLE = 3              # need at least this many aligned rows to call it a table
+COLUMN_TOLERANCE_PX = 20
+MIN_ROWS_FOR_TABLE = 3
 MIN_COLS_FOR_TABLE = 2
 
 
@@ -81,33 +46,91 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
     if doc.is_encrypted:
         return {"markdown": "", "report": {"status": "failed", "reason": "password_protected"}}
 
-    sample_pages = min(3, len(doc))
-    text_chars = sum(len(doc[i].get_text()) for i in range(sample_pages))
-    is_digital = text_chars > 50  # empirical threshold; scanned pages yield ~0
+    page_classes = []
+    for i in range(len(doc)):
+        text = doc[i].get_text("text").strip()
+        page_classes.append("digital" if len(text) >= 1 else "scanned")
 
-    if is_digital:
-        return _convert_digital(path, doc)
-    else:
-        return _convert_scanned(path, doc)
+    if all(c == "digital" for c in page_classes):
+        return _convert_digital(path, doc, list(range(len(doc))))
+    if all(c == "scanned" for c in page_classes):
+        return _convert_scanned(path, doc, list(range(len(doc))))
+    return _convert_mixed(path, doc, page_classes)
 
 
-def _convert_digital(path: str, doc) -> dict:
+def _convert_mixed(path: str, doc, page_classes) -> dict:
+    digital_idx = [i for i, c in enumerate(page_classes) if c == "digital"]
+    scanned_idx = [i for i, c in enumerate(page_classes) if c == "scanned"]
+
+    digital_result = _convert_digital(path, doc, digital_idx) if digital_idx else None
+    scanned_result = _convert_scanned(path, doc, scanned_idx) if scanned_idx else None
+
+    # re-merge in original page order using each result's per-page markdown
+    pages_md = {}
+    if digital_result:
+        for i, md in zip(digital_idx, digital_result["_per_page_md"]):
+            pages_md[i] = md
+    if scanned_result:
+        for i, md in zip(scanned_idx, scanned_result["_per_page_md"]):
+            pages_md[i] = md
+    ordered_md = "\n\n".join(pages_md[i] for i in sorted(pages_md))
+
+    report = {
+        "status": "passed_with_warnings",
+        "engine": "mixed(pdfplumber+rapidocr)",
+        "page_count": len(doc),
+        "digital_pages": [i + 1 for i in digital_idx],
+        "scanned_pages": [i + 1 for i in scanned_idx],
+        "ocr_used": bool(scanned_idx),
+    }
+    if digital_result:
+        d = digital_result["report"]
+        report["table_count"] = d.get("table_count", 0)
+        report["table_row_consistency"] = d.get("table_row_consistency", "pass")
+    if scanned_result:
+        s = scanned_result["report"]
+        for k in ("ocr_avg_confidence", "ocr_low_confidence_pages", "glued_word_pages",
+                   "tesseract_fallback_pages", "engine_per_page", "table_regions_detected",
+                   "table_structure_confidence", "table_likelihood"):
+            if k in s:
+                report[k] = s[k]
+
+    elements = (digital_result.get("elements", []) if digital_result else []) + \
+               (scanned_result.get("elements", []) if scanned_result else [])
+    elements.sort(key=lambda e: e.get("page", 0))
+    tables = (digital_result.get("tables", []) if digital_result else []) + \
+             (scanned_result.get("tables", []) if scanned_result else [])
+
+    return {"markdown": ordered_md, "report": report, "_per_page_md": [pages_md[i] for i in sorted(pages_md)],
+            "elements": elements, "tables": tables}
+
+
+def _convert_digital(path: str, doc, page_indices) -> dict:
     import pdfplumber
 
-    pages_md = []
+    per_page_md = []
+    elements = []
+    tables_out = []
     table_row_consistency = "pass"
     table_count = 0
 
     with pdfplumber.open(path) as pdf:
-        for i, page in enumerate(pdf.pages):
+        for i in page_indices:
+            page = pdf.pages[i]
+            page_id = f"page-{i + 1:04d}"
             page_md = [f"<!-- page: {i + 1} -->\n"]
             tables = page.find_tables()
+            table_bboxes = [t.bbox for t in tables]
 
             text = page.extract_text() or ""
             if not tables:
                 page_md.append(text)
+                _append_digital_text_elements(elements, page_id, doc[i], [], text, i + 1)
             else:
-                page_md.append(text)
+                text_no_tables = _strip_table_text(page, text, table_bboxes)
+                page_md.append(text_no_tables)
+                _append_digital_text_elements(elements, page_id, doc[i], table_bboxes,
+                                              text_no_tables, i + 1)
                 for t in tables:
                     table_count += 1
                     rows = t.extract()
@@ -117,8 +140,27 @@ def _convert_digital(path: str, doc) -> dict:
                     if len(row_lengths) > 1:
                         table_row_consistency = "warning"
                     page_md.append(_rows_to_markdown(rows))
+                    table_id = f"table-p{i + 1:04d}-{table_count:04d}"
+                    table_md = _rows_to_markdown(rows)
+                    tables_out.append({"id": table_id, "rows": rows,
+                                        "context": f"pdf_page_{i + 1}",
+                                        "source_locator": {"page": i + 1, "bbox": list(t.bbox)},
+                                        "engine": "pdfplumber"})
+                    elements.append({
+                        "id": f"{page_id}-table-{table_count:03d}",
+                        "parent_id": page_id, "type": "table", "content": table_md,
+                        "engine": "pdfplumber", "confidence": None,
+                        "source_locator": {"page": i + 1, "bbox": list(t.bbox)},
+                        "table_id": table_id,
+                    })
 
-            pages_md.append("\n".join(page_md))
+            page_text = "\n".join(page_md)
+            per_page_md.append(page_text)
+            elements.insert(len(elements) - sum(1 for e in elements if e.get("parent_id") == page_id), {
+                "id": page_id, "type": "page", "page": i + 1,
+                "content": f"<!-- page: {i + 1} -->", "engine": "pdfplumber",
+                "confidence": None, "source_locator": {"page": i + 1},
+            })
 
     report = {
         "status": "passed",
@@ -128,29 +170,94 @@ def _convert_digital(path: str, doc) -> dict:
         "table_row_consistency": table_row_consistency,
         "ocr_used": False,
     }
-    return {"markdown": "\n\n".join(pages_md), "report": report}
+    return {"markdown": "\n\n".join(per_page_md), "report": report, "_per_page_md": per_page_md,
+            "elements": elements, "tables": tables_out}
 
 
-def _convert_scanned(path: str, doc) -> dict:
+def _strip_table_text(page, full_text, table_bboxes):
+    """Remove words that fall inside a detected table's bounding box from the
+    plain-text extraction, so table content isn't duplicated as both loose
+    prose AND a Markdown table (verified as a real duplication bug: a
+    table's cell values were showing up once in the running paragraph text
+    and again in the rendered table, which is bad for RAG - doubles token
+    count and can make a retriever return the same fact twice)."""
+    if not table_bboxes:
+        return full_text
+    words = page.extract_words()
+    kept = []
+    for w in words:
+        in_table = any(
+            bbox[0] - 2 <= w["x0"] and w["x1"] <= bbox[2] + 2
+            and bbox[1] - 2 <= w["top"] and w["bottom"] <= bbox[3] + 2
+            for bbox in table_bboxes
+        )
+        if not in_table:
+            kept.append(w["text"])
+    return " ".join(kept) if kept else ""
+
+
+def _append_digital_text_elements(elements, page_id, fitz_page, table_bboxes,
+                                  fallback_text, page_number):
+    blocks = []
+    for raw in fitz_page.get_text("blocks"):
+        if len(raw) < 5:
+            continue
+        bbox = tuple(raw[:4])
+        content = (raw[4] or "").strip()
+        if not content or any(_bbox_overlap_ratio(bbox, table_bbox) >= 0.5
+                              for table_bbox in table_bboxes):
+            continue
+        blocks.append((bbox, content))
+    if not blocks and fallback_text.strip():
+        blocks = [(None, fallback_text.strip())]
+    for index, (bbox, content) in enumerate(blocks, start=1):
+        lines = [line.strip() for line in content.splitlines() if line.strip()]
+        element_type = "heading" if len(lines) == 1 and len(content) <= 120 else "paragraph"
+        elements.append({
+            "id": f"{page_id}-text-{index:03d}", "parent_id": page_id,
+            "type": element_type, "content": content,
+            "engine": "pymupdf+pdfplumber", "confidence": None,
+            "source_locator": {"page": page_number,
+                               "bbox": list(bbox) if bbox else None},
+        })
+
+
+def _bbox_overlap_ratio(a, b):
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    width = max(0, min(ax1, bx1) - max(ax0, bx0))
+    height = max(0, min(ay1, by1) - max(ay0, by0))
+    intersection = width * height
+    area = max((ax1 - ax0) * (ay1 - ay0), 1)
+    return intersection / area
+
+
+def _convert_scanned(path: str, doc, page_indices) -> dict:
     try:
         from rapidocr_onnxruntime import RapidOCR
     except ImportError:
         return {
             "markdown": "",
             "report": {"status": "failed", "reason": "rapidocr_not_installed"},
+            "_per_page_md": ["" for _ in page_indices],
+            "elements": [], "tables": [],
         }
 
     engine = RapidOCR()
-    pages_md = []
+    per_page_md = []
+    elements = []
+    tables_out = []
     all_confidences = []
     low_confidence_pages = []
     glued_word_pages = []
     tesseract_fallback_pages = []
     table_regions_detected = 0
     engine_per_page = {}
+    page_likelihoods = []
 
-    for i in range(len(doc)):
+    for i in page_indices:
         page = doc[i]
+        page_id = f"page-{i + 1:04d}"
         pix = page.get_pixmap(dpi=200)
         img_bytes = pix.tobytes("png")
 
@@ -169,20 +276,23 @@ def _convert_scanned(path: str, doc) -> dict:
                 page_engine = "tesseract_fallback"
                 tesseract_fallback_pages.append(i + 1)
             else:
-                glued_word_pages.append(i + 1)  # fallback unavailable; still flag it
+                glued_word_pages.append(i + 1)
         elif glued:
-            # glued but not clearly Latin script (e.g. mixed CJK/Latin) -
-            # Tesseract wouldn't reliably help either; just flag it honestly
             glued_word_pages.append(i + 1)
 
         engine_per_page[str(i + 1)] = page_engine
 
         if not boxes:
-            pages_md.append(f"<!-- page: {i + 1} (no text detected) -->\n")
+            page_text = f"<!-- page: {i + 1} (no text detected) -->\n"
+            per_page_md.append(page_text)
+            elements.append({"id": page_id, "type": "page", "page": i + 1,
+                              "content": page_text, "engine": page_engine, "confidence": None,
+                              "source_locator": {"page": i + 1}})
             continue
 
         page_confidences = [b[2] for b in boxes if b[2] is not None]
         all_confidences.extend(page_confidences)
+        page_avg_conf = round(statistics.mean(page_confidences), 3) if page_confidences else None
         if page_confidences and statistics.mean(page_confidences) < 0.75:
             low_confidence_pages.append(i + 1)
 
@@ -190,15 +300,38 @@ def _convert_scanned(path: str, doc) -> dict:
         if table_rows:
             table_regions_detected += 1
             page_text = _rows_to_markdown(table_rows)
+            table_id = f"table-ocr-p{i + 1:04d}-{table_regions_detected:04d}"
+            tables_out.append({"id": table_id, "rows": table_rows,
+                                "context": f"pdf_scanned_page_{i + 1}",
+                                "source_locator": {"page": i + 1},
+                                "engine": page_engine,
+                                "confidence": page_avg_conf})
         else:
             page_text = _reconstruct_layout(boxes)
+            page_likelihoods.append(_estimate_table_likelihood(boxes))
 
-        pages_md.append(f"<!-- page: {i + 1} -->\n\n{page_text}")
+        full_page_text = f"<!-- page: {i + 1} -->\n\n{page_text}"
+        per_page_md.append(full_page_text)
+        elements.append({"id": page_id, "type": "page", "page": i + 1,
+                          "content": f"<!-- page: {i + 1} -->", "engine": page_engine,
+                          "confidence": page_avg_conf, "source_locator": {"page": i + 1}})
+        elements.append({
+            "id": f"{page_id}-{'table' if table_rows else 'text'}-001",
+            "parent_id": page_id, "type": "table" if table_rows else "text",
+            "content": page_text, "engine": page_engine,
+            "confidence": page_avg_conf, "source_locator": {"page": i + 1},
+            **({"table_id": table_id} if table_rows else {}),
+        })
 
     avg_conf = round(statistics.mean(all_confidences), 3) if all_confidences else 0.0
     status = "passed"
     if glued_word_pages or low_confidence_pages:
         status = "passed_with_warnings"
+
+    # Max, not average: one page that looks strongly tabular is reason
+    # enough to flag TABLE_STRUCTURE_UNVERIFIED even if most other pages
+    # in the document are plain prose (averaging would dilute it away).
+    max_likelihood = max(page_likelihoods) if page_likelihoods else 0.0
 
     report = {
         "status": status,
@@ -211,6 +344,7 @@ def _convert_scanned(path: str, doc) -> dict:
         "tesseract_fallback_pages": tesseract_fallback_pages,
         "engine_per_page": engine_per_page,
         "table_regions_detected": table_regions_detected,
+        "table_likelihood": round(max_likelihood, 3),
         "table_structure_confidence": (
             "clustered (column-heuristic table detected)"
             if table_regions_detected else
@@ -218,48 +352,22 @@ def _convert_scanned(path: str, doc) -> dict:
             "reading-order text only)"
         ),
     }
-    return {"markdown": "\n\n".join(pages_md), "report": report}
+    return {"markdown": "\n\n".join(per_page_md), "report": report, "_per_page_md": per_page_md,
+            "elements": elements, "tables": tables_out}
 
-
-# ---------------------------------------------------------------------------
-# Content-level heuristics (inspect the actual OCR output, not just which
-# code path ran)
-# ---------------------------------------------------------------------------
 
 def _looks_glued(text: str) -> bool:
-    """Detect the 'CJK-model-swallowed-the-spaces' symptom: a single
-    detection box's recognized text is actually two or more English words
-    with no space between them.
-
-    Deliberately per-token, not a page-wide average - an average dilutes
-    the signal to nothing on a page that mixes a few glued tokens with
-    many short normal words (verified: a real glued-word test page had
-    tokens ['eTotalAmount'(12), 'Pleaseremit'(11), ...] alongside ['Due'(3),
-    '30'(2), 't'(1)...], giving a page average of ~5.8 - well under any
-    reasonable single threshold, even though the page clearly had a
-    gluing problem)."""
     tokens = [t for t in re.split(r"\s+", text) if t]
     if not tokens:
         return False
-
     cores = [_NON_ALPHA.sub("", t) for t in tokens]
-
-    # signal 1 (strongest): lower-to-upper transition inside a token, e.g.
-    # "eTotalAmount" - real English words essentially never do this.
     if any(len(c) >= 6 and _CASE_TRANSITION.search(c) for c in cores):
         return True
-
-    # signal 2: a single implausibly long alphabetic run
     if any(len(c) >= VERY_LONG_TOKEN_THRESHOLD for c in cores):
         return True
-
-    # signal 3: multiple moderately-long tokens together (cumulative signal;
-    # a lone long-but-real word like "International" shouldn't trip this,
-    # but two or more on one page is a real pattern worth flagging)
     medium = [c for c in cores if len(c) >= MEDIUM_TOKEN_THRESHOLD]
     if len(medium) >= MEDIUM_TOKEN_MIN_COUNT:
         return True
-
     return False
 
 
@@ -271,22 +379,13 @@ def _is_majority_latin(text: str) -> bool:
     return latin_count > cjk_count
 
 
-# ---------------------------------------------------------------------------
-# Tesseract fallback for Latin-script pages that RapidOCR glued together
-# ---------------------------------------------------------------------------
-
 def _ocr_page_tesseract(img_bytes: bytes):
-    """Re-OCR a page with Tesseract, which detects at word granularity and
-    doesn't have the CJK-model space-swallowing problem. Returns boxes in
-    the same (points, text, confidence) shape the RapidOCR path uses, so
-    downstream layout/table code doesn't need to know which engine ran."""
     try:
         import pytesseract
         from PIL import Image
         import io
     except ImportError:
         return None
-
     try:
         img = Image.open(io.BytesIO(img_bytes))
         data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
@@ -299,9 +398,8 @@ def _ocr_page_tesseract(img_bytes: bytes):
         text = data["text"][i].strip()
         if not text:
             continue
-        conf_raw = data["conf"][i]
         try:
-            conf = max(0.0, float(conf_raw)) / 100.0
+            conf = max(0.0, float(data["conf"][i])) / 100.0
         except (ValueError, TypeError):
             conf = 0.0
         x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
@@ -309,10 +407,6 @@ def _ocr_page_tesseract(img_bytes: bytes):
         boxes.append((pts, text, conf))
     return boxes
 
-
-# ---------------------------------------------------------------------------
-# Layout reconstruction: plain reading order, or a clustered table
-# ---------------------------------------------------------------------------
 
 def _group_lines(boxes, y_tolerance: int = 10):
     items = []
@@ -337,9 +431,6 @@ def _group_lines(boxes, y_tolerance: int = 10):
 
 
 def _reconstruct_layout(boxes, y_tolerance: int = 10) -> str:
-    """Group OCR boxes into lines by y-coordinate, order left-to-right.
-    Simple, honest heuristic - not a layout model. Used when
-    `_cluster_into_table` doesn't find a table-like pattern on the page."""
     if not boxes:
         return ""
     lines = _group_lines(boxes, y_tolerance)
@@ -347,26 +438,12 @@ def _reconstruct_layout(boxes, y_tolerance: int = 10) -> str:
 
 
 def _cluster_into_table(boxes, y_tolerance: int = 10):
-    """Heuristic column-clustering table reconstruction.
-
-    Collects the left-edge x-coordinate of every box, clusters nearby
-    x-values into candidate column boundaries, then checks whether those
-    boundaries repeat consistently across enough lines to be a real table
-    (as opposed to justified paragraph text, which won't have repeated
-    column starts). Returns a list-of-rows table if found, else None.
-
-    This is explicitly a heuristic, not a layout model - see engine_notes.md
-    for the honest limitations of this approach vs. a real table-structure
-    model (e.g. Docling's TableFormer).
-    """
     if len(boxes) < MIN_ROWS_FOR_TABLE * MIN_COLS_FOR_TABLE:
         return None
-
     lines = _group_lines(boxes, y_tolerance)
     if len(lines) < MIN_ROWS_FOR_TABLE:
         return None
 
-    # candidate column x-starts, clustered across the whole page
     all_x = sorted(x for line in lines for (_, x, _) in line)
     clusters = []
     for x in all_x:
@@ -375,11 +452,9 @@ def _cluster_into_table(boxes, y_tolerance: int = 10):
         else:
             clusters.append([x])
     column_bins = [statistics.mean(c) for c in clusters if len(c) >= MIN_ROWS_FOR_TABLE]
-
     if len(column_bins) < MIN_COLS_FOR_TABLE:
         return None
 
-    # how many lines actually have a box landing in each bin?
     def nearest_bin(x):
         return min(range(len(column_bins)), key=lambda i: abs(column_bins[i] - x))
 
@@ -397,9 +472,65 @@ def _cluster_into_table(boxes, y_tolerance: int = 10):
         rows.append(row)
 
     if lines_with_multi_cols < MIN_ROWS_FOR_TABLE:
-        return None  # doesn't look tabular enough; let plain reconstruction handle it
-
+        return None
     return rows
+
+
+def _estimate_table_likelihood(boxes, y_tolerance: int = 10) -> float:
+    """Score (0.0-1.0) of how much a page's OCR boxes LOOK tabular, used
+    so TABLE_STRUCTURE_UNVERIFIED can be reserved for pages that actually
+    resemble a table but fell just short of _cluster_into_table's stricter
+    thresholds - not fired as a blanket disclaimer on every scanned page
+    with zero table content (the v1.5 behavior: `table_structure_confidence`
+    was set to "low" for literally every page where no table was detected,
+    including a plain scanned letter with no tabular content at all, so
+    the warning carried no actual information about whether a table might
+    have been missed).
+
+    Deliberately looser than _cluster_into_table (which requires >=3 rows
+    and >=2 repeated column positions before rendering an actual table):
+    this only has to notice "this page has some column-aligned structure",
+    not confirm it well enough to safely reconstruct row/column content.
+    Combines:
+      - row_ratio: fraction of lines that hit >=2 distinct column bins
+      - col_score: how many repeated column positions were found (capped)
+      - density_score: roughly how "filled in" the implied grid is
+    """
+    if len(boxes) < 4:
+        return 0.0
+    lines = _group_lines(boxes, y_tolerance)
+    if len(lines) < 2:
+        return 0.0
+
+    all_x = sorted(x for line in lines for (_, x, _) in line)
+    clusters = []
+    for x in all_x:
+        if clusters and x - clusters[-1][-1] <= COLUMN_TOLERANCE_PX:
+            clusters[-1].append(x)
+        else:
+            clusters.append([x])
+    # relaxed vs _cluster_into_table: only 2 hits needed to count a
+    # column position as "repeated", not MIN_ROWS_FOR_TABLE
+    repeated_bins = [c for c in clusters if len(c) >= 2]
+    if not repeated_bins:
+        return 0.0
+    column_bins = [statistics.mean(c) for c in repeated_bins]
+
+    def nearest_bin(x):
+        return min(range(len(column_bins)), key=lambda i: abs(column_bins[i] - x))
+
+    lines_with_multi = 0
+    for line in lines:
+        hit_bins = {nearest_bin(x) for (_, x, _) in line}
+        if len(hit_bins) >= 2:
+            lines_with_multi += 1
+
+    row_ratio = lines_with_multi / len(lines)
+    col_score = min(len(column_bins) / 4.0, 1.0)
+    density_score = min(len(boxes) / (len(lines) * max(len(column_bins), 1)), 1.0)
+
+    likelihood = 0.5 * row_ratio + 0.3 * col_score + 0.2 * density_score
+    return round(min(likelihood, 1.0), 3)
 
 
 def _rows_to_markdown(rows) -> str:

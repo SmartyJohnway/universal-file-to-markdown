@@ -1,0 +1,4 @@
+interface:
+  display_name: "Universal File to Markdown"
+  short_description: "將常用文件轉為可驗證的 Markdown 與 RAG 資料包"
+  default_prompt: "Use $universal-file-to-markdown to convert this file, validate the output bundle, and explain any quality warnings."

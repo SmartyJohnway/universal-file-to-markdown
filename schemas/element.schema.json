@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "element.schema.json",
+  "title": "Canonical element",
+  "type": "object",
+  "required": ["id", "type", "parent_id", "children", "child_ids", "content", "content_format", "heading_path", "engine", "confidence", "source_locator", "properties", "warnings", "ordinal"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "type": {"type": "string", "minLength": 1},
+    "parent_id": {"type": ["string", "null"]},
+    "children": {"type": "array", "items": {"type": "string"}},
+    "child_ids": {"type": "array", "items": {"type": "string"}},
+    "content": {"type": "string"},
+    "content_format": {"const": "markdown"},
+    "heading_path": {"type": "array", "items": {"type": "string"}},
+    "engine": {"type": ["string", "null"]},
+    "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "source_locator": {
+      "type": "object",
+      "required": ["page", "slide", "sheet", "cell_range", "shape_id", "shape_name", "bbox", "table_index", "relationship_id", "part", "source_file"]
+    },
+    "properties": {"type": "object"},
+    "warnings": {"type": "array"},
+    "ordinal": {"type": "integer", "minimum": 0}
+  },
+  "additionalProperties": true
+}

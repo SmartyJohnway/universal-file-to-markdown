@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "table.schema.json",
+  "title": "Canonical table",
+  "type": "object",
+  "required": ["schema_version", "id", "source_format", "source_locator", "dimensions", "cells", "grid", "confidence", "engine", "merged_cells_present", "merged_cells_flattened_in_csv"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "source_format": {"type": "string"},
+    "source_locator": {"type": "object"},
+    "dimensions": {"type": "object", "required": ["rows", "columns"]},
+    "cells": {"type": "array"},
+    "grid": {"type": "array"},
+    "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "engine": {"type": ["string", "null"]},
+    "merged_cells_present": {"type": "boolean"},
+    "merged_cells_flattened_in_csv": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

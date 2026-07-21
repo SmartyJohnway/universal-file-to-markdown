@@ -130,20 +130,269 @@ Tier-2 escalation path above for that case. What changed is that the
 misaligned) is now caught and, for the glue case, actually fixed rather
 than just flagged.
 
-## Deliberately out of scope for this first version
+## v1.2: correctness hardening (external review + verification cycle)
 
-- **PPTX merged-cell table renderer**: not built yet. PPTX tables use a
-  different merge representation (`gridSpan`/`rowSpan`/`hMerge`/`vMerge`
-  on `a:tc` elements in the slide XML) and merged cells are considerably
-  less common in decks than in Word/Excel documents. Falls back to
-  MarkItDown for now, which will flatten any merges it encounters.
+An external review of v1.1 raised several correctness concerns. Per this
+project's practice, each was reproduced before being fixed - all three
+reproduced as described:
+
+1. **PDF digital/scanned misclassification at the document level.** A
+   30-ish-character digital PDF fell under a 50-char whole-document
+   threshold and got routed to OCR unnecessarily. Fixed: classify per
+   page (any extractable text -> digital), with a genuine mixed-mode path
+   for documents with both digital and scanned pages.
+2. **Big5 CSV misdetected as UTF-16BE**, producing legal-but-wrong
+   Unicode (not caught by mojibake checks, since the output was valid
+   Unicode, just wrong), reported as `status: passed`. Fixed: strict
+   UTF-8 first, then plausibility-scored candidates instead of trusting a
+   single statistical detector.
+3. **Excel formula cells with no cached value rendered as silent blanks**,
+   reported as `status: passed`. Fixed: every cell resolved through a
+   formula-aware function that preserves the formula text and reports
+   `FORMULA_RESULT_UNAVAILABLE` instead of an unexplained empty cell.
+
+Also added: magic-byte/container-based format detection (an extension
+lying about the real format no longer sends a file to the wrong parser -
+verified with an .xlsx renamed to .pdf, which openpyxl's own filename
+validation additionally required a temp-path workaround for), tri-state
+encryption checking (`encrypted`/`not_encrypted`/`unknown` - a parser
+error is never silently treated as "safe"), and EML attachment filename
+sanitization (a `../../evil.bin` attachment name is neutralized before
+ever touching a real path).
+
+## v1.3: canonical representation and provenance
+
+Added `document.json` (element list: one entry per sheet/page/paragraph/
+table/slide, with engine and confidence where applicable), `chunks.jsonl`
+(heading/unit-aware chunking - a sheet, page, or slide is a natural chunk
+boundary, not a blind character count, which routinely cuts a table away
+from the paragraph explaining it), and `tables/*.csv`+`*.html` (every
+detected table also as a standalone asset, for direct loading into
+pandas/etc. rather than parsing it back out of embedded Markdown).
+
+This is a deliberately smaller schema than Docling's DoclingDocument - no
+per-run bounding boxes, no reading-order graph. The goal is "enough
+structure for a RAG pipeline to know what page/sheet/slide something came
+from and which engine produced it," not a full document object model.
+
+## v1.4: Office fidelity
+
+**DOCX**: run-level bold/italic/bold-italic via `paragraph.iter_inner_content()`
+(which interleaves `Run` and `Hyperlink` objects in true document order -
+verified with a manually-constructed `w:hyperlink` XML element, since
+this python-docx version has no direct "add a hyperlink" convenience
+method); hyperlinks rendered as Markdown links; nested lists via explicit
+`w:numPr`/`w:ilvl` or, failing that, the trailing digit in python-docx's
+own "List Bullet 2"/"List Bullet 3" style names; footnotes/endnotes
+extracted directly from `word/footnotes.xml`/`word/endnotes.xml` (not a
+first-class API in this python-docx version - verified against a manually
+constructed footnote fixture built via raw zip/XML injection, since
+python-docx itself has no way to create one either); header/footer
+paragraphs; inline images anchored at their actual position in the text
+flow (previously: a single trailing comment listing all extracted media,
+with no indication of where in the document each one belonged).
+
+**XLSX**: date/datetime cells render as ISO dates instead of Python's
+default datetime repr; hyperlinks as Markdown links; cell comments
+collected per-sheet; workbook-level defined names listed in the report;
+chart presence counted (not rendered - see below); **used-region
+trimming** - iterate only cells with actual content instead of trusting
+`ws.max_row`/`max_column`, which openpyxl can report as inflated by
+formatting-only cells with no data.
+
+**Bug the test suite caught during this work**: the used-region trimming
+initially checked only the `data_only=True` workbook for non-None values
+to find sheet bounds - but a formula cell with no cached value has `value
+== None` in that workbook, so it was excluded from the "used" region
+entirely, meaning it was never rendered or counted. This silently
+undid the v1.2 formula-preservation fix for exactly the case that fix was
+built for. Caught by `test_missing_cached_value_is_not_silent_blank`
+before being shipped - this is the concrete argument for the pytest suite
+existing at all: a manual spot-check with an older fixture could plausibly
+have missed this, since the bug only manifests when used-region trimming
+and formula handling interact.
+
+## v1.5.1: correctness patch (external review + verification cycle)
+
+Prompted by an external review of v1.5 that judged it `PASS_WITH_CAVEATS`
+- the core architecture and v1.1-v1.5 fixes held up, but flagged six
+concrete correctness/disclosure gaps in the PPTX converter and the
+document.json/table-export output contract. All six were fixed and each
+has a dedicated regression test in `tests/test_router.py`
+(`*V151` test classes).
+
+1. **PPTX level-0 bullets were silently downgraded to plain paragraphs.**
+   The v1.5 renderer treated `para.level > 0` as "is a bullet" and
+   anything at level 0 as plain text - but level 0 IS PowerPoint's
+   ordinary top-level bullet indentation. An everyday flat bulleted list
+   (the single most common case on a real slide) lost its list semantics
+   entirely and rendered as plain paragraphs. Fixed by reading the
+   paragraph's own `<a:pPr>` bullet markup directly
+   (`_get_bullet_info()` in `pptx_converter.py`): `<a:buNone/>` -> not a
+   bullet, `<a:buAutoNum/>` -> numbered, `<a:buChar/>` -> bulleted with
+   that character, and no explicit override -> still bulleted (matching
+   PowerPoint's own body-placeholder default). Full inheritance
+   resolution from the slide layout/master's bullet definitions is still
+   not attempted - a paragraph that doesn't explicitly set or unset a
+   bullet is assumed bulleted, which is correct for the common case but
+   could theoretically be wrong for an unusual master that overrides the
+   default to no-bullet. Flagged as a possible v1.6 follow-up if it ever
+   surfaces in practice.
+
+2. **SmartArt/embedded-OLE presence was a silent drop, not a disclosed
+   limitation.** SKILL.md described SmartArt/OLE as "out of scope,
+   noted, not silently dropped" but nothing in `conversion-report.json`
+   actually reflected whether a given input contained any - every real
+   file with a SmartArt diagram or an embedded Excel object looked
+   identical, in its report, to one without. Fixed by scanning the pptx
+   zip container's own relationship parts (`ppt/slides/_rels/*.rels` for
+   `.../relationships/diagramData` and `.../relationships/oleObject`
+   relationship types, corroborated by `ppt/diagrams/*.xml` presence) and
+   surfacing counts as `smartart_parts_found`/`ole_objects_found` in the
+   converter report, which `quality_check.py` turns into
+   `SMARTART_NOT_EXTRACTED`/`EMBEDDED_OLE_NOT_EXTRACTED` warnings
+   (status escalates to `passed_with_warnings`). Content extraction
+   itself is still out of scope - this is detection + disclosure only.
+
+3. **Group-nested tables were discarded before reaching `tables_out`.**
+   `_render_shape()`'s group-shape branch had a comment claiming it would
+   "surface the first" nested table, but the code actually returned
+   `None` unconditionally for the table slot - so a table inside a group
+   shape rendered correctly into `document.md`'s Markdown but its
+   standalone `tables/*.csv+*.html` asset never existed, for ANY
+   group-nested table, not just the 2nd+. Fixed by changing
+   `_render_shape()`'s return contract from a single optional table dict
+   to a `tables: list`, which the group branch now accumulates from every
+   recursed sub-shape instead of dropping.
+
+4. **Standalone `tables/*.html` silently flattened merge geometry that
+   `document.md` preserved.** DOCX/XLSX/PPTX converters all compute
+   correct rowspan/colspan for merged cells and render them into
+   `document.md` correctly - but only ever passed a flat `rows` grid to
+   `table_export.py`, which rebuilt standalone HTML from that flat grid
+   with no span information at all. So `document.md` and
+   `tables/table-0001.html` for the exact same table could show different
+   structure. Fixed by having each converter also emit a `cells` list
+   (`{row, col, value, rowspan, colspan}`, one entry per merge-anchor or
+   unmerged cell) alongside `rows`; `table_export.py` renders standalone
+   HTML from `cells` when present, falling back to the old flat-grid
+   renderer otherwise. `rows`/CSV still flattens spans (CSV has no way to
+   express a span - an accepted, documented limitation, not a bug).
+   While fixing this, also found and fixed a related XLSX-only bug: the
+   grid passed to `tables_out` for a merged sheet was RAGGED (spanned-over
+   cells were skipped instead of leaving a blank placeholder), producing
+   a non-rectangular CSV with a different column count per row depending
+   on how many merges that row happened to touch.
+
+5. **`document.json` elements didn't reliably expose `engine`/
+   `confidence`/`source_locator`.** SKILL.md documents the canonical
+   element schema as including these "where applicable", but in practice
+   a DOCX paragraph element had neither key at all, a PDF page element
+   had both, and no element type had `source_locator`. Fixed in
+   `document_model.py`: every element is now normalized to the same
+   top-level keys before being written to `document.json` - missing
+   `engine` falls back to the converter's own reported engine (passed
+   through from `router.py`), missing `confidence`/`source_locator`
+   default to `null` rather than being absent. This was the interim
+   v1.5.1 contract; v1.6 subsequently introduced schema 1.0 and finer
+   format-specific child elements.
+
+6. **`TABLE_STRUCTURE_UNVERIFIED` was a blanket warning, not a real
+   likelihood check.** The v1.5 code's comment claimed it would "only
+   warn when the page actually looked tabular but clustering couldn't
+   confirm it," but the actual condition just checked whether
+   `table_regions_detected == 0` - true for EVERY scanned page with no
+   detected table, including a plain scanned prose letter with zero
+   tabular content. `table_structure_confidence` was hardcoded to the
+   string `"low"` in that same branch, so it carried no real signal.
+   Fixed by adding `_estimate_table_likelihood()` to `pdf_converter.py`:
+   a real per-page heuristic score (column-position repetition, row/column
+   fill ratio, box density) computed even when `_cluster_into_table`'s
+   stricter thresholds (>=3 rows, >=2 confirmed columns) weren't met.
+   `quality_check.py` now only raises `TABLE_STRUCTURE_UNVERIFIED` when
+   `table_likelihood >= 0.4` AND no table was actually detected - a plain
+   prose scan no longer gets a table-related warning at all.
+
+None of these six required touching the v1.1-v1.5 fixes already locked in
+by the existing 15 tests, which still pass unmodified.
+
+## v1.5: PPTX custom converter
+
+Replaced the v1.1-v1.4 MarkItDown fallback for `.pptx` with a converter
+built on python-pptx, which - unlike DOCX/XLSX - exposes table merges
+through a clean first-class API (`cell.is_merge_origin`, `is_spanned`,
+`span_width`, `span_height`) rather than requiring raw-XML digging.
+Covers: title/body text reading order (shapes sorted by top/left
+position - a heuristic approximation of visual reading order, not a
+guarantee for unusual layouts), merge-aware tables, images (extracted via
+the same OOXML-zip media mechanism as DOCX/XLSX), chart title/category/
+series data (via `shape.chart` - verified against a real generated
+column chart), speaker notes, and group shapes (recursed into).
+
+**Deliberately out of scope**: SmartArt diagrams (stored as separate
+diagram-data XML, not exposed as readable text through python-pptx),
+embedded OLE objects (e.g. an Excel range embedded inside a slide), and
+run-level bold/italic within slide text boxes (slide text is usually
+short titles/bullets where this matters less than in a Word document
+body - could be added later following the same pattern as the DOCX
+renderer if a real need comes up).
+
+## Test suite
+
+`tests/` is a real pytest suite (not just this file's development notes)
+- `conftest.py` generates every fixture programmatically (no committed
+binary files), and `test_router.py` asserts on the *specific* behavior
+each historical bug represents, not just "doesn't crash." Run before
+trusting any change to a converter:
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+
+
+## v1.6.0: canonical contracts and integrated validation
+
+v1.6 freezes document/table/chunk schema version 1.0 independently of the
+skill version. It adds fixed element fields and parent/child references,
+shape-level PPTX elements, blank-separated XLSX blocks, located digital-PDF
+text blocks, direct raster-image OCR, source-rich bounded chunks, and a common
+table contract. `validate_bundle.py` checks schemas and cross-file references;
+the router runs it automatically before reporting success. A rerun clears only
+known bundle artifacts first so stale canonical outputs cannot survive a
+failure.
+
+The v1.5.1 bullet patch was also corrected: absence of paragraph bullet XML is
+not itself evidence of a bullet. Explicit `buNone`/`buChar`/`buAutoNum` wins;
+body-like placeholders then resolve layout/master level styles; ordinary text
+boxes default to prose.
+
+## Deliberately out of scope (current, as of v1.6.0)
+
 - **Legacy binary formats** (`.doc`, `.xls`, `.ppt`): not parsed directly.
   These require either `LibreOffice --headless` conversion as a
   preprocessing step or OLE2-specific parsers, which is a meaningfully
   different engineering problem from the OOXML zip-based formats this
   skill focuses on.
-- **Chart/embedded-object data extraction** (native Excel/PowerPoint
-  charts, as opposed to raster images): the underlying chart XML
-  (`xl/charts/chart1.xml`, etc.) is parseable but was judged lower
-  priority than the two features this skill was built to solve
-  (merged cells, OCR).
+- **Excel native chart data extraction**: chart presence is counted in
+  the report but not rendered - the underlying chart XML
+  (`xl/charts/chart1.xml`) is parseable but was judged lower priority
+  than the features this skill was built to solve. (PPTX charts, by
+  contrast, ARE extracted - `shape.chart` in python-pptx made that
+  straightforward enough to include in v1.5; the same effort for Excel's
+  chart XML would be a separate, larger piece of work.)
+- **SmartArt diagram content and embedded OLE object content** in PPTX
+  are still not extracted (see v1.5 notes above) - as of v1.5.1, their
+  PRESENCE is now detected and disclosed in the conversion report (see
+  the v1.5.1 changelog above), which is a meaningfully different claim
+  than actually extracting the diagram/object's content.
+- **DOCX/XLSX/PPTX -> DOCX/XLSX/PPTX round-tripping**: this skill only
+  converts TO Markdown/JSON, never back to Office formats.
+- **Canonical granularity is deterministic rather than visually semantic.**
+  PPTX shapes and XLSX blank-separated blocks are explicit, and digital PDF
+  blocks carry bounding boxes, but complex dashboards, overlapping slide
+  flows, and multi-column PDF reading order are not inferred by a layout model.
+- **The 2,000-character chunk limit is hard.** Large pipe tables repeat their
+  headers. A pathological individual row longer than the limit is split at a
+  word or character boundary because preserving both the row and hard limit is
+  impossible.
