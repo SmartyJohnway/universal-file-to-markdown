@@ -6,6 +6,16 @@ A deterministic, offline-first document normalization skill that converts suppor
 
 The project is designed for environments where conversion must remain transparent and traceable. It does not treat `document.md` alone as proof of success: every run also produces a quality report, source manifest, canonical elements, bounded chunks, table assets, and validation results.
 
+## Documentation
+
+- [English README](README.md)
+- [繁體中文 README](README.zh-TW.md)
+- [English changelog](CHANGELOG.md)
+- [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
+- [AI skill operating contract](SKILL.md)
+- [Format capability matrix](references/capability_matrix.md)
+- [Engine notes and escalation guidance](references/engine_notes.md)
+
 ## Highlights
 
 - Converts PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON, EML, and Pandoc-supported markup.
