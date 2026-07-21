@@ -239,6 +239,11 @@ has a dedicated regression test in `tests/test_router.py`
    default to no-bullet. Flagged as a possible v1.6 follow-up if it ever
    surfaces in practice.
 
+   **Superseded in v1.6.0:** this paragraph describes the v1.5.1 behavior.
+   v1.6.0 resolves explicit paragraph settings first, then layout/master
+   inheritance for body-like placeholders, while ordinary text boxes default
+   to prose. See the current v1.6.0 section below.
+
 2. **SmartArt/embedded-OLE presence was a silent drop, not a disclosed
    limitation.** SKILL.md described SmartArt/OLE as "out of scope,
    noted, not silently dropped" but nothing in `conversion-report.json`
@@ -357,10 +362,16 @@ v1.6 freezes document/table/chunk schema version 1.0 independently of the
 skill version. It adds fixed element fields and parent/child references,
 shape-level PPTX elements, blank-separated XLSX blocks, located digital-PDF
 text blocks, direct raster-image OCR, source-rich bounded chunks, and a common
-table contract. `validate_bundle.py` checks schemas and cross-file references;
-the router runs it automatically before reporting success. A rerun clears only
-known bundle artifacts first so stale canonical outputs cannot survive a
-failure.
+table contract. `validate_bundle.py` checks schemas plus tree reachability and
+cycles, root/count invariants, chunk identity/count/index consistency, and table
+dimensions/cell bounds; the router runs it automatically before reporting
+success. A rerun clears only known bundle artifacts first so stale canonical
+outputs cannot survive a failure.
+
+OOXML preflight classifies the container before checking encryption: valid ZIP
+packages, corrupt/invalid OOXML, and OLE-based encrypted Office files are
+distinct outcomes. Standalone image provenance records
+`rapidocr_onnxruntime` or `tesseract` according to the actual OCR path.
 
 The v1.5.1 bullet patch was also corrected: absence of paragraph bullet XML is
 not itself evidence of a bullet. Explicit `buNone`/`buChar`/`buAutoNum` wins;

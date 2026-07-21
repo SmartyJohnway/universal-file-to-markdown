@@ -8,9 +8,9 @@ Entry point for the universal-file-to-markdown skill.
 Produces an output bundle:
     OUTPUT_DIR/
       document.md              human/LLM-readable Markdown
-      document.json            canonical element-level representation (v1.3)
-      chunks.jsonl              heading-aware chunks for RAG ingestion (v1.3)
-      tables/                  each detected table also as standalone .csv/.html (v1.3)
+      document.json            canonical schema 1.0 (introduced in skill v1.6)
+      chunks.jsonl              bounded RAG chunks, canonical schema 1.0
+      tables/                  canonical JSON plus standalone CSV/HTML assets
       manifest.json
       conversion-report.json
       assets/                  embedded images/media, if any
@@ -139,6 +139,11 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
     if encryption_status == "encrypted":
         return _write_bundle(output_dir, original_path, file_type, sha256,
                               "", {"status": "failed", "reason": "password_protected"}, fmt_info)
+    if encryption_status == "corrupt":
+        return _write_bundle(output_dir, original_path, file_type, sha256, "", {
+            "status": "failed",
+            "reason": "corrupt_or_invalid_office_container",
+        }, fmt_info)
 
     elements, tables = [], []
 
@@ -154,7 +159,7 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
         markdown, report = result["markdown"], result["report"]
         elements, tables = result.get("elements", []), result.get("tables", [])
         report.setdefault("status", "passed")
-        report["engine"] = "openpyxl_custom"
+        report.setdefault("engine", "rapidocr_onnxruntime")
 
     elif file_type == "docx":
         from docx_converter import convert_docx

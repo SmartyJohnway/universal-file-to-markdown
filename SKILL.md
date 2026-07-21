@@ -14,6 +14,14 @@ and bundle validation result every time.
 Install Python dependencies from `requirements.txt`. Tesseract and Pandoc are
 optional system binaries used only for their documented paths.
 
+Verify the environment before conversion. Missing required Python dependencies
+produce an explicit non-zero preflight result; optional binaries are reported
+without failing the probe:
+
+```bash
+python3 scripts/capability_probe.py --json
+```
+
 ```bash
 python3 scripts/router.py <input_file> --output <output_directory>
 ```
@@ -132,4 +140,5 @@ not extracted, and Excel charts represented only as references.
 
 Read `references/engine_notes.md` only when investigating engine choice,
 historical defects, or escalation. Run `python3 -m pytest tests/ -q` before
-shipping any modification.
+shipping any modification, and require a passing capability probe in the
+release environment.

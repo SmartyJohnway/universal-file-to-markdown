@@ -88,6 +88,18 @@ def build_document_json(source_path: str, sha256: str, file_type: str, elements:
             raise ValueError(f"element {item['id']} references missing parent {parent_id}")
         if parent_id == item["id"]:
             raise ValueError(f"element {item['id']} cannot parent itself")
+
+    for item in normalized[1:]:
+        current_id = item["id"]
+        path = set()
+        while current_id != root_id:
+            if current_id in path:
+                raise ValueError(f"hierarchy cycle detected at element {current_id}")
+            path.add(current_id)
+            current_id = by_id[current_id]["parent_id"]
+
+    for item in normalized[1:]:
+        parent_id = item["parent_id"]
         by_id[parent_id]["child_ids"].append(item["id"])
         by_id[parent_id]["children"].append(item["id"])
 

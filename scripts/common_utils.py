@@ -21,31 +21,55 @@ from xml.etree import ElementTree as ET
 # Encryption / password-protection detection
 # ---------------------------------------------------------------------------
 
-def check_office_encrypted(path: str) -> str:
-    """Returns 'encrypted' / 'not_encrypted' / 'unknown'.
+_OLE_SIGNATURE = bytes.fromhex("D0CF11E0A1B11AE1")
+_OOXML_REQUIRED_PARTS = {
+    ".xlsx": "xl/workbook.xml",
+    ".docx": "word/document.xml",
+    ".pptx": "ppt/presentation.xml",
+}
 
-    Bug found in real-world review: the original boolean version caught
-    any exception (corrupt file, unsupported variant, msoffcrypto quirk)
-    and returned False - i.e. treated "I couldn't tell" the same as
-    "definitely not encrypted", so a corrupted file could silently sail
-    through to the next parser and fail there with a much more confusing
-    error, or in the worst case partially parse into garbage."""
+
+def check_office_encrypted(path: str) -> str:
+    """Return ``encrypted``, ``not_encrypted``, ``corrupt``, or ``unknown``.
+
+    OOXML is a ZIP package, while password-protected modern Office files are
+    normally OLE compound containers.  Classify the container first so a
+    truncated/fake ZIP can never be reported as password protected.
+    """
+    extension = os.path.splitext(path)[1].lower()
     try:
-        import msoffcrypto
         with open(path, "rb") as f:
-            try:
-                office_file = msoffcrypto.OfficeFile(f)
-                return "encrypted" if office_file.is_encrypted() else "not_encrypted"
-            except Exception:
-                return "unknown"
-    except ImportError:
+            signature = f.read(8)
+    except OSError:
+        return "unknown"
+
+    if signature.startswith(b"PK"):
         try:
-            with zipfile.ZipFile(path):
-                return "not_encrypted"
-        except zipfile.BadZipFile:
-            return "encrypted"
+            with zipfile.ZipFile(path) as archive:
+                if archive.testzip() is not None:
+                    return "corrupt"
+                required_part = _OOXML_REQUIRED_PARTS.get(extension)
+                if required_part and required_part not in archive.namelist():
+                    return "corrupt"
+            return "not_encrypted"
+        except (zipfile.BadZipFile, EOFError, OSError):
+            return "corrupt"
+
+    if signature == _OLE_SIGNATURE:
+        try:
+            import msoffcrypto
+        except ImportError:
+            return "unknown"
+        try:
+            with open(path, "rb") as f:
+                encrypted = msoffcrypto.OfficeFile(f).is_encrypted()
         except Exception:
             return "unknown"
+        if encrypted:
+            return "encrypted"
+        return "corrupt" if extension in _OOXML_REQUIRED_PARTS else "not_encrypted"
+
+    return "corrupt" if extension in _OOXML_REQUIRED_PARTS else "unknown"
 
 
 def check_pdf_encrypted(path: str) -> str:
