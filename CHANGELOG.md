@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Expand real-world integration fixtures for encrypted Office files, SmartArt, embedded OLE objects, and complex scanned tables.
 - Continue improving format-specific canonical granularity and provenance without breaking schema 1.0 compatibility.
-- Add an explicit open-source license after the intended reuse terms are selected.
 
 ## [1.6.0] - 2026-07-21
 
@@ -32,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Runtime capability probe for required Python dependencies and optional system tools.
 - GitHub Actions workflow for dependency installation, capability preflight, tests, and source compilation.
 - Release-hardening regression tests, expanding the suite to approximately 65 tests.
+- Apache License 2.0, licensing scope, third-party dependency notices, and citation metadata.
+- Contribution, governance, security, support, code-of-conduct, maintainer, and authorship documents.
+- Issue and pull-request templates, CODEOWNERS, Dependabot, CodeQL, dependency review, metadata validation, Markdown link checking, release gate, and clean release-package workflows.
+- Release process, release checklist, release notes draft, repository-settings guidance, and security/dependency policy documentation.
 
 ### Changed
 
@@ -43,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Image OCR provenance records the actual RapidOCR or Tesseract path instead of inheriting an unrelated engine label.
 - Failed reruns clear known generated artifacts before writing a failure bundle, preventing stale canonical outputs.
 - Source locator schemas now constrain page, slide, sheet, shape, table index, and bounding-box types.
+- README files now describe Apache-2.0 licensing, release governance, and release-quality checks.
 
 ### Fixed
 
