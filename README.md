@@ -15,6 +15,13 @@ The project is designed for environments where conversion must remain transparen
 - [AI skill operating contract](SKILL.md)
 - [Format capability matrix](references/capability_matrix.md)
 - [Engine notes and escalation guidance](references/engine_notes.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Support policy](SUPPORT.md)
+- [Governance](GOVERNANCE.md)
+- [Release process](RELEASING.md)
+- [Release checklist](RELEASE_CHECKLIST.md)
+- [Licensing guide](docs/LICENSING.md)
 
 ## Highlights
 
@@ -155,7 +162,7 @@ python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
 
-GitHub Actions runs these checks on pushes and pull requests.
+GitHub Actions runs these checks on pushes and pull requests. Release-specific checks are documented in `RELEASING.md` and `RELEASE_CHECKLIST.md`.
 
 ## Project structure
 
@@ -170,4 +177,6 @@ requirements.txt            Runtime and test dependencies
 
 ## License
 
-No license file is currently included. Until a license is added, standard copyright rules apply and reuse rights are not automatically granted.
+Licensed under the [Apache License 2.0](LICENSE).
+
+The license permits commercial use, modification, and redistribution subject to its terms, and includes an express contributor patent grant. Third-party dependencies retain their own licenses; see `THIRD_PARTY_NOTICES.md` and `LICENSES.md`.
