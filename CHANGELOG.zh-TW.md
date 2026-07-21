@@ -120,8 +120,8 @@
 - 受限環境優先採用輕量離線引擎。
 - 不把 `document.md` 單獨視為轉換成功證據。
 
-[尚未發布]: https://github.com/SmartyJohnway/universal-file-to-markdown/compare/v1.6.0...HEAD
-[1.6.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/releases/tag/v1.6.0
+[尚未發布]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
+[1.6.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commit/d4ff2d29a65dce6d0f84780c8d22effe10fe4f5d
 [1.5.1]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
 [1.5.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
 [1.1.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
