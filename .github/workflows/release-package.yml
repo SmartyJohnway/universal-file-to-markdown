@@ -1,0 +1,48 @@
+name: Build release package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release files
+        run: |
+          test -f LICENSE
+          test -f README.md
+          test -f README.zh-TW.md
+          test -f CHANGELOG.md
+          test -f CHANGELOG.zh-TW.md
+          test -f CITATION.cff
+      - name: Build clean skill archive
+        run: |
+          VERSION="${GITHUB_REF_NAME:-manual}"
+          ROOT="universal-file-to-markdown-${VERSION}"
+          mkdir -p "dist/${ROOT}"
+          rsync -a ./ "dist/${ROOT}/" \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.venv' \
+            --exclude '__pycache__' \
+            --exclude '.pytest_cache' \
+            --exclude 'dist' \
+            --exclude 'private-fixtures' \
+            --exclude 'local-fixtures'
+          cd dist
+          zip -r "${ROOT}.zip" "${ROOT}"
+          sha256sum "${ROOT}.zip" > "${ROOT}.zip.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: universal-file-to-markdown-release-package
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
