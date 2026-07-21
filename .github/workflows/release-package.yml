@@ -39,7 +39,7 @@ jobs:
           cd dist
           zip -r "${ROOT}.zip" "${ROOT}"
           sha256sum "${ROOT}.zip" > "${ROOT}.zip.sha256"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: universal-file-to-markdown-release-package
           path: |
