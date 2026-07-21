@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a reproducible conversion, validation, or packaging defect
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not upload confidential documents. Use a synthetic or redistributable fixture whenever possible.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.6.0 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Python version, and relevant system tools
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: Input format
+      options:
+        - PDF digital
+        - PDF scanned or mixed
+        - Image OCR
+        - DOCX
+        - XLSX or XLSM
+        - PPTX
+        - CSV or TSV
+        - JSON
+        - EML
+        - Pandoc-supported markup
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and capability probe
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include status, warning codes, error type, and bundle-validation result. Remove document content and secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Explain how to create a safe synthetic fixture or provide a link to a redistributable example.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I removed confidential data and credentials.
+          required: true
+        - label: I ran the capability probe or explained why I could not.
+          required: true
