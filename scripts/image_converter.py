@@ -33,7 +33,10 @@ def convert_image(path: str) -> dict:
     table_rows = _cluster_into_table(boxes) if boxes else None
     table_likelihood = _estimate_table_likelihood(boxes) if boxes and not table_rows else 0.0
     markdown = _rows_to_markdown(table_rows) if table_rows else _reconstruct_layout(boxes)
-    engine = "tesseract_fallback" if fallback_used else "rapidocr"
+    engine = "tesseract" if fallback_used else "rapidocr_onnxruntime"
+    engines_used = ["rapidocr_onnxruntime"]
+    if fallback_used:
+        engines_used.append("tesseract")
     tables = []
     elements = [{
         "id": "image-ocr-region-0001", "type": "table" if table_rows else "ocr_region",
@@ -52,6 +55,7 @@ def convert_image(path: str) -> dict:
         "status": "passed_with_warnings" if low_confidence or (glued and not fallback_used)
                   else "passed",
         "engine": engine,
+        "engines_used": engines_used,
         "ocr_used": True,
         "ocr_avg_confidence": avg_confidence,
         "ocr_low_confidence_pages": [1] if low_confidence else [],

@@ -20,6 +20,31 @@ def _run(input_path, tmp_out):
     return router.convert(input_path, tmp_out)
 
 
+def _mutate_json(bundle_dir, relative_path, mutate):
+    path = os.path.join(bundle_dir, relative_path)
+    with open(path, encoding="utf-8") as f:
+        value = json.load(f)
+    mutate(value)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(value, f, ensure_ascii=False)
+
+
+def _read_chunks(bundle_dir):
+    with open(os.path.join(bundle_dir, "chunks.jsonl"), encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def _write_chunks(bundle_dir, chunks):
+    with open(os.path.join(bundle_dir, "chunks.jsonl"), "w", encoding="utf-8") as f:
+        for chunk in chunks:
+            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+
+
+def _validate(bundle_dir):
+    from validate_bundle import validate_bundle
+    return validate_bundle(bundle_dir)
+
+
 class TestXlsxMergedCells:
     def test_merged_range_becomes_html_colspan(self, xlsx_merged, tmp_out):
         report = _run(xlsx_merged, tmp_out)
@@ -401,7 +426,7 @@ class TestV16FailureIsolation:
         broken.write_bytes(b"PK-not-a-real-workbook")
         second = _run(str(broken), tmp_out)
         assert second["status"] == "failed"
-        assert second["reason"] == "conversion_error"
+        assert second["reason"] == "corrupt_or_invalid_office_container"
         assert not os.path.exists(os.path.join(tmp_out, "document.json"))
         assert not os.path.exists(os.path.join(tmp_out, "chunks.jsonl"))
         assert not os.path.exists(os.path.join(tmp_out, "tables"))
@@ -489,6 +514,33 @@ class TestV16FormatGranularity:
         assert "Hello world" in md
         document = json.load(open(os.path.join(tmp_out, "document.json"), encoding="utf-8"))
         assert any(element["type"] == "ocr_region" for element in document["elements"])
+        assert report["engine"] == "rapidocr_onnxruntime"
+        assert report["details"]["engines_used"] == ["rapidocr_onnxruntime"]
+        ocr_region = next(element for element in document["elements"]
+                          if element["type"] == "ocr_region")
+        assert ocr_region["engine"] == "rapidocr_onnxruntime"
+
+
+class TestV16OfficeContainerClassification:
+    def test_corrupt_ooxml_is_not_password_protected(self, tmp_path, tmp_out):
+        broken = tmp_path / "broken.xlsx"
+        broken.write_bytes(b"PK-not-a-real-workbook")
+        report = _run(str(broken), tmp_out)
+        assert report["status"] == "failed"
+        assert report["reason"] == "corrupt_or_invalid_office_container"
+
+    def test_valid_ooxml_is_not_encrypted(self, xlsx_merged):
+        from common_utils import check_office_encrypted
+        assert check_office_encrypted(xlsx_merged) == "not_encrypted"
+
+    def test_real_encrypted_office_is_password_protected(self, xlsx_merged, tmp_path, tmp_out):
+        import msoffcrypto
+        encrypted = tmp_path / "encrypted.xlsx"
+        with open(xlsx_merged, "rb") as source, open(encrypted, "wb") as target:
+            msoffcrypto.OfficeFile(source).encrypt("test-password", target)
+        report = _run(str(encrypted), tmp_out)
+        assert report["status"] == "failed"
+        assert report["reason"] == "password_protected"
 
 
 class TestV16BundleValidator:
@@ -520,6 +572,96 @@ class TestV16BundleValidator:
         for relative in relative_files:
             assert open(os.path.join(out_a, relative), "rb").read() == open(
                 os.path.join(out_b, relative), "rb").read()
+
+    def test_validator_rejects_missing_root(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda doc: doc.update(
+            root_element_id="does-not-exist"))
+        result = _validate(tmp_out)
+        assert any("root_element_id" in error for error in result["errors"])
+
+    def test_validator_rejects_root_with_parent(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        def mutate(doc):
+            doc["elements"][0]["parent_id"] = doc["elements"][1]["id"]
+        _mutate_json(tmp_out, "document.json", mutate)
+        result = _validate(tmp_out)
+        assert any("root element parent_id" in error for error in result["errors"])
+
+    def test_validator_rejects_parent_cycle_and_disconnected_elements(
+            self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        def mutate(doc):
+            root, parent, child = doc["elements"][:3]
+            root["children"] = root["child_ids"] = []
+            parent["parent_id"] = child["id"]
+            parent["children"] = parent["child_ids"] = [child["id"]]
+            child["parent_id"] = parent["id"]
+            child["children"] = child["child_ids"] = [parent["id"]]
+        _mutate_json(tmp_out, "document.json", mutate)
+        result = _validate(tmp_out)
+        assert any("cycle" in error for error in result["errors"])
+        assert any("not reachable" in error for error in result["errors"])
+
+    def test_validator_rejects_element_count_mismatch(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda doc: doc.update(element_count=999))
+        result = _validate(tmp_out)
+        assert any("element_count" in error for error in result["errors"])
+
+    def test_validator_rejects_content_element_count_mismatch(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda doc: doc.update(
+            content_element_count=999))
+        result = _validate(tmp_out)
+        assert any("content_element_count" in error for error in result["errors"])
+
+    def test_validator_rejects_char_count_mismatch(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        chunks = _read_chunks(tmp_out)
+        chunks[0]["char_count"] = 0
+        _write_chunks(tmp_out, chunks)
+        result = _validate(tmp_out)
+        assert any("char_count mismatch" in error for error in result["errors"])
+
+    def test_validator_rejects_duplicate_chunk_id(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        chunks = _read_chunks(tmp_out)
+        duplicate = dict(chunks[0])
+        duplicate["chunk_index"] = 2
+        chunks.append(duplicate)
+        _write_chunks(tmp_out, chunks)
+        result = _validate(tmp_out)
+        assert any("chunk IDs" in error for error in result["errors"])
+
+    def test_validator_rejects_invalid_part_index(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        chunks = _read_chunks(tmp_out)
+        chunks[0]["part_index"] = chunks[0]["part_count"] + 1
+        _write_chunks(tmp_out, chunks)
+        result = _validate(tmp_out)
+        assert any("part index" in error for error in result["errors"])
+
+    def test_validator_rejects_inconsistent_table_dimensions(self, xlsx_merged, tmp_out):
+        _run(xlsx_merged, tmp_out)
+        index = json.load(open(os.path.join(tmp_out, "tables", "index.json"),
+                               encoding="utf-8"))
+        table_path = os.path.join("tables", index[0]["assets"]["json"])
+        _mutate_json(tmp_out, table_path, lambda table: table["dimensions"].update(rows=999))
+        result = _validate(tmp_out)
+        assert any("row dimension" in error for error in result["errors"])
+
+
+class TestV16DocumentBuilder:
+    def test_builder_rejects_parent_cycle(self, tmp_path):
+        from document_model import build_document_json
+        elements = [
+            {"id": "a", "type": "paragraph", "parent_id": "b"},
+            {"id": "b", "type": "paragraph", "parent_id": "a"},
+        ]
+        import pytest
+        with pytest.raises(ValueError, match="cycle"):
+            build_document_json(str(tmp_path / "source.txt"), "0" * 64, "txt", elements)
 
 
 class TestV16TableChunking:

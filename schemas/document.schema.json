@@ -3,7 +3,7 @@
   "$id": "document.schema.json",
   "title": "Universal File to Markdown canonical document",
   "type": "object",
-  "required": ["schema_version", "source_file", "source_sha256", "file_type", "root_element_id", "element_count", "elements"],
+  "required": ["schema_version", "source_file", "source_sha256", "file_type", "root_element_id", "element_count", "content_element_count", "elements"],
   "properties": {
     "schema_version": {"const": "1.0"},
     "source_file": {"type": "string"},
@@ -11,6 +11,7 @@
     "file_type": {"type": "string"},
     "root_element_id": {"type": "string"},
     "element_count": {"type": "integer", "minimum": 1},
+    "content_element_count": {"type": "integer", "minimum": 0},
     "elements": {"type": "array", "items": {"$ref": "element.schema.json"}}
   },
   "additionalProperties": true

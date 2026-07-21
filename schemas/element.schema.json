@@ -17,7 +17,27 @@
     "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
     "source_locator": {
       "type": "object",
-      "required": ["page", "slide", "sheet", "cell_range", "shape_id", "shape_name", "bbox", "table_index", "relationship_id", "part", "source_file"]
+      "required": ["page", "slide", "sheet", "cell_range", "shape_id", "shape_name", "bbox", "table_index", "relationship_id", "part", "source_file"],
+      "properties": {
+        "page": {"type": ["integer", "null"], "minimum": 1},
+        "slide": {"type": ["integer", "null"], "minimum": 1},
+        "sheet": {"type": ["string", "null"]},
+        "cell_range": {"type": ["string", "null"]},
+        "shape_id": {"type": ["integer", "string", "null"]},
+        "shape_name": {"type": ["string", "null"]},
+        "bbox": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4},
+            {"type": "object"}
+          ]
+        },
+        "table_index": {"type": ["integer", "null"], "minimum": 0},
+        "relationship_id": {"type": ["string", "null"]},
+        "part": {"type": ["string", "null"]},
+        "source_file": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
     },
     "properties": {"type": "object"},
     "warnings": {"type": "array"},

@@ -9,13 +9,36 @@
     "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
     "source_format": {"type": "string"},
     "source_locator": {"type": "object"},
-    "dimensions": {"type": "object", "required": ["rows", "columns"]},
-    "cells": {"type": "array"},
-    "grid": {"type": "array"},
+    "dimensions": {
+      "type": "object",
+      "required": ["rows", "columns"],
+      "properties": {
+        "rows": {"type": "integer", "minimum": 0},
+        "columns": {"type": "integer", "minimum": 0}
+      }
+    },
+    "cells": {"type": "array", "items": {"$ref": "#/$defs/cell"}},
+    "grid": {"type": "array", "items": {"type": "array"}},
     "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
     "engine": {"type": ["string", "null"]},
     "merged_cells_present": {"type": "boolean"},
     "merged_cells_flattened_in_csv": {"type": "boolean"}
+  },
+  "$defs": {
+    "cell": {
+      "type": "object",
+      "required": ["row", "column", "value", "rowspan", "colspan", "is_header", "confidence", "source_locator"],
+      "properties": {
+        "row": {"type": "integer", "minimum": 0},
+        "column": {"type": "integer", "minimum": 0},
+        "rowspan": {"type": "integer", "minimum": 1},
+        "colspan": {"type": "integer", "minimum": 1},
+        "is_header": {"type": "boolean"},
+        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "source_locator": {"type": ["object", "null"]}
+      },
+      "additionalProperties": true
+    }
   },
   "additionalProperties": true
 }
