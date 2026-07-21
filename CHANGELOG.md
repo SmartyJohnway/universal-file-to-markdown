@@ -120,8 +120,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Use lightweight offline engines in restricted environments.
 - Never treat `document.md` alone as proof of successful conversion.
 
-[Unreleased]: https://github.com/SmartyJohnway/universal-file-to-markdown/compare/v1.6.0...HEAD
-[1.6.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/releases/tag/v1.6.0
+[Unreleased]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
+[1.6.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commit/d4ff2d29a65dce6d0f84780c8d22effe10fe4f5d
 [1.5.1]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
 [1.5.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
 [1.1.0]: https://github.com/SmartyJohnway/universal-file-to-markdown/commits/main
