@@ -6,6 +6,10 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+from markdown_refs import parse_markdown_image_references
 
 HARD_MAX_CHUNK_CHARS = 2000
 
@@ -40,6 +44,8 @@ def validate_bundle(bundle_dir: str) -> dict:
             errors.append(f"missing required file: {name}")
     if errors:
         return {"status": "failed", "errors": errors, "warnings": warnings}
+
+    _validate_markdown_image_targets(bundle_dir, errors)
 
     manifest = _load_json(os.path.join(bundle_dir, "manifest.json"))
     document = _load_json(os.path.join(bundle_dir, "document.json"))
@@ -168,6 +174,34 @@ def validate_bundle(bundle_dir: str) -> dict:
     return {"status": "passed" if not errors else "failed", "errors": errors,
             "warnings": warnings, "counts": {"elements": len(elements),
             "chunks": len(chunks), "tables": len(table_ids)}}
+
+
+def _validate_markdown_image_targets(bundle_dir: str, errors: list) -> None:
+    """Validate local inline image destinations without consulting the CWD."""
+    markdown = Path(bundle_dir, "document.md").read_text(encoding="utf-8")
+    root = Path(bundle_dir).resolve()
+    for ref in parse_markdown_image_references(markdown):
+        raw, normalized = ref.raw_target, ref.normalized_target
+        parsed = urlparse(normalized)
+        if parsed.scheme in ("http", "https", "data"):
+            continue
+        details = f"line={ref.line_number} raw_target={raw!r} normalized_path={normalized!r}"
+        # file: is always an absolute filesystem reference for this contract.
+        if parsed.scheme == "file" or re.match(r"^[A-Za-z]:[\\/]", normalized) or normalized.startswith("\\"):
+            errors.append(f"MARKDOWN_IMAGE_TARGET_ABSOLUTE: {details}; reason=absolute path")
+            continue
+        candidate = Path(normalized)
+        if candidate.is_absolute():
+            errors.append(f"MARKDOWN_IMAGE_TARGET_ABSOLUTE: {details}; reason=absolute path")
+            continue
+        resolved = (root / candidate).resolve()
+        try:
+            relative = resolved.relative_to(root)
+        except ValueError:
+            errors.append(f"MARKDOWN_IMAGE_TARGET_ESCAPES_BUNDLE: {details}; reason=path escapes bundle")
+            continue
+        if not resolved.is_file():
+            errors.append(f"MARKDOWN_IMAGE_TARGET_MISSING: {details}; reason=file does not exist")
 
 
 def _validate_table_semantics(table: dict, errors: list) -> None:

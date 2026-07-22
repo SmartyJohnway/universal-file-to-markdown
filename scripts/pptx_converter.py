@@ -50,7 +50,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 
-from common_utils import extract_ooxml_core_metadata
+from common_utils import extract_ooxml_core_metadata, to_bundle_relative_posix_path
 
 _REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 _OLE_REL_SUFFIX = "/relationships/oleObject"
@@ -290,7 +290,7 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
             return {"markdown": markdown, "image_count": 1,
                     "chart_count": 0, "tables": [],
                     "items": [{"type": "image", "content": markdown,
-                               "token": shape_token, "asset": asset,
+                               "token": shape_token, "asset": os.path.basename(asset),
                                "source_locator": {**_shape_locator(shape),
                                                   "relationship_id": relationship_id,
                                                   "part": part}}]}
@@ -339,7 +339,7 @@ def _extract_picture_asset(shape, assets_dir, slide_num):
         relationship_id = blip.rEmbed
         rel = shape.part.rels[relationship_id]
         part = str(rel.target_part.partname)
-        return filename, relationship_id, part
+        return to_bundle_relative_posix_path(os.path.dirname(assets_dir), os.path.join(assets_dir, filename)), relationship_id, part
     except Exception:
         return None, None, None
 

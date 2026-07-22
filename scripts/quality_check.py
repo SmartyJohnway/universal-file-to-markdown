@@ -14,7 +14,7 @@ _MOJIBAKE_PATTERN = re.compile(r"[\ufffd\x00-\x08\x0b\x0c\x0e-\x1f]")
 
 def build_report(source_path: str, file_type: str, converter_report: dict, markdown: str,
                   fmt_info: dict = None) -> dict:
-    warnings = []
+    warnings = list(converter_report.get("warnings", []))
     status = converter_report.get("status", "passed")
 
     if status == "failed":
@@ -245,8 +245,13 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
                            "Markdown output. Open the original file to view this content.",
             })
 
-    if warnings and status == "passed":
-        status = "passed_with_warnings"
+    # Status is derived from formal warnings, never from an informational note.
+    if status != "failed":
+        status = "passed_with_warnings" if warnings else "passed"
+    if status != "failed" and not isinstance(converter_report.get("engine"), str):
+        raise ValueError("successful conversion report requires a non-empty primary engine")
+    if status != "failed" and not converter_report.get("engine", "").strip():
+        raise ValueError("successful conversion report requires a non-empty primary engine")
 
     return {
         "source_file": source_path,

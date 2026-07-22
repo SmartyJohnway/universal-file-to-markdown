@@ -695,3 +695,71 @@ class TestSecurityFixes:
         for fname in os.listdir(assets_dir):
             assert ".." not in fname
             assert not fname.startswith("/")
+
+class TestAssetAndReportContractsV161:
+    def test_bundle_relative_path_rejects_escape(self, tmp_path):
+        from common_utils import to_bundle_relative_posix_path
+        import pytest
+        with pytest.raises(ValueError):
+            to_bundle_relative_posix_path(tmp_path / "bundle", tmp_path / "outside.png")
+
+    def test_bundle_relative_path_rejects_absolute_target(self, tmp_path):
+        from common_utils import to_bundle_relative_posix_path
+        import pytest
+        root = tmp_path / "bundle"; root.mkdir()
+        with pytest.raises(ValueError):
+            to_bundle_relative_posix_path(root, tmp_path / "outside.png")
+
+    def test_pptx_image_markdown_target_exists_and_uses_assets_prefix(self, tmp_path, tmp_out):
+        from PIL import Image
+        from pptx import Presentation
+        from pptx.util import Inches
+        image = tmp_path / "image.png"
+        Image.new("RGB", (2, 2), "red").save(image)
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+        slide.shapes.add_picture(str(image), Inches(1), Inches(1))
+        source = tmp_path / "picture.pptx"; presentation.save(source)
+        report = _run(str(source), tmp_out)
+        assert report["status"] == "passed"
+        from markdown_refs import parse_markdown_image_references
+        refs = parse_markdown_image_references(open(os.path.join(tmp_out, "document.md"), encoding="utf-8").read())
+        assert refs and refs[0].normalized_target.startswith("assets/")
+        assert "\\" not in refs[0].normalized_target
+        assert os.path.isfile(os.path.join(tmp_out, refs[0].normalized_target))
+        assert _validate(tmp_out)["status"] == "passed"
+
+    def test_validator_image_target_policy(self, tmp_path, tmp_out):
+        source = tmp_path / "input.csv"
+        source.write_text("a,b\n1,2\n", encoding="utf-8")
+        _run(str(source), tmp_out)
+        asset = os.path.join(tmp_out, "assets"); os.makedirs(asset)
+        open(os.path.join(asset, "file name.png"), "wb").write(b"x")
+        path = os.path.join(tmp_out, "document.md")
+        for target in ("assets/file%20name.png", "<assets/file name.png>", "https://example.com/image.png", "data:image/png;base64,AAAA"):
+            open(path, "w", encoding="utf-8").write(f"![x]({target})\n")
+            assert _validate(tmp_out)["status"] == "passed"
+        for target, code in (("missing.png", "MARKDOWN_IMAGE_TARGET_MISSING"), ("../outside.png", "MARKDOWN_IMAGE_TARGET_ESCAPES_BUNDLE"), ("/tmp/image.png", "MARKDOWN_IMAGE_TARGET_ABSOLUTE"), (r"C:\\image.png", "MARKDOWN_IMAGE_TARGET_ABSOLUTE")):
+            open(path, "w", encoding="utf-8").write(f"![x]({target})\n")
+            assert any(code in error for error in _validate(tmp_out)["errors"])
+
+    def test_generic_fallback_emits_warning(self, tmp_path, tmp_out):
+        source = tmp_path / "12_unsupported.xyz"; source.write_text("fallback test\n", encoding="utf-8")
+        report = _run(str(source), tmp_out)
+        assert report["status"] == "passed_with_warnings"
+        assert report["engine"] == "markitdown_fallback"
+        assert "GENERIC_FALLBACK_USED" in [warning["code"] for warning in report["warnings"]]
+
+    def test_status_warning_and_engine_invariants(self):
+        from quality_check import build_report
+        passed = build_report("a.txt", "csv", {"status": "passed", "engine": "csv_native"}, "ok")
+        warned = build_report("a.txt", "csv", {"status": "passed_with_warnings", "engine": "csv_native", "warnings": [{"code": "W"}]}, "ok")
+        failed = build_report("a.txt", "csv", {"status": "failed", "reason": "bad"}, "")
+        assert passed["status"] == "passed" and not passed["warnings"]
+        assert warned["status"] == "passed_with_warnings" and warned["warnings"]
+        assert failed["status"] == "failed" and failed["reason"]
+
+    def test_xlsx_success_report_has_primary_engine(self, xlsx_merged, tmp_out):
+        report = _run(xlsx_merged, tmp_out)
+        assert report["status"] in ("passed", "passed_with_warnings")
+        assert report["engine"] == "openpyxl_custom"

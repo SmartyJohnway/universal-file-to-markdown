@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Correct PPTX Markdown image paths to resolve through the bundle `assets/` directory.
+- Validate local Markdown image targets and reject missing, absolute, or escaping paths.
+- Enforce consistency between conversion status and warning/error payloads.
+- Require a non-empty primary engine for successful conversions.
+
+### Added
+
+- Generic fallback warning for unsupported extensions handled by MarkItDown.
+- Regression coverage for Markdown asset usability and report-contract invariants.
+
 ### Planned
 
 - Expand real-world integration fixtures for encrypted Office files, SmartArt, embedded OLE objects, and complex scanned tables.

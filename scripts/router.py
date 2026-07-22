@@ -49,7 +49,7 @@ from chunker import build_chunks
 from table_export import export_tables
 from table_model import normalize_tables
 
-SKILL_VERSION = "1.6.0"
+SKILL_VERSION = "1.6.1-rc1"
 _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
     "conversion-report.json", "_pandoc_tmp.md",
@@ -271,7 +271,10 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
             md_engine = MarkItDown(enable_plugins=False)
             markdown = md_engine.convert(input_path).text_content
             report = {"status": "passed_with_warnings", "engine": "markitdown_fallback",
-                      "note": "unrecognized extension, used generic fallback"}
+                      "note": "unrecognized extension, used generic fallback",
+                      "warnings": [{"code": "GENERIC_FALLBACK_USED",
+                                    "message": "The input extension is not natively supported; generic MarkItDown fallback was used.",
+                                    "details": {"extension": os.path.splitext(original_path)[1].lower(), "engine": "markitdown_fallback"}}]}
             elements = [{"id": "fallback-block-0001", "type": "structured_block",
                          "content": markdown, "engine": "markitdown_fallback",
                          "confidence": None, "source_locator": {}}]
