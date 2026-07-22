@@ -1,101 +1,219 @@
-"""Deterministic native HTML structure extraction (BeautifulSoup + lxml)."""
+"""Deterministic native HTML structure extraction using BeautifulSoup + lxml."""
 from urllib.parse import urljoin, urlparse
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
+
 
 def parse_html_source(path):
-    with open(path, encoding="utf-8", errors="replace") as f: return BeautifulSoup(f.read(), "lxml")
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        return BeautifulSoup(handle.read(), "lxml")
+
 
 def extract_main_content(soup):
-    candidates = [("main_element", "main", "high", soup.find("main")), ("article_element", "article", "high", soup.find("article")),
-        ("role_main", '[role="main"]', "high", soup.find(attrs={"role":"main"})), ("content_id", "#content", "medium", soup.find(id="content")),
-        ("content_class", ".content", "medium", soup.find(class_="content")), ("body_fallback", "body", "low", soup.body)]
+    candidates = (("main_element", "main", "high", soup.find("main")),
+                  ("article_element", "article", "high", soup.find("article")),
+                  ("role_main", '[role="main"]', "high", soup.find(attrs={"role": "main"})),
+                  ("content_id", "#content", "medium", soup.find(id="content")),
+                  ("content_class", ".content", "medium", soup.find(class_="content")),
+                  ("body_fallback", "body", "low", soup.body))
     for strategy, selector, confidence, node in candidates:
-        if node: return node, {"strategy":strategy,"selector":selector,"confidence":confidence}, ([] if confidence != "low" else ["MAIN_CONTENT_NOT_IDENTIFIED", "BOILERPLATE_MAY_BE_INCLUDED"])
-    return soup, {"strategy":"document_fallback","selector":"document","confidence":"low"}, ["MAIN_CONTENT_NOT_IDENTIFIED", "BOILERPLATE_MAY_BE_INCLUDED"]
+        if node:
+            warnings = [] if confidence != "low" else ["MAIN_CONTENT_NOT_IDENTIFIED", "BOILERPLATE_MAY_BE_INCLUDED"]
+            return node, {"strategy": strategy, "selector": selector, "confidence": confidence}, warnings
+    return soup, {"strategy": "document_fallback", "selector": "document", "confidence": "low"}, ["MAIN_CONTENT_NOT_IDENTIFIED", "BOILERPLATE_MAY_BE_INCLUDED"]
 
-def _url(value, base, warnings):
-    if not value: return value
-    if urlparse(value).scheme or value.startswith("//"): return value if not value.startswith("//") else "https:" + value
-    if base: return urljoin(base, value)
-    warnings.add("BASE_URL_UNAVAILABLE"); warnings.add("RELATIVE_URL_UNRESOLVED"); return value
 
-def _text(node): return " ".join(node.stripped_strings)
+def _relative(value):
+    parsed = urlparse(value or "")
+    return bool(value) and not parsed.scheme and not value.startswith("//")
 
-def extract_cell_blocks(cell, base, warnings):
-    blocks=[]
-    for descendant in cell.find_all(["p","br","li","a","img"], recursive=True):
-        if descendant.name == "br": blocks.append({"type":"line_break"})
-        elif descendant.name == "li": blocks.append({"type":"list_item","level":len(descendant.find_parents(["ul","ol"])),"ordered":bool(descendant.find_parent("ol")),"text":_text(descendant)})
-        elif descendant.name == "a": blocks.append({"type":"link","text":_text(descendant),"url":_url(descendant.get("href"),base,warnings)})
-        elif descendant.name == "img": blocks.append({"type":"image","alt":descendant.get("alt", ""),"url":_url(descendant.get("src"),base,warnings),"remote_resource":True})
-        elif descendant.name == "p": blocks.append({"type":"paragraph","text":_text(descendant)})
-    return blocks or [{"type":"paragraph","text":_text(cell)}]
 
-def _span(cell, key, warnings):
-    raw=cell.get(key, "1")
+def resolve_url(value, base_url, warnings):
+    if not value:
+        return value
+    if value.startswith("//"):
+        return "https:" + value
+    if not _relative(value):
+        return value
+    if base_url:
+        return urljoin(base_url, value)
+    warnings.update(("BASE_URL_UNAVAILABLE", "RELATIVE_URL_UNRESOLVED"))
+    return value
+
+
+def _text(node):
+    return " ".join(node.stripped_strings)
+
+
+def _markdown_inline(node, base_url, warnings, emitted_urls):
+    """Preserve links/images while flattening only inline HTML markup."""
+    parts = []
+    for child in node.children:
+        if isinstance(child, str):
+            parts.append(child)
+        elif child.name == "a":
+            url = resolve_url(child.get("href"), base_url, warnings)
+            label = _markdown_inline(child, base_url, warnings, emitted_urls).strip() or url or ""
+            if url:
+                emitted_urls.append((id(child), url))
+                parts.append(f"[{label}]({url})")
+            else:
+                parts.append(label)
+        elif child.name == "img":
+            url = resolve_url(child.get("src"), base_url, warnings)
+            if url:
+                parts.append(f"![{child.get('alt', '')}]({url})")
+        elif child.name == "br":
+            parts.append("<br>")
+        else:
+            parts.append(_markdown_inline(child, base_url, warnings, emitted_urls))
+    return "".join(parts).strip()
+
+
+def extract_cell_blocks(cell, base_url, warnings):
+    blocks = []
+    for node in cell.find_all(["p", "br", "li", "a", "img"], recursive=True):
+        if node.name == "br": blocks.append({"type": "line_break"})
+        elif node.name == "li": blocks.append({"type": "list_item", "level": len(node.find_parents(["ul", "ol"])), "ordered": bool(node.find_parent("ol")), "text": _text(node)})
+        elif node.name == "a": blocks.append({"type": "link", "text": _text(node), "url": resolve_url(node.get("href"), base_url, warnings)})
+        elif node.name == "img": blocks.append({"type": "image", "alt": node.get("alt", ""), "url": resolve_url(node.get("src"), base_url, warnings), "remote_resource": True})
+        elif node.name == "p": blocks.append({"type": "paragraph", "text": _text(node)})
+    return blocks or [{"type": "paragraph", "text": _text(cell)}]
+
+
+def _span(cell, name, warnings):
     try:
-        result=int(raw)
-        if result < 1: raise ValueError
-        return result
-    except (TypeError, ValueError): warnings.add("HTML_TABLE_SPAN_INVALID"); return 1
+        value = int(cell.get(name, "1"))
+        if value < 1: raise ValueError
+        return value
+    except (TypeError, ValueError):
+        warnings.add("HTML_TABLE_SPAN_INVALID")
+        return 1
 
-def extract_table(table, index, base, warnings):
-    rows=table.find_all("tr")
-    grid=[]; cells=[]; merges=[]; cell_blocks=[]; occupied={}
-    source_cells=0
-    for r, tr in enumerate(rows):
-        row=[]; c=0
-        while (r,c) in occupied: row.append(occupied[(r,c)]); c+=1
-        for cell in tr.find_all(["th","td"], recursive=False):
-            source_cells+=1
-            while (r,c) in occupied: row.append(occupied[(r,c)]); c+=1
-            rs,cs=_span(cell,"rowspan",warnings),_span(cell,"colspan",warnings); value=_text(cell)
-            blocks=extract_cell_blocks(cell,base,warnings)
-            for rr in range(r,r+rs):
-                for cc in range(c,c+cs):
-                    if (rr,cc) in occupied: warnings.add("HTML_TABLE_SPAN_OVERLAP")
-                    occupied[(rr,cc)]=value
-            while len(row) < c: row.append(occupied.get((r,len(row)),""))
-            row.extend([value]*cs); cells.append({"row":r,"column":c,"value":value,"rowspan":rs,"colspan":cs,"is_header":cell.name=="th"})
-            if rs>1 or cs>1: merges.append({"anchor_row":r,"anchor_column":c,"rowspan":rs,"colspan":cs,"value":value})
-            if len(blocks)>1 or blocks[0].get("type") != "paragraph": cell_blocks.append({"row":r,"column":c,"blocks":blocks})
-            c+=cs
-        grid.append(row)
-    width=max((len(x) for x in grid),default=0)
-    # Materialize rows created solely by rowspans and pad missing cells.
-    for r in range(len(grid), max((rr for rr,_ in occupied), default=-1)+1): grid.append([])
-    for r,row in enumerate(grid):
-        row.extend(occupied.get((r,c),"") for c in range(len(row),width))
-        if len(row)<width: row.extend([""]*(width-len(row)))
-    locator={"format":"html","table_index":index}
-    if table.get("id"): locator["element_id"]=table["id"]
-    return {"id":f"table-html-{index:04d}","source_format":"html","source_locator":locator,"source_dimensions":{"row_count":len(rows),"source_cell_count":source_cells},"grid":grid,"cells":cells,"merged_cells":merges,"cell_blocks":cell_blocks,"engine":"beautifulsoup4_lxml"}
+
+def extract_table(table, index, base_url, warnings):
+    occupied, cells, merges, cell_blocks, grid = {}, [], [], [], []
+    source_cells = 0
+    for row_index, tr in enumerate(table.find_all("tr")):
+        column = 0
+        while (row_index, column) in occupied: column += 1
+        for cell in tr.find_all(["th", "td"], recursive=False):
+            while (row_index, column) in occupied: column += 1
+            source_cells += 1
+            rowspan, colspan = _span(cell, "rowspan", warnings), _span(cell, "colspan", warnings)
+            value = _text(cell)
+            positions = [(r, c) for r in range(row_index, row_index + rowspan) for c in range(column, column + colspan)]
+            if any(position in occupied for position in positions):
+                # Preserve the first source anchor; never silently overwrite it.
+                warnings.add("HTML_TABLE_SPAN_OVERLAP")
+                column += colspan
+                continue
+            for position in positions: occupied[position] = value
+            cells.append({"row": row_index, "column": column, "value": value, "rowspan": rowspan, "colspan": colspan, "is_header": cell.name == "th"})
+            if rowspan > 1 or colspan > 1:
+                merges.append({"anchor_row": row_index, "anchor_column": column, "rowspan": rowspan, "colspan": colspan, "value": value})
+            blocks = extract_cell_blocks(cell, base_url, warnings)
+            if len(blocks) > 1 or blocks[0].get("type") != "paragraph": cell_blocks.append({"row": row_index, "column": column, "blocks": blocks})
+            column += colspan
+    row_count = max((r for r, _ in occupied), default=-1) + 1
+    width = max((c for _, c in occupied), default=-1) + 1
+    for r in range(row_count): grid.append([occupied.get((r, c), "") for c in range(width)])
+    if not grid: warnings.add("HTML_TABLE_EMPTY")
+    locator = {"format": "html", "table_index": index}
+    if table.get("id"): locator["element_id"] = table["id"]
+    return {"id": f"table-html-{index:04d}", "source_format": "html", "source_locator": locator,
+            "source_dimensions": {"row_count": len(table.find_all("tr")), "source_cell_count": source_cells},
+            "grid": grid, "cells": cells, "merged_cells": merges, "cell_blocks": cell_blocks, "engine": "beautifulsoup4_lxml"}
+
 
 def render_table(grid):
     if not grid: return ""
-    def esc(v): return str(v).replace("|", "\\|").replace("\n", "<br>")
-    lines=["| " + " | ".join(esc(x) for x in grid[0]) + " |", "| " + " | ".join("---" for _ in grid[0]) + " |"]
-    lines += ["| " + " | ".join(esc(x) for x in row) + " |" for row in grid[1:]]
-    return "\n".join(lines)
+    escape = lambda value: str(value).replace("|", "\\|").replace("\n", "<br>")
+    return "\n".join(["| " + " | ".join(escape(x) for x in grid[0]) + " |", "| " + " | ".join("---" for _ in grid[0]) + " |"] + ["| " + " | ".join(escape(x) for x in row) + " |" for row in grid[1:]])
+
 
 def extract_html(path, source_url=None):
-    soup=parse_html_source(path); base=source_url or (soup.base.get("href") if soup.base else None); main, main_info, warn_list=extract_main_content(soup); warnings=set(warn_list)
-    for x in main.find_all(["script","style","noscript","template"]): x.decompose()
-    tables=[]; elements=[]; heading_path=[]; table_number=0; element_index=0
-    for node in main.find_all(["h1","h2","h3","h4","h5","h6","p","ul","ol","table","img"], recursive=True):
-        if node.find_parent("table") and node.name != "table": continue
-        if node.find_parent(["ul","ol"]) and node.name in ("ul","ol"): continue
-        element_index+=1; locator={"format":"html","element_index":element_index}
-        if node.get("id"): locator["element_id"]=node["id"]
+    soup = parse_html_source(path)
+    base_url = source_url or (soup.base.get("href") if soup.base else None)
+    main, main_content, warning_codes = extract_main_content(soup)
+    warnings, emitted_urls, elements, tables = set(warning_codes), [], [], []
+    for node in main.find_all(["script", "style", "noscript", "template"]): node.decompose()
+    heading_stack, ordinal, table_index = [], 0, 0
+
+    def add(kind, content, node, parent_id=None, properties=None):
+        nonlocal ordinal
+        ordinal += 1
+        locator = {"format": "html", "element_index": ordinal}
+        if node.get("id"): locator["element_id"] = node["id"]
+        element = {"id": f"html-{kind}-{ordinal:04d}", "type": kind, "content": content,
+                   "heading_path": [item[1] for item in heading_stack], "source_locator": locator,
+                   "locator_precision": "exact", "properties": properties or {}}
+        if parent_id: element["parent_id"] = parent_id
+        elements.append(element); return element
+
+    def emit_list(list_node, parent_id=None, level=1):
+        ordered = list_node.name == "ol"
+        container = add("list", "", list_node, parent_id, {"ordered": ordered, "level": level})
+        for li in list_node.find_all("li", recursive=False):
+            inline = _markdown_inline(li, base_url, warnings, emitted_urls)
+            # Nested list text is excluded from the item readable projection.
+            for nested in li.find_all(["ul", "ol"], recursive=False): inline = inline.replace(_text(nested), "").strip()
+            marker = "1." if ordered else "-"
+            item = add("list_item", f"{'  ' * (level - 1)}{marker} {inline}", li, container["id"], {"ordered": ordered, "level": level})
+            for nested in li.find_all(["ul", "ol"], recursive=False): emit_list(nested, item["id"], level + 1)
+        return container
+
+    block_names = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "table", "img"]
+    for node in main.find_all(block_names, recursive=True):
+        if node.find_parent("table") or node.find_parent(["ul", "ol"]) and node.name in ("ul", "ol"): continue
+        parent = heading_stack[-1][0] if heading_stack else None
         if node.name.startswith("h"):
-            level=int(node.name[1]); text=_text(node); heading_path=heading_path[:level-1]+[text]
-            elements.append({"id":f"html-heading-{element_index:04d}","type":"heading","content":"#"*level+" "+text,"heading_path":heading_path[:-1],"source_locator":locator,"locator_precision":"exact","properties":{"level":level}})
+            level, text = int(node.name[1]), _text(node)
+            heading_stack = heading_stack[:level - 1]
+            parent = heading_stack[-1][0] if heading_stack else None
+            heading = add("heading", "#" * level + " " + text, node, parent, {"level": level})
+            heading_stack.append((heading["id"], text))
+        elif node.name in ("ul", "ol"): emit_list(node, parent)
         elif node.name == "table":
-            table_number+=1; t=extract_table(node,table_number,base,warnings); tables.append(t); elements.append({"id":f"html-table-{table_number:04d}","type":"table","content":render_table(t["grid"]),"table_id":t["id"],"heading_path":heading_path,"source_locator":locator,"locator_precision":"exact"})
-        elif node.name == "img": elements.append({"id":f"html-image-{element_index:04d}","type":"image","content":f"![{node.get('alt','')}]({_url(node.get('src'),base,warnings)})","heading_path":heading_path,"source_locator":locator,"locator_precision":"exact","properties":{"remote_resource":True}})
+            table_index += 1; table = extract_table(node, table_index, base_url, warnings); tables.append(table)
+            element = add("table", render_table(table["grid"]), node, parent); element["table_id"] = table["id"]
+        elif node.name == "img":
+            url = resolve_url(node.get("src"), base_url, warnings)
+            add("image", f"![{node.get('alt', '')}]({url or ''})", node, parent, {"remote_resource": True, "url": url})
         else:
-            text=_text(node)
-            if text: elements.append({"id":f"html-{node.name}-{element_index:04d}","type":"list" if node.name in ("ul","ol") else "paragraph","content":text,"heading_path":heading_path,"source_locator":locator,"locator_precision":"exact"})
-    source={"heading_count":len(main.find_all(["h1","h2","h3","h4","h5","h6"])),"table_count":len(tables),"table_row_count":sum(t['source_dimensions']['row_count'] for t in tables),"source_cell_count":sum(t['source_dimensions']['source_cell_count'] for t in tables),"rowspan_anchor_count":sum(sum(x['rowspan']>1 for x in t['merged_cells']) for t in tables),"colspan_anchor_count":sum(sum(x['colspan']>1 for x in t['merged_cells']) for t in tables),"merged_cell_anchor_count":sum(len(t['merged_cells']) for t in tables),"link_count":len(main.find_all('a')),"relative_link_count":sum(not urlparse(a.get('href','')).scheme and not a.get('href','').startswith('//') for a in main.find_all('a')),"image_count":len(main.find_all('img'))}
-    canonical={"heading_count":sum(e['type']=='heading' for e in elements),"table_count":len(tables),"table_row_count":sum(len(t['grid']) for t in tables),"expanded_grid_cell_count":sum(sum(len(r) for r in t['grid']) for t in tables),"merged_cell_anchor_count":sum(len(t['merged_cells']) for t in tables),"resolved_link_count":source['link_count'] if base else source['link_count']-source['relative_link_count'],"unresolved_relative_link_count":source['relative_link_count'] if not base else 0,"image_reference_count":sum(e['type']=='image' for e in elements)}
-    return {"markdown":"\n\n".join(e['content'] for e in elements),"elements":elements,"tables":tables,"report":{"status":"passed","engine":"beautifulsoup4_lxml","source_url":source_url,"main_content":main_info,"html_structure":{"source_metrics":source,"canonical_metrics":canonical},"warnings":[{"code":x,"message":x} for x in sorted(warnings)]}}
+            content = _markdown_inline(node, base_url, warnings, emitted_urls)
+            if content: add("paragraph", content, node, parent)
+    # Links can occur in non-semantic wrapper elements. Preserve any that did
+    # not belong to an emitted paragraph/list item instead of claiming them in
+    # metrics without canonical evidence.
+    emitted_anchor_ids = {anchor_id for anchor_id, _ in emitted_urls}
+    parent = heading_stack[-1][0] if heading_stack else None
+    for anchor in main.find_all("a"):
+        if id(anchor) in emitted_anchor_ids:
+            continue
+        url = resolve_url(anchor.get("href"), base_url, warnings)
+        label = _text(anchor) or url or ""
+        if url:
+            emitted_urls.append((id(anchor), url))
+            add("paragraph", f"[{label}]({url})", anchor, parent, {"link_only_fallback": True})
+    source = {"heading_count": len(main.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])), "table_count": len(main.find_all("table")), "table_row_count": sum(len(t.find_all("tr")) for t in main.find_all("table")), "source_cell_count": sum(len(t.find_all(["th", "td"])) for t in main.find_all("table")), "rowspan_anchor_count": sum(_span(c, "rowspan", set()) > 1 for c in main.find_all(["th", "td"])), "colspan_anchor_count": sum(_span(c, "colspan", set()) > 1 for c in main.find_all(["th", "td"])), "merged_cell_anchor_count": sum((_span(c, "rowspan", set()) > 1 or _span(c, "colspan", set()) > 1) for c in main.find_all(["th", "td"])), "link_count": len(main.find_all("a")), "relative_link_count": sum(_relative(a.get("href", "")) for a in main.find_all("a")), "image_count": len(main.find_all("img"))}
+    canonical = {"heading_count": sum(x["type"] == "heading" for x in elements), "table_count": len(tables), "table_row_count": sum(len(t["grid"]) for t in tables), "expanded_grid_cell_count": sum(sum(len(row) for row in t["grid"]) for t in tables), "merged_cell_anchor_count": sum(len(t["merged_cells"]) for t in tables), "resolved_link_count": sum(bool(urlparse(url).scheme) for _, url in emitted_urls), "unresolved_relative_link_count": sum(_relative(url) for _, url in emitted_urls), "image_reference_count": sum(x["type"] == "image" for x in elements)}
+    return {"markdown": "\n\n".join(x["content"] for x in elements if x["content"]), "elements": elements, "tables": tables, "report": {"status": "passed", "engine": "beautifulsoup4_lxml", "source_url": source_url, "main_content": main_content, "html_structure": {"source_metrics": source, "canonical_metrics": canonical}, "warnings": [{"code": code, "message": code} for code in sorted(warnings)]}}
+
+
+def assess_html_structural_fidelity(structure, tables, elements, chunks, warning_codes, validation=None):
+    """Assess source-to-canonical evidence independently of bundle validity."""
+    source, canonical = structure["source_metrics"], structure["canonical_metrics"]
+    failed = []
+    if source["table_count"] != canonical["table_count"]: failed.append("HTML_TABLE_COUNT_MISMATCH")
+    if source["merged_cell_anchor_count"] != canonical["merged_cell_anchor_count"]: failed.append("HTML_MERGE_COUNT_MISMATCH")
+    if source["heading_count"] and canonical["heading_count"] < source["heading_count"]: failed.append("HEADING_STRUCTURE_WEAK")
+    if source["link_count"] > canonical["resolved_link_count"] + canonical["unresolved_relative_link_count"]: failed.append("HTML_LINK_COUNT_MISMATCH")
+    table_ids = {table["id"] for table in tables}
+    if any(el.get("type") == "table" and el.get("table_id") not in table_ids for el in elements): failed.append("HTML_TABLE_REFERENCE_MISSING")
+    if any(not isinstance(row, list) or len(row) != len(table["grid"][0]) for table in tables for row in table.get("grid", []) if table.get("grid")): failed.append("HTML_TABLE_GRID_NOT_RECTANGULAR")
+    fatal_warning_codes = {"HTML_TABLE_SPAN_INVALID", "HTML_TABLE_SPAN_OVERLAP", "HTML_TABLE_GRID_IRREGULAR"}
+    failed.extend(sorted(fatal_warning_codes.intersection(warning_codes)))
+    if validation and validation.get("status") != "passed": failed.append("BUNDLE_VALIDATION_FAILED")
+    warnings = sorted(set(warning_codes) - fatal_warning_codes)
+    status = "failed" if failed else ("passed_with_warnings" if warnings else "passed")
+    return {"status": status, "warning_codes": warnings, "failure_codes": sorted(set(failed)), "metrics": structure}

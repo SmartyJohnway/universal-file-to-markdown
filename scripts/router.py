@@ -341,10 +341,10 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
         if structure:
             cm = structure["canonical_metrics"]; cm["chunks_total"] = len(chunks); cm["chunks_with_heading_path"] = sum(bool(c.get("heading_path")) for c in chunks)
             sf_warnings = [w.get("code") for w in full_report.get("warnings", [])]
-            status = "passed_with_warnings" if sf_warnings else "passed"
-            full_report["structural_fidelity"] = {"status":status, "warning_codes":sf_warnings, "metrics":structure}
+            from html_structure import assess_html_structural_fidelity
+            full_report["structural_fidelity"] = assess_html_structural_fidelity(structure, tables, doc_json["elements"], chunks, sf_warnings)
             full_report["deterministic_conversion_status"] = "passed"
-            full_report["structural_fidelity_status"] = status
+            full_report["structural_fidelity_status"] = full_report["structural_fidelity"]["status"]
             full_report["ai_review_recommended"] = bool(structure["source_metrics"]["merged_cell_anchor_count"] or sf_warnings)
             full_report["quality_risk_assessment"] = {"ai_review_recommended":full_report["ai_review_recommended"], "reasons":[{"code":"HTML_MERGED_TABLE_COMPLEX","severity":"medium","targets":[t["id"] for t in tables if t.get("merged_cells")]}]}
         with open(os.path.join(output_dir, "chunks.jsonl"), "w", encoding="utf-8") as f:
@@ -357,6 +357,11 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
         from validate_bundle import validate_bundle
         validation = validate_bundle(output_dir)
         full_report["bundle_validation"] = validation
+        if structure:
+            full_report["structural_fidelity"] = assess_html_structural_fidelity(
+                structure, tables, doc_json["elements"], chunks,
+                [w.get("code") for w in full_report.get("warnings", [])], validation)
+            full_report["structural_fidelity_status"] = full_report["structural_fidelity"]["status"]
         if validation["status"] != "passed":
             full_report["status"] = "failed"
             full_report["reason"] = "bundle_validation_failed"

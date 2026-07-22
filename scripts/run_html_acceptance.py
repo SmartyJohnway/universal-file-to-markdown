@@ -11,4 +11,4 @@ details=report.get("details", {}).get("html_structure", {})
 summary={"status":report.get("status"), "source_url":a.source_url, **details,
          "structural_fidelity":report.get("structural_fidelity"), "quality_risk_assessment":report.get("quality_risk_assessment")}
 with open(os.path.join(a.output,"html-acceptance-summary.json"),"w",encoding="utf-8") as f: json.dump(summary,f,ensure_ascii=False,indent=2)
-print(json.dumps(summary,ensure_ascii=False,indent=2)); sys.exit(0 if report.get("status") != "failed" else 1)
+print(json.dumps(summary,ensure_ascii=False,indent=2)); sys.exit(0 if report.get("status") != "failed" and (report.get("structural_fidelity") or {}).get("status") != "failed" else 1)
