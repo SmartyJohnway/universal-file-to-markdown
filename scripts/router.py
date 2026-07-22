@@ -57,7 +57,7 @@ _GENERATED_FILES = (
 _GENERATED_DIRS = ("assets", "tables")
 
 
-def convert(input_path: str, output_dir: str, encoding_hint: str = None) -> dict:
+def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_url: str = None) -> dict:
     """Convert one file and always return a structured report.
 
     v1.6 makes the public entry point exception-safe and clears only known
@@ -73,7 +73,7 @@ def convert(input_path: str, output_dir: str, encoding_hint: str = None) -> dict
         if original_path == output_dir:
             raise ValueError("output path must be a directory, not the input file")
         _clear_previous_bundle(output_dir, protected_path=original_path)
-        return _convert_unchecked(original_path, output_dir, encoding_hint)
+        return _convert_unchecked(original_path, output_dir, encoding_hint, source_url)
     except Exception as exc:
         # If the output directory itself cannot be created/written there is no
         # honest bundle to return, so re-raise that I/O failure.
@@ -90,7 +90,7 @@ def convert(input_path: str, output_dir: str, encoding_hint: str = None) -> dict
         })
 
 
-def _convert_unchecked(input_path: str, output_dir: str, encoding_hint: str = None) -> dict:
+def _convert_unchecked(input_path: str, output_dir: str, encoding_hint: str = None, source_url: str = None) -> dict:
     os.makedirs(output_dir, exist_ok=True)
     assets_dir = os.path.join(output_dir, "assets")
 
@@ -116,7 +116,7 @@ def _convert_unchecked(input_path: str, output_dir: str, encoding_hint: str = No
 
     try:
         return _convert_inner(effective_path, input_path, output_dir, assets_dir,
-                               file_type, sha256, fmt_info, encoding_hint)
+                               file_type, sha256, fmt_info, encoding_hint, source_url)
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -124,7 +124,7 @@ def _convert_unchecked(input_path: str, output_dir: str, encoding_hint: str = No
 
 def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_dir: str,
                     file_type: str, sha256: str, fmt_info: dict,
-                    encoding_hint: str = None) -> dict:
+                    encoding_hint: str = None, source_url: str = None) -> dict:
 
     # --- security / pre-flight gate: encryption check first, always ---
     # Tri-state (encrypted / not_encrypted / unknown) - "unknown" (parser
@@ -147,7 +147,16 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
 
     elements, tables = [], []
 
-    if file_type == "xlsx":
+    if file_type == "html":
+        try:
+            from html_structure import extract_html
+            result = extract_html(input_path, source_url)
+            markdown, report = result["markdown"], result["report"]
+            elements, tables = result["elements"], result["tables"]
+        except Exception as exc:
+            return _write_bundle(output_dir, original_path, file_type, sha256, "", {"status":"failed", "reason":"HTML_NATIVE_PARSE_FAILED", "error_type":type(exc).__name__, "error_message":str(exc)}, fmt_info)
+
+    elif file_type == "xlsx":
         from xlsx_converter import convert_xlsx
         result = convert_xlsx(input_path, assets_dir)
         markdown, report = result["markdown"], result["report"]
@@ -286,11 +295,11 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
         report["encryption_check"] = "unknown"
 
     return _write_bundle(output_dir, original_path, file_type, sha256, markdown, report,
-                          fmt_info, elements, tables)
+                          fmt_info, elements, tables, source_url)
 
 
 def _write_bundle(output_dir, original_path, file_type, sha256, markdown, converter_report,
-                   fmt_info=None, elements=None, tables=None) -> dict:
+                   fmt_info=None, elements=None, tables=None, source_url=None) -> dict:
     elements = elements or []
     tables = tables or []
     full_report = build_report(original_path, file_type, converter_report, markdown, fmt_info)
@@ -310,6 +319,7 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
         "converted_at": datetime.now(timezone.utc).isoformat(),
         "status": full_report["status"],
     }
+    if source_url: manifest["source_url"] = source_url
     with open(os.path.join(output_dir, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
 
@@ -322,10 +332,21 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
     if full_report["status"] != "failed":
         doc_json = build_document_json(original_path, sha256, file_type, elements,
                                         default_engine=full_report.get("engine"))
+        if source_url: doc_json["metadata"] = {"source_url": source_url}
         with open(os.path.join(output_dir, "document.json"), "w", encoding="utf-8") as f:
             json.dump(doc_json, f, indent=2, ensure_ascii=False)
 
         chunks = build_chunks(markdown, doc_json["elements"], sha256)
+        structure = full_report.get("details", {}).get("html_structure")
+        if structure:
+            cm = structure["canonical_metrics"]; cm["chunks_total"] = len(chunks); cm["chunks_with_heading_path"] = sum(bool(c.get("heading_path")) for c in chunks)
+            sf_warnings = [w.get("code") for w in full_report.get("warnings", [])]
+            status = "passed_with_warnings" if sf_warnings else "passed"
+            full_report["structural_fidelity"] = {"status":status, "warning_codes":sf_warnings, "metrics":structure}
+            full_report["deterministic_conversion_status"] = "passed"
+            full_report["structural_fidelity_status"] = status
+            full_report["ai_review_recommended"] = bool(structure["source_metrics"]["merged_cell_anchor_count"] or sf_warnings)
+            full_report["quality_risk_assessment"] = {"ai_review_recommended":full_report["ai_review_recommended"], "reasons":[{"code":"HTML_MERGED_TABLE_COMPLEX","severity":"medium","targets":[t["id"] for t in tables if t.get("merged_cells")]}]}
         with open(os.path.join(output_dir, "chunks.jsonl"), "w", encoding="utf-8") as f:
             for chunk in chunks:
                 f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
@@ -377,8 +398,9 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Path to the input file")
     parser.add_argument("--output", required=True, help="Output directory for the bundle")
     parser.add_argument("--encoding", help="Explicit text encoding for CSV/TSV/JSON (e.g. big5, gb18030, shift_jis)")
+    parser.add_argument("--source-url", help="Original HTTP(S) URL used to resolve HTML relative links")
     args = parser.parse_args()
 
-    report = convert(args.input, args.output, args.encoding)
+    report = convert(args.input, args.output, args.encoding, args.source_url)
     print(json.dumps(report, indent=2, ensure_ascii=False))
     sys.exit(0 if report["status"] != "failed" else 1)

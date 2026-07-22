@@ -32,7 +32,7 @@ _EXT_TO_FORMAT = {
     "csv": "csv", "tsv": "csv",
     "json": "json",
     "eml": "eml",
-    "html": "pandoc", "htm": "pandoc", "epub": "pandoc",
+    "html": "html", "htm": "html", "epub": "pandoc",
     "rst": "pandoc", "org": "pandoc", "tex": "pandoc", "latex": "pandoc",
     "xls": "legacy_office", "doc": "legacy_office", "ppt": "legacy_office",
 }

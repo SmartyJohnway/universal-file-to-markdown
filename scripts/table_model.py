@@ -55,6 +55,11 @@ def normalize_tables(tables: list, source_format: str, default_engine: str = Non
             "engine": raw.get("engine") or default_engine,
             "merged_cells_present": has_merges,
             "merged_cells_flattened_in_csv": has_merges,
+            # Optional v1.0 extension: HTML keeps the source merge anchors
+            # separate from the rectangular readable grid.
+            "merged_cells": raw.get("merged_cells", []),
+            "cell_blocks": raw.get("cell_blocks", []),
+            "source_dimensions": raw.get("source_dimensions"),
         })
     return normalized
 

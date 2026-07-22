@@ -224,6 +224,7 @@ def _validate_provenance(record: dict, errors: list, subject: str) -> None:
         "csv": bool(locator.get("row_start") and locator.get("row_end")),
         "json": bool(locator.get("json_path")),
         "eml": bool(locator.get("mime_part")),
+        "html": isinstance(locator.get("element_index"), int) and locator.get("element_index") >= 1,
     }
     if precision == "exact" and not exact_evidence.get(fmt, False):
         errors.append("LOCATOR_PRECISION_INVALID")
