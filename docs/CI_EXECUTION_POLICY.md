@@ -2,30 +2,28 @@
 
 ## Current phase
 
-The repository is in **v1.6.1 iterative development**. Automatic push and
-pull-request validation is temporarily disabled to conserve GitHub Actions
-minutes. Developers must run the complete local/Codex-sandbox validation suite
-before every review handoff.
+The repository is in **v1.6.1 release-readiness validation**. Pull-request
+validation and `main` push validation are active; release readiness and stable
+release work must not rely on manual-only workflows.
 
-## Manual validation
+## Active validation
 
-Development workflows are available through `workflow_dispatch` and should be
-run only at explicit review and release gates. Dependency Review cannot produce
-a meaningful comparison without pull-request context; its manual workflow
-reports that it is deferred to final release validation rather than claiming a
-successful review.
+- `test` runs on pull requests and `main` pushes with CPython 3.12. The Ubuntu
+  runner installs `libgl1` before RapidOCR/OpenCV qualification.
+- CodeQL runs on pull requests, `main` pushes, and the weekly schedule.
+- Dependency Review runs in real pull-request base/head context. Manual dispatch
+  explains that a comparison is not applicable instead of reporting a false pass.
+- Markdown-link, license, and metadata validation run on their path-relevant
+  pull requests and `main` pushes, and remain manually dispatchable.
+- Release gate remains manually dispatchable and runs automatically for `v*`
+  tags. Release packaging remains tag-triggered and manually dispatchable.
 
-## Release packaging
+Recommended required checks are: `test`, `CodeQL`, `Markdown links`, `License
+files`, and `Validate repository metadata`. Dependency Review should be made
+required only when the repository feature is available and enabled.
 
-`release-package.yml` remains manually runnable and retains its automatic `v*`
-tag trigger. Tagged releases therefore still produce the clean ZIP and
-SHA-256 checksum.
+## Future iterative development
 
-## Restoration before v1.6.1 stable
-
-Restore automatic validation in a dedicated release-readiness PR before the
-stable release, including: test, CodeQL, dependency review, Markdown links,
-license check, metadata/YAML validation, and release gate. Maintainers must
-also confirm required-status-check branch protection matches the active trigger
-policy; otherwise GitHub may wait indefinitely for checks that are no longer
-automatically created.
+A future long-running iterative phase may pause automatic CI only through a
+separate governance PR. It must restore automatic validation before a
+release-readiness or stable-release PR is opened.

@@ -137,7 +137,7 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 Skill and schema versions are independent:
 
 ```text
-skill_version: 1.6.0
+skill_version: 1.6.1
 document/table/chunk schema_version: 1.0
 ```
 

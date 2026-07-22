@@ -137,7 +137,7 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 技能版本與資料 schema 版本彼此獨立：
 
 ```text
-skill_version: 1.6.0
+skill_version: 1.6.1
 document/table/chunk schema_version: 1.0
 ```
 

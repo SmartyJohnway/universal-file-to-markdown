@@ -3,7 +3,7 @@ name: universal-file-to-markdown
 description: Convert PDF, scanned images, Word (.docx), Excel (.xlsx/.xlsm), PowerPoint (.pptx), CSV/TSV, JSON, EML, and Pandoc-supported markup into clean Markdown plus schema-validated canonical elements, bounded RAG chunks, tables, assets, manifest, and an explicit quality report. Use when an AI conversation needs to read, normalize, OCR, inspect, or prepare supported files for analysis/RAG, especially Traditional Chinese Big5/CP950 data, merged Office tables, mixed digital/scanned PDFs, or documents requiring traceable page/sheet/slide/shape locators. Prefer this deterministic offline-first workflow before escalating low-confidence or unsupported structures to a heavier parser.
 ---
 
-# Universal File to Markdown v1.6.0
+# Universal File to Markdown v1.6.1
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -90,7 +90,7 @@ OOXML first, then rerun.
 Skill version and data schema version are different:
 
 ```text
-skill_version: 1.6.0
+skill_version: 1.6.1
 document/table/chunk schema_version: 1.0
 ```
 

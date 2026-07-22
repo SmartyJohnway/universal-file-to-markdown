@@ -8,27 +8,25 @@
 
 ## [尚未發布]
 
+## [1.6.1] - 2026-07-22
+
 ### 修正
 
-- 修正 PPTX Markdown 圖片路徑，使其透過 bundle 的 `assets/` 目錄解析。
-- 驗證本機 Markdown 圖片目標，拒絕遺失、絕對或逸出 bundle 的路徑。
-- 強制轉換狀態與 warning/error payload 一致。
-- 成功轉換報告必須包含非空的主要 engine。
+- 修正 PPTX Markdown 與 canonical asset path，並拒絕遺失、絕對、逸出或 traversal 的 asset target。
+- 強制 conversion status、warning/error、empty-output reason 與 successful primary engine 的 report contract。
 
 ### 新增
 
-- 未支援副檔名使用 MarkItDown fallback 時新增正式 warning。
-- 增加 Markdown 資產可用性與報告合約的 regression coverage。
+- 為 MarkItDown 處理的未支援副檔名提供 `GENERIC_FALLBACK_USED` warning。
+- 在隔離 child process 中執行 PyMuPDF import 與最小 PDF functional qualification。
+- 加入 RapidOCR/OpenCV child-process import qualification、runtime environment/package evidence、timeout/signal reporting 與 required failure propagation。
+- 加入 runtime compatibility policy 與 release-readiness regression coverage。
 
 ### 變更
 
-- 在 v1.6.1 迭代開發期間，暫時將開發驗證 workflows 改為手動 dispatch，以節省 GitHub Actions 用量。
-- Release tag 的 packaging 仍維持自動執行。
-
-### 規劃中
-
-- 增加真實加密 Office、SmartArt、embedded OLE 與複雜掃描表格的 integration fixtures。
-- 在維持 schema 1.0 相容性的前提下，持續改善各格式的 canonical granularity 與 provenance。
+- 將 PyMuPDF 限定為 `>=1.26.4,<1.27` 以提高 tested runtime 可重現性，並非宣稱後續版本普遍有問題。
+- CPython 3.12 為 primary tested runtime，3.11 為 best-effort，3.13 尚未保證支援。
+- 恢復 release-readiness CI validation 與 Linux native prerequisite。
 
 ## [1.6.0] - 2026-07-21
 

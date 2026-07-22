@@ -1,16 +1,22 @@
 name: Dependency review
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  deferred-dependency-review:
+  dependency-review:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Explain deferred validation
-        run: |
-          echo "Dependency review requires pull_request context and is deferred to final release validation."
-          exit 1
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
+  manual-context:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dependency review requires pull_request base/head context and is not applicable to manual dispatch."

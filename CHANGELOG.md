@@ -8,27 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-07-22
+
 ### Fixed
 
-- Correct PPTX Markdown image paths to resolve through the bundle `assets/` directory.
-- Validate local Markdown image targets and reject missing, absolute, or escaping paths.
-- Enforce consistency between conversion status and warning/error payloads.
-- Require a non-empty primary engine for successful conversions.
+- Corrected PPTX Markdown and canonical asset paths, and reject missing, absolute, escaping, or traversal asset targets.
+- Enforced conversion status, warning/error, empty-output reason, and successful-primary-engine report contracts.
 
 ### Added
 
-- Generic fallback warning for unsupported extensions handled by MarkItDown.
-- Regression coverage for Markdown asset usability and report-contract invariants.
+- `GENERIC_FALLBACK_USED` warnings for unsupported extensions handled by MarkItDown.
+- PyMuPDF import and minimal-PDF functional qualification in isolated child processes.
+- RapidOCR/OpenCV child-process import qualification, runtime environment evidence, package versions, timeout/signal reporting, and required-failure propagation.
+- Runtime compatibility policy and release-readiness regression coverage.
 
 ### Changed
 
-- Temporarily changed development validation workflows to manual dispatch to conserve GitHub Actions usage during iterative v1.6.1 development.
-- Release tag packaging remains automatic.
-
-### Planned
-
-- Expand real-world integration fixtures for encrypted Office files, SmartArt, embedded OLE objects, and complex scanned tables.
-- Continue improving format-specific canonical granularity and provenance without breaking schema 1.0 compatibility.
+- Pin PyMuPDF to `>=1.26.4,<1.27` for tested-runtime reproducibility; this does not claim later releases are universally faulty.
+- Define CPython 3.12 as the primary tested runtime, with 3.11 best-effort and 3.13 not guaranteed.
+- Restore release-readiness CI validation, including native Linux prerequisites.
 
 ## [1.6.0] - 2026-07-21
 

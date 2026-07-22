@@ -49,7 +49,7 @@ from chunker import build_chunks
 from table_export import export_tables
 from table_model import normalize_tables
 
-SKILL_VERSION = "1.6.1-rc1"
+SKILL_VERSION = "1.6.1"
 _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
     "conversion-report.json", "_pandoc_tmp.md",
