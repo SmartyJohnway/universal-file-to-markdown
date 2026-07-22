@@ -378,3 +378,28 @@ def _sanitize_filename(name: str, seen: set) -> str:
 
 def _escape_pipe(cell: str) -> str:
     return str(cell).replace("|", "\\|").replace("\n", "<br>")
+
+# ---------------------------------------------------------------------------
+# Bundle asset paths
+# ---------------------------------------------------------------------------
+
+def to_bundle_relative_posix_path(bundle_root, target_path) -> str:
+    """Return *target_path* relative to *bundle_root* using POSIX separators.
+
+    This is intentionally lexical: callers that require an existing asset must
+    check it separately.  Resolving strict=False still detects symlink escapes.
+    """
+    from pathlib import Path
+
+    root = Path(bundle_root).resolve()
+    target = Path(target_path)
+    if not target.is_absolute():
+        target = root / target
+    resolved = target.resolve()
+    try:
+        relative = resolved.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("target path escapes bundle root") from exc
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("target path must be inside bundle root")
+    return relative.as_posix()

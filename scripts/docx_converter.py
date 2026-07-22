@@ -28,6 +28,7 @@ document.json) and `tables` (raw grid per table, for tables/*.csv+*.html).
 """
 
 import re
+import os
 import zipfile
 from xml.etree import ElementTree as ET
 
@@ -39,7 +40,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
-from common_utils import extract_ooxml_media, extract_ooxml_core_metadata
+from common_utils import extract_ooxml_media, extract_ooxml_core_metadata, to_bundle_relative_posix_path
 
 try:
     from docx.text.hyperlink import Hyperlink
@@ -66,6 +67,8 @@ def convert_docx(path: str, assets_dir: str = None) -> dict:
     used_endnotes = set()
 
     media_saved = extract_ooxml_media(path, assets_dir) if assets_dir else []
+    if assets_dir:
+        media_saved = [to_bundle_relative_posix_path(os.path.dirname(assets_dir), os.path.join(assets_dir, asset)) for asset in media_saved]
     el_counter = 0
     for child in doc.element.body.iterchildren():
         if isinstance(child, CT_P):

@@ -1,25 +1,16 @@
 name: Dependency review
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  dependency-review:
+  deferred-dependency-review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - name: Review dependency changes
-        id: dependency-review
-        continue-on-error: true
-        uses: actions/dependency-review-action@v5
-        with:
-          fail-on-severity: high
-      - name: Explain advisory mode
-        if: steps.dependency-review.outcome == 'failure'
+      - name: Explain deferred validation
         run: |
-          echo "::warning::Dependency Review is advisory until the repository dependency graph and related security features are enabled."
-          echo "See docs/REPOSITORY_SETTINGS.md before making this workflow a required check."
+          echo "Dependency review requires pull_request context and is deferred to final release validation."
+          exit 1

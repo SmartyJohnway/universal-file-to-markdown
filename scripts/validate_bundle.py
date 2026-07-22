@@ -6,6 +6,10 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+from markdown_refs import parse_markdown_image_references
 
 HARD_MAX_CHUNK_CHARS = 2000
 
@@ -41,6 +45,8 @@ def validate_bundle(bundle_dir: str) -> dict:
     if errors:
         return {"status": "failed", "errors": errors, "warnings": warnings}
 
+    _validate_markdown_image_targets(bundle_dir, errors)
+
     manifest = _load_json(os.path.join(bundle_dir, "manifest.json"))
     document = _load_json(os.path.join(bundle_dir, "document.json"))
     _schema_validate(document, "document.schema.json", errors)
@@ -48,6 +54,7 @@ def validate_bundle(bundle_dir: str) -> dict:
         errors.append("document.json source_sha256 does not match manifest.json")
 
     elements = document.get("elements", [])
+    _validate_canonical_asset_targets(bundle_dir, elements, errors)
     ids = [element.get("id") for element in elements]
     if len(ids) != len(set(ids)):
         errors.append("element IDs are not unique")
@@ -77,9 +84,6 @@ def validate_bundle(bundle_dir: str) -> dict:
         for child_id in element.get("children") or []:
             if child_id not in by_id or by_id[child_id].get("parent_id") != element.get("id"):
                 errors.append(f"invalid child reference {child_id} from {element.get('id')}")
-        if element.get("type") == "image" and element.get("asset"):
-            if not os.path.isfile(os.path.join(bundle_dir, "assets", element["asset"])):
-                errors.append(f"missing image asset: {element['asset']}")
 
     if root is not None:
         reachable_from_root, pending = set(), [root_id]
@@ -168,6 +172,58 @@ def validate_bundle(bundle_dir: str) -> dict:
     return {"status": "passed" if not errors else "failed", "errors": errors,
             "warnings": warnings, "counts": {"elements": len(elements),
             "chunks": len(chunks), "tables": len(table_ids)}}
+
+
+def _validate_local_asset_target(root: Path, raw_target: str, code_prefix: str,
+                                 errors: list, context: str) -> None:
+    """Validate one local bundle-relative target independently of the CWD."""
+    normalized = unquote(raw_target)
+    parsed = urlparse(normalized)
+    details = f"{context} raw_target={raw_target!r} normalized_path={normalized!r}"
+    if (parsed.scheme == "file" or re.match(r"^[A-Za-z]:[\\/]", normalized)
+            or normalized.startswith("\\") or Path(normalized).is_absolute()):
+        errors.append(f"{code_prefix}_ABSOLUTE: {details}; reason=absolute path")
+        return
+    resolved = (root / Path(normalized)).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError:
+        errors.append(f"{code_prefix}_ESCAPES_BUNDLE: {details}; reason=path escapes bundle")
+        return
+    if not resolved.is_file():
+        errors.append(f"{code_prefix}_MISSING: {details}; reason=file does not exist")
+
+
+def _validate_markdown_image_targets(bundle_dir: str, errors: list) -> None:
+    """Validate local inline image destinations without consulting the CWD."""
+    markdown = Path(bundle_dir, "document.md").read_text(encoding="utf-8")
+    root = Path(bundle_dir).resolve()
+    for ref in parse_markdown_image_references(markdown):
+        if urlparse(ref.normalized_target).scheme in ("http", "https", "data"):
+            continue
+        _validate_local_asset_target(
+            root, ref.raw_target, "MARKDOWN_IMAGE_TARGET", errors,
+            f"document.md line={ref.line_number}",
+        )
+
+
+def _validate_canonical_asset_targets(bundle_dir: str, elements: list, errors: list) -> None:
+    """Validate every populated canonical element asset reference."""
+    root = Path(bundle_dir).resolve()
+    for element in elements:
+        asset = element.get("asset")
+        if not asset:
+            continue
+        if not isinstance(asset, str):
+            errors.append(
+                "CANONICAL_ASSET_TARGET_MISSING: "
+                f"element_id={element.get('id')!r} raw_target={asset!r}; reason=asset must be a string"
+            )
+            continue
+        _validate_local_asset_target(
+            root, asset, "CANONICAL_ASSET_TARGET", errors,
+            f"element_id={element.get('id')!r}",
+        )
 
 
 def _validate_table_semantics(table: dict, errors: list) -> None:

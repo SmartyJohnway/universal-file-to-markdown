@@ -31,21 +31,31 @@ v1.4 additions (Office fidelity):
 """
 
 import datetime as dt
+import os
 
 import openpyxl
-from common_utils import extract_ooxml_media
+from common_utils import extract_ooxml_media, to_bundle_relative_posix_path
 
 
 def convert_xlsx(path: str, assets_dir: str = None) -> dict:
     wb_values = openpyxl.load_workbook(path, data_only=True)
     wb_formulas = openpyxl.load_workbook(path, data_only=False)
     media_saved = extract_ooxml_media(path, assets_dir) if assets_dir else []
+    if assets_dir:
+        media_saved = [
+            to_bundle_relative_posix_path(
+                os.path.dirname(assets_dir), os.path.join(assets_dir, asset)
+            )
+            for asset in media_saved
+        ]
     media_cursor = 0
 
     sections = []
     elements = []
     tables = []
     report = {
+        "engine": "openpyxl_custom",
+        "renderers_used": [],
         "sheets": [],
         "total_merged_ranges": 0,
         "merged_ranges_rendered": 0,
@@ -111,6 +121,8 @@ def convert_xlsx(path: str, assets_dir: str = None) -> dict:
                 block_markdown.append(table_md)
             block_results.append((block_idx, range_label, table_md, grid, cells, engine,
                                   len(block_merges)))
+            if engine not in report["renderers_used"]:
+                report["renderers_used"].append(engine)
 
         comments_md = ""
         if comments:
