@@ -48,3 +48,21 @@ def test_html_validator_rejects_non_rectangular_grid():
     _validate_table_semantics({"id": "table-html-0001", "source_format": "html", "source_locator": {"table_index": 1},
                                "dimensions": {"rows": 2, "columns": 2}, "grid": [["a", "b"], ["c"]]}, errors)
     assert "HTML_TABLE_GRID_NOT_RECTANGULAR" in errors
+
+
+def test_nested_semantic_nodes_are_emitted_once(tmp_path):
+    source = tmp_path / "owned.html"
+    source.write_text("""<main><ul><li><p>item <img src="item.png"></p><ul><li>nested</li></ul></li></ul><p>text <img src="text.png"></p></main>""", encoding="utf-8")
+    result = extract_html(str(source), "https://example.test/page.html")
+    assert result["markdown"].count("item") == 2  # text plus image URL, each once
+    assert result["markdown"].count("nested") == 1
+    assert result["markdown"].count("text.png") == 1
+    assert [element["type"] for element in result["elements"]].count("paragraph") == 1
+
+
+def test_top_level_image_has_one_owner(tmp_path):
+    source = tmp_path / "image.html"
+    source.write_text('<main><img src="only.png"></main>', encoding="utf-8")
+    result = extract_html(str(source), "https://example.test/page.html")
+    assert result["markdown"].count("only.png") == 1
+    assert [element["type"] for element in result["elements"]] == ["image"]

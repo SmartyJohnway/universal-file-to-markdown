@@ -162,26 +162,43 @@ def extract_html(path, source_url=None):
             for nested in li.find_all(["ul", "ol"], recursive=False): emit_list(nested, item["id"], level + 1)
         return container
 
-    block_names = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "table", "img"]
-    for node in main.find_all(block_names, recursive=True):
-        if node.find_parent("table") or node.find_parent(["ul", "ol"]) and node.name in ("ul", "ol"): continue
-        parent = heading_stack[-1][0] if heading_stack else None
-        if node.name.startswith("h"):
-            level, text = int(node.name[1]), _text(node)
-            heading_stack = heading_stack[:level - 1]
+    def walk_blocks(container):
+        """Give each semantic DOM node exactly one renderer/owner.
+
+        Paragraph and list renderers consume their inline descendants, so only
+        transparent wrapper nodes recurse.  This prevents a list paragraph or
+        inline image from being emitted a second time by a flat descendant scan.
+        """
+        nonlocal table_index, heading_stack
+        for node in container.children:
+            if not getattr(node, "name", None) or node.name in ("script", "style", "noscript", "template"):
+                continue
             parent = heading_stack[-1][0] if heading_stack else None
-            heading = add("heading", "#" * level + " " + text, node, parent, {"level": level})
-            heading_stack.append((heading["id"], text))
-        elif node.name in ("ul", "ol"): emit_list(node, parent)
-        elif node.name == "table":
-            table_index += 1; table = extract_table(node, table_index, base_url, warnings); tables.append(table)
-            element = add("table", render_table(table["grid"]), node, parent); element["table_id"] = table["id"]
-        elif node.name == "img":
-            url = resolve_url(node.get("src"), base_url, warnings)
-            add("image", f"![{node.get('alt', '')}]({url or ''})", node, parent, {"remote_resource": True, "url": url})
-        else:
-            content = _markdown_inline(node, base_url, warnings, emitted_urls)
-            if content: add("paragraph", content, node, parent)
+            if node.name in ("h1", "h2", "h3", "h4", "h5", "h6"):
+                level, text = int(node.name[1]), _text(node)
+                heading_stack = heading_stack[:level - 1]
+                parent = heading_stack[-1][0] if heading_stack else None
+                heading = add("heading", "#" * level + " " + text, node, parent, {"level": level})
+                heading_stack.append((heading["id"], text))
+            elif node.name in ("ul", "ol"):
+                emit_list(node, parent)
+            elif node.name == "table":
+                table_index += 1
+                table = extract_table(node, table_index, base_url, warnings)
+                tables.append(table)
+                element = add("table", render_table(table["grid"]), node, parent)
+                element["table_id"] = table["id"]
+            elif node.name == "img":
+                url = resolve_url(node.get("src"), base_url, warnings)
+                add("image", f"![{node.get('alt', '')}]({url or ''})", node, parent, {"remote_resource": True, "url": url})
+            elif node.name == "p":
+                content = _markdown_inline(node, base_url, warnings, emitted_urls)
+                if content:
+                    add("paragraph", content, node, parent)
+            else:
+                walk_blocks(node)
+
+    walk_blocks(main)
     # Links can occur in non-semantic wrapper elements. Preserve any that did
     # not belong to an emitted paragraph/list item instead of claiming them in
     # metrics without canonical evidence.

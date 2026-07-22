@@ -345,8 +345,15 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
             full_report["structural_fidelity"] = assess_html_structural_fidelity(structure, tables, doc_json["elements"], chunks, sf_warnings)
             full_report["deterministic_conversion_status"] = "passed"
             full_report["structural_fidelity_status"] = full_report["structural_fidelity"]["status"]
-            full_report["ai_review_recommended"] = bool(structure["source_metrics"]["merged_cell_anchor_count"] or sf_warnings)
-            full_report["quality_risk_assessment"] = {"ai_review_recommended":full_report["ai_review_recommended"], "reasons":[{"code":"HTML_MERGED_TABLE_COMPLEX","severity":"medium","targets":[t["id"] for t in tables if t.get("merged_cells")]}]}
+            reasons = []
+            merged_targets = [t["id"] for t in tables if t.get("merged_cells")]
+            if merged_targets:
+                reasons.append({"code": "HTML_MERGED_TABLE_COMPLEX", "severity": "medium", "targets": merged_targets})
+            for warning, code in {"MAIN_CONTENT_NOT_IDENTIFIED": "MAIN_CONTENT_UNCERTAIN", "BOILERPLATE_MAY_BE_INCLUDED": "BOILERPLATE_MAY_BE_INCLUDED", "RELATIVE_URL_UNRESOLVED": "RELATIVE_URL_UNRESOLVED"}.items():
+                if warning in sf_warnings:
+                    reasons.append({"code": code, "severity": "medium", "targets": []})
+            full_report["ai_review_recommended"] = bool(reasons)
+            full_report["quality_risk_assessment"] = {"ai_review_recommended": full_report["ai_review_recommended"], "reasons": reasons}
         with open(os.path.join(output_dir, "chunks.jsonl"), "w", encoding="utf-8") as f:
             for chunk in chunks:
                 f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
