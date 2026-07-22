@@ -58,3 +58,51 @@ def test_validator_rejects_ocr_metrics_mismatch(tmp_path):
     report = {"details": {"ocr_table_assessment": {"candidate_count": 1, "accepted_count": 1, "rejected_count": 1, "fallback_to_text_count": 0, "low_confidence_count": 0}}}
     errors = []; _validate_ocr_table_metrics(report, set(), str(tmp_path), errors)
     assert "OCR_TABLE_METRICS_MISMATCH" in errors
+
+
+def _write_ocr_bundle(tmp_path, accepted, monkeypatch):
+    import hashlib
+    import validate_bundle
+    monkeypatch.setattr(validate_bundle, "_schema_validate", lambda *_args: None)
+    from router import _write_bundle
+    source = tmp_path / "source.pdf"; source.write_bytes(b"synthetic")
+    candidate = {"candidate_id": "ocr-table-candidate-0001", "source_locator": {"format": "pdf", "page_start": 1, "page_end": 1},
+                 "confidence": .9 if accepted else .2, "decision": "accepted" if accepted else "fallback_to_text",
+                 "signals": {"row_count": 3}, "reason_codes": [] if accepted else ["OCR_TABLE_REJECTED", "OCR_TABLE_FALLBACK_TO_TEXT"]}
+    assessment = {"candidate_count": 1, "accepted_count": int(accepted), "rejected_count": int(not accepted),
+                  "fallback_to_text_count": int(not accepted), "low_confidence_count": int(not accepted)}
+    rows = [["Item", "Qty"], ["Motor", "2"], ["Pump", "4"]]
+    elements = [{"id": "page-0001", "type": "page", "page": 1, "content": "page", "engine": "rapidocr", "source_locator": {"page": 1}},
+                {"id": "page-0001-content", "parent_id": "page-0001", "type": "table" if accepted else "text",
+                 "content": "table" if accepted else "Name: Alice", "engine": "rapidocr", "source_locator": {"page": 1},
+                 **({"table_id": "table-ocr-p0001-0001"} if accepted else {})}]
+    tables = [{"id": "table-ocr-p0001-0001", "rows": rows, "source_locator": {"format": "pdf", "page_start": 1, "page_end": 1},
+               "engine": "rapidocr", "confidence": .9, "properties": {"origin": "ocr_table_candidate", "candidate_id": candidate["candidate_id"], "decision": "accepted", "signals": candidate["signals"]}}] if accepted else []
+    output = tmp_path / ("accepted" if accepted else "rejected")
+    output.mkdir()
+    _write_bundle(str(output), str(source), "pdf", hashlib.sha256(source.read_bytes()).hexdigest(),
+                  "| Item | Qty |\n| --- | --- |\n| Motor | 2 |" if accepted else "Name: Alice",
+                  {"status": "passed", "engine": "rapidocr_onnxruntime", "ocr_used": True,
+                   "ocr_table_candidates": [candidate], "ocr_table_assessment": assessment}, elements=elements, tables=tables)
+    return output
+
+
+def test_accepted_ocr_candidate_becomes_one_valid_canonical_table(tmp_path, monkeypatch):
+    bundle = _write_ocr_bundle(tmp_path, True, monkeypatch)
+    index = __import__("json").loads((bundle / "tables" / "index.json").read_text())
+    report = __import__("json").loads((bundle / "conversion-report.json").read_text())
+    assert len(index) == 1
+    assert report["bundle_validation"]["status"] == "passed"
+    assert report["details"]["ocr_table_assessment"]["accepted_count"] == 1
+
+
+def test_rejected_ocr_candidate_has_no_canonical_table_or_chunk_reference(tmp_path, monkeypatch):
+    bundle = _write_ocr_bundle(tmp_path, False, monkeypatch)
+    document = __import__("json").loads((bundle / "document.json").read_text())
+    chunks = [__import__("json").loads(line) for line in (bundle / "chunks.jsonl").read_text().splitlines()]
+    report = __import__("json").loads((bundle / "conversion-report.json").read_text())
+    assert not (bundle / "tables" / "index.json").exists()
+    assert not any(element["type"] == "table" for element in document["elements"])
+    assert not any(chunk.get("table_ids") for chunk in chunks)
+    assert report["bundle_validation"]["status"] == "passed"
+    assert report["details"]["ocr_table_assessment"]["fallback_to_text_count"] == 1
