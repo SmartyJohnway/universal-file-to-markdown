@@ -91,7 +91,7 @@ def _convert_mixed(path: str, doc, page_classes) -> dict:
         s = scanned_result["report"]
         for k in ("ocr_avg_confidence", "ocr_low_confidence_pages", "glued_word_pages",
                    "tesseract_fallback_pages", "engine_per_page", "table_regions_detected",
-                   "table_structure_confidence", "table_likelihood"):
+                   "table_structure_confidence", "table_likelihood", "ocr_table_candidates", "ocr_table_assessment"):
             if k in s:
                 report[k] = s[k]
 

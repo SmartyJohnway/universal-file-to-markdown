@@ -355,7 +355,7 @@ def _validate_table_semantics(table: dict, errors: list) -> None:
         if not isinstance(table.get("confidence"), (int, float)) or not 0 <= table["confidence"] <= 1: errors.append("OCR_TABLE_CONFIDENCE_INVALID")
         if not isinstance(table.get("engine"), str) or not table["engine"]: errors.append("OCR_TABLE_DECISION_INVALID")
         locator = table.get("source_locator") or {}
-        if locator.get("format") != "pdf" or not isinstance(locator.get("page_start"), int) or locator.get("page_end") != locator.get("page_start"): errors.append("OCR_TABLE_LOCATOR_INVALID")
+        if locator.get("format") != "pdf" or not isinstance(locator.get("page_start"), int) or locator.get("page_start") < 1 or locator.get("page_end") != locator.get("page_start"): errors.append("OCR_TABLE_LOCATOR_INVALID")
     if table.get("source_format") != "html":
         return
     if not isinstance(grid, list) or any(not isinstance(row, list) for row in grid):

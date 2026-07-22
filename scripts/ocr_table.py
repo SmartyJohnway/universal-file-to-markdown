@@ -8,7 +8,7 @@ import statistics
 
 OCR_TABLE_POLICY = {
     "min_columns": 2, "min_rows": 3, "min_aligned_row_ratio": 0.75,
-    "min_confidence_with_geometry": 0.60, "min_confidence_text_only": 0.80,
+    "min_confidence_with_geometry": 0.60,
     "max_irregular_row_ratio": 0.25, "high_confidence": 0.80,
 }
 _KEY_VALUE = re.compile(r"^\s*[^:]{1,80}:\s*\S+")
