@@ -254,6 +254,7 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
     table_regions_detected = 0
     engine_per_page = {}
     page_likelihoods = []
+    ocr_candidates = []
 
     for i in page_indices:
         page = doc[i]
@@ -296,16 +297,20 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
         if page_confidences and statistics.mean(page_confidences) < 0.75:
             low_confidence_pages.append(i + 1)
 
-        table_rows = _cluster_into_table(boxes)
+        from ocr_table import assess_ocr_table
+        candidate = assess_ocr_table(boxes, i + 1, page_engine,
+                                      f"ocr-table-candidate-{i + 1:04d}")
+        ocr_candidates.append(candidate)
+        table_rows = candidate["rows"] if candidate["decision"] == "accepted" else None
         if table_rows:
             table_regions_detected += 1
             page_text = _rows_to_markdown(table_rows)
             table_id = f"table-ocr-p{i + 1:04d}-{table_regions_detected:04d}"
             tables_out.append({"id": table_id, "rows": table_rows,
                                 "context": f"pdf_scanned_page_{i + 1}",
-                                "source_locator": {"page": i + 1},
-                                "engine": page_engine,
-                                "confidence": page_avg_conf})
+                                "source_locator": {"format": "pdf", "page_start": i + 1, "page_end": i + 1},
+                                "engine": page_engine, "confidence": candidate["confidence"],
+                                "properties": {"origin": "ocr_table_candidate", "candidate_id": candidate["candidate_id"], "decision": "accepted", "signals": candidate["signals"]}})
         else:
             page_text = _reconstruct_layout(boxes)
             page_likelihoods.append(_estimate_table_likelihood(boxes))
@@ -345,6 +350,8 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
         "engine_per_page": engine_per_page,
         "table_regions_detected": table_regions_detected,
         "table_likelihood": round(max_likelihood, 3),
+        "ocr_table_candidates": ocr_candidates,
+        "ocr_table_assessment": {"candidate_count": len(ocr_candidates), "accepted_count": sum(c["decision"] == "accepted" for c in ocr_candidates), "rejected_count": sum(c["decision"] != "accepted" for c in ocr_candidates), "fallback_to_text_count": sum(c["decision"] == "fallback_to_text" for c in ocr_candidates), "low_confidence_count": sum(c["confidence"] < .60 for c in ocr_candidates)},
         "table_structure_confidence": (
             "clustered (column-heuristic table detected)"
             if table_regions_detected else

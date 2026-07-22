@@ -60,6 +60,7 @@ def normalize_tables(tables: list, source_format: str, default_engine: str = Non
             "merged_cells": raw.get("merged_cells", []),
             "cell_blocks": raw.get("cell_blocks", []),
             "source_dimensions": raw.get("source_dimensions"),
+            "properties": raw.get("properties", {}),
         })
     return normalized
 
