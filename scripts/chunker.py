@@ -1,5 +1,6 @@
 """Build bounded, hierarchy-aware chunks for RAG ingestion (v1.6)."""
 
+import json
 import re
 
 
@@ -123,22 +124,74 @@ def _resolved_locator(element: dict, by_id: dict) -> dict:
     return resolved
 
 
-def build_chunk_provenance(elements: list, by_id: dict) -> dict:
-    """Produce deterministic provenance for one or more canonical elements."""
-    locators = [_resolved_locator(element, by_id) for element in elements]
-    precisions = [element.get("locator_precision", "unknown") for element in elements]
-    table_ids = list(dict.fromkeys(element["table_id"] for element in elements if element.get("table_id")))
-    # A chunk made from one element is precise exactly as that element is.
+def _a1_bounds(cell_range: str):
+    match = re.fullmatch(r"\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?", cell_range or "")
+    if not match:
+        return None
+    def column(value):
+        result = 0
+        for character in value:
+            result = result * 26 + ord(character) - 64
+        return result
+    end_column, end_row = match.group(3) or match.group(1), match.group(4) or match.group(2)
+    return column(match.group(1)), int(match.group(2)), column(end_column), int(end_row)
+
+
+def _a1_label(min_col, min_row, max_col, max_row):
+    def column(value):
+        result = ""
+        while value:
+            value, remainder = divmod(value - 1, 26)
+            result = chr(65 + remainder) + result
+        return result
+    return f"{column(min_col)}{min_row}:{column(max_col)}{max_row}"
+
+
+def merge_source_locators(locators: list[dict]) -> tuple[dict | list[dict], str]:
+    """Merge compatible locators; preserve disjoint sources as a list."""
+    unique = list(dict.fromkeys(json.dumps(x, sort_keys=True) for x in locators))
+    locators = [json.loads(value) for value in unique]
     if len(locators) == 1:
-        result = {"source_locator": locators[0], "locator_precision": precisions[0]}
-    else:
-        unique = []
-        for locator in locators:
-            if locator not in unique:
-                unique.append(locator)
-        result = {"source_locators": unique, "locator_precision": "range"}
-    if table_ids:
-        result["table_ids"] = table_ids
+        return locators[0], "exact"
+    formats = {locator.get("format") for locator in locators}
+    if len(formats) != 1:
+        return locators, "range"
+    fmt = formats.pop()
+    if fmt == "xlsx" and len({x.get("sheet_name") for x in locators}) == 1:
+        bounds = [_a1_bounds(x.get("cell_range")) for x in locators]
+        if all(bounds):
+            return {"format": fmt, "sheet_name": locators[0]["sheet_name"], "cell_range": _a1_label(min(x[0] for x in bounds), min(x[1] for x in bounds), max(x[2] for x in bounds), max(x[3] for x in bounds))}, "range"
+    if fmt == "pptx" and len({x.get("slide_number") for x in locators}) == 1:
+        shapes = sorted({shape for x in locators for shape in (x.get("shape_ids") or [x.get("shape_id")]) if shape is not None})
+        if shapes:
+            return {"format": fmt, "slide_number": locators[0]["slide_number"], "shape_ids": shapes}, "range"
+    if fmt == "pdf":
+        starts, ends = [x.get("page_start") for x in locators], [x.get("page_end") for x in locators]
+        if all(isinstance(x, int) for x in starts + ends) and max(starts) <= min(ends) + 1:
+            merged = {"format": fmt, "page_start": min(starts), "page_end": max(ends)}
+            bboxes = [bbox for x in locators for bbox in (x.get("bboxes") or [])]
+            if bboxes and merged["page_start"] == merged["page_end"]: merged["bboxes"] = bboxes
+            return merged, "range"
+    for start, end in (("element_start", "element_end"), ("paragraph_start", "paragraph_end"), ("row_start", "row_end")):
+        if all(isinstance(x.get(start), int) and isinstance(x.get(end), int) for x in locators):
+            shared = "section_index" not in locators[0] or len({x.get("section_index") for x in locators}) == 1
+            if shared and max(x[start] for x in locators) <= min(x[end] for x in locators) + 1:
+                merged = {"format": fmt, start: min(x[start] for x in locators), end: max(x[end] for x in locators)}
+                if "section_index" in locators[0]: merged["section_index"] = locators[0]["section_index"]
+                return merged, "range"
+    return locators, "range"
+
+
+def build_chunk_provenance(elements: list, by_id: dict) -> dict:
+    """Collect element/table references and merge compatible source locators."""
+    locators = [_resolved_locator(element, by_id) for element in elements]
+    table_ids = list(dict.fromkeys(element["table_id"] for element in elements if element.get("table_id")))
+    merged, precision = merge_source_locators(locators)
+    if len(locators) == 1:
+        precision = elements[0].get("locator_precision", "unknown")
+    result = ({"source_locator": merged} if isinstance(merged, dict) else {"source_locators": merged})
+    result["locator_precision"] = precision
+    if table_ids: result["table_ids"] = table_ids
     return result
 
 def build_chunks(markdown: str, elements: list, sha256: str) -> list:
@@ -159,16 +212,22 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
         return [_chunk(i, [], [], part, sha256, 1, len(source_parts))
                 for i, part in enumerate(source_parts, start=1)]
 
-    chunks = []
+    chunks, pending, pending_text, pending_heading = [], [], "", None
+    def emit_pending():
+        if pending:
+            provenance = build_chunk_provenance(pending, by_id)
+            chunks.append(_chunk(len(chunks) + 1, pending_heading, [e["id"] for e in pending], pending_text, sha256, 1, 1, provenance))
     for element in content_elements:
         parts = _split_markdown(element.get("content", ""))
         heading_path = list(element.get("heading_path") or []) or _ancestor_labels(element, by_id)
-        if element.get("type") == "heading":
-            heading_path = heading_path + [(element.get("content") or "").lstrip("# ")]
-        for part_index, part in enumerate(parts, start=1):
-            provenance = build_chunk_provenance([element], by_id)
-            chunks.append(_chunk(len(chunks) + 1, heading_path, [element.get("id")],
-                                 part, sha256, part_index, len(parts), provenance))
+        if len(parts) != 1 or (pending and (element.get("parent_id") != pending[-1].get("parent_id") or pending_heading != heading_path or len(pending_text) + len(parts[0]) + 2 > MAX_CHUNK_CHARS)):
+            emit_pending(); pending, pending_text, pending_heading = [], "", None
+        if len(parts) == 1:
+            pending.append(element); pending_text = parts[0] if not pending_text else pending_text + "\n\n" + parts[0]; pending_heading = heading_path
+        else:
+            for part_index, part in enumerate(parts, start=1):
+                chunks.append(_chunk(len(chunks) + 1, heading_path, [element["id"]], part, sha256, part_index, len(parts), build_chunk_provenance([element], by_id)))
+    emit_pending()
     return chunks
 
 

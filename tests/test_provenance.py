@@ -30,7 +30,7 @@ def test_pptx_multi_shape_and_multi_element_provenance():
     ]
     provenance = build_chunk_provenance(elements, {})
     assert provenance["locator_precision"] == "range"
-    assert len(provenance["source_locators"]) == 2
+    assert provenance["source_locator"]["shape_ids"] == [5, 7]
 
 
 def test_pdf_ocr_docx_csv_json_and_eml_precision_contracts():
@@ -49,3 +49,55 @@ def test_invalid_locator_fixtures_are_rejected_with_stable_codes():
     assert "INVALID_CSV_ROW_RANGE" in _errors({"format": "csv", "row_start": 2, "row_end": 1})
     assert "INVALID_JSON_PATH" in _errors({"format": "json", "json_path": "items[0]"})
     assert _valid_a1_range("$A$1:$G$9")
+
+
+def _csv_bundle(tmp_path):
+    import router
+    source = tmp_path / "source.csv"
+    source.write_text("name,value\nA,1\n", encoding="utf-8")
+    output = tmp_path / "bundle"
+    assert router.convert(str(source), str(output))["status"] == "passed"
+    return output
+
+
+def test_current_router_output_has_precision_bounded_chunks_and_resolvable_references(tmp_path):
+    import json
+    from run_provenance_regression import metrics
+    result = metrics(_csv_bundle(tmp_path))
+    assert result["chunks_without_precision"] == result["chunks_over_2000"] == 0
+    assert result["unresolved_element_refs"] == result["unresolved_table_refs"] == 0
+    assert result["xlsx_locator_coverage"] == result["pptx_locator_coverage"] == result["pdf_page_locator_coverage"] == 1.0
+
+
+def test_bundle_rejects_missing_references_conflicts_and_invalid_element_locator(tmp_path):
+    import json
+    from validate_bundle import validate_bundle
+    bundle = _csv_bundle(tmp_path)
+    chunks_path = bundle / "chunks.jsonl"
+    chunk = json.loads(chunks_path.read_text(encoding="utf-8"))
+    chunk["element_ids"] = ["missing"]
+    chunk["table_ids"] = ["missing-table"]
+    chunk["source_locators"] = [chunk["source_locator"]]
+    chunks_path.write_text(json.dumps(chunk) + "\n", encoding="utf-8")
+    errors = validate_bundle(str(bundle))["errors"]
+    assert any(x.startswith("CHUNK_ELEMENT_REFERENCE_MISSING") for x in errors)
+    assert any(x.startswith("CHUNK_TABLE_REFERENCE_MISSING") for x in errors)
+    assert "CHUNK_LOCATOR_CONFLICT" in errors
+    document_path = bundle / "document.json"
+    document = json.loads(document_path.read_text(encoding="utf-8"))
+    document["elements"][1]["locator_precision"] = "exact"
+    document["elements"][1]["source_locator"] = {"format": "xlsx", "sheet_name": "Sheet", "cell_range": "B2:A1"}
+    document_path.write_text(json.dumps(document), encoding="utf-8")
+    assert "INVALID_XLSX_CELL_RANGE" in validate_bundle(str(bundle))["errors"]
+
+
+def test_legacy_v160_chunk_without_provenance_remains_accepted(tmp_path):
+    import json
+    from validate_bundle import validate_bundle
+    bundle = _csv_bundle(tmp_path)
+    chunks_path = bundle / "chunks.jsonl"
+    chunk = json.loads(chunks_path.read_text(encoding="utf-8"))
+    for field in ("locator_precision", "source_locator", "source_locators", "table_ids"):
+        chunk.pop(field, None)
+    chunks_path.write_text(json.dumps(chunk) + "\n", encoding="utf-8")
+    assert validate_bundle(str(bundle))["status"] == "passed"

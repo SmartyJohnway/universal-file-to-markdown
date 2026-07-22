@@ -57,6 +57,8 @@ def validate_bundle(bundle_dir: str) -> dict:
 
     elements = document.get("elements", [])
     _validate_canonical_asset_targets(bundle_dir, elements, errors)
+    for element in elements:
+        _validate_provenance(element, errors, "ELEMENT")
     ids = [element.get("id") for element in elements]
     if len(ids) != len(set(ids)):
         errors.append("element IDs are not unique")
@@ -137,7 +139,7 @@ def validate_bundle(bundle_dir: str) -> dict:
             for element_id in element_ids:
                 if element_id not in by_id:
                     errors.append(f"CHUNK_ELEMENT_REFERENCE_MISSING: missing element {element_id}")
-            _validate_chunk_locator(chunk, errors)
+            _validate_provenance(chunk, errors, "CHUNK")
 
     chunk_ids = [chunk.get("chunk_id") for chunk in chunks]
     if len(chunk_ids) != len(set(chunk_ids)):
@@ -188,21 +190,49 @@ def validate_bundle(bundle_dir: str) -> dict:
             "chunks": len(chunks), "tables": len(table_ids)}}
 
 
-def _validate_chunk_locator(chunk: dict, errors: list) -> None:
-    """Validate the documented, version-1.0 optional provenance extension."""
-    precision = chunk.get("locator_precision")
+def _validate_provenance(record: dict, errors: list, subject: str) -> None:
+    """Apply the same precision/evidence contract to elements and chunks."""
+    precision = record.get("locator_precision")
     if precision is None:
-        # Legacy v1.6.0 chunks are accepted without the extension.
+        # Legacy v1.6.0 records may omit the optional extension.
         return
     if precision not in LOCATOR_PRECISIONS:
         errors.append("LOCATOR_PRECISION_INVALID")
-    single, many = chunk.get("source_locator"), chunk.get("source_locators")
+        return
+    single, many = record.get("source_locator"), record.get("source_locators")
     if single is not None and many is not None:
-        errors.append("CHUNK_LOCATOR_CONFLICT")
+        errors.append("CHUNK_LOCATOR_CONFLICT" if subject == "CHUNK" else "ELEMENT_LOCATOR_CONFLICT")
+        return
+    locators = [single] if isinstance(single, dict) else (many or [])
     if many is not None and (not isinstance(many, list) or not many):
-        errors.append("CHUNK_LOCATOR_CONFLICT: source_locators must be non-empty")
-    for locator in ([single] if isinstance(single, dict) else (many or [])):
+        errors.append("CHUNK_LOCATOR_CONFLICT" if subject == "CHUNK" else "ELEMENT_LOCATOR_CONFLICT")
+    if precision == "unknown":
+        return
+    for locator in locators:
         _validate_source_locator(locator, errors)
+    if not locators:
+        errors.append("LOCATOR_PRECISION_MISSING")
+        return
+    if precision == "range" and len(locators) > 1:
+        return
+    locator = locators[0]
+    fmt = locator.get("format")
+    exact_evidence = {
+        "xlsx": bool(locator.get("sheet_name") and locator.get("cell_range")),
+        "pptx": bool(locator.get("slide_number") and (locator.get("shape_id") or locator.get("shape_ids"))),
+        "pdf": bool(locator.get("page_start") and locator.get("page_end") and locator.get("bboxes")),
+        "csv": bool(locator.get("row_start") and locator.get("row_end")),
+        "json": bool(locator.get("json_path")),
+        "eml": bool(locator.get("mime_part")),
+    }
+    if precision == "exact" and not exact_evidence.get(fmt, False):
+        errors.append("LOCATOR_PRECISION_INVALID")
+    if fmt == "pdf" and precision == "page_only" and locator.get("bboxes"):
+        errors.append("LOCATOR_PRECISION_INVALID")
+    if fmt == "pdf" and precision == "exact" and not locator.get("bboxes"):
+        errors.append("LOCATOR_PRECISION_INVALID")
+    if fmt == "docx" and precision == "exact":
+        errors.append("LOCATOR_PRECISION_INVALID")
 
 
 def _validate_source_locator(locator: dict, errors: list) -> None:
