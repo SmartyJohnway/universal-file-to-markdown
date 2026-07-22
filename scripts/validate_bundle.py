@@ -188,6 +188,7 @@ def validate_bundle(bundle_dir: str) -> dict:
 
     report = _load_json(os.path.join(bundle_dir, "conversion-report.json"))
     _validate_html_metrics(report, html_tables, errors)
+    _validate_ocr_table_metrics(report, table_ids, bundle_dir, errors)
 
     if not re.fullmatch(r"[0-9a-f]{64}", manifest.get("source_sha256", "")):
         errors.append("manifest source_sha256 is not a SHA-256 hex digest")
@@ -348,6 +349,13 @@ def _validate_table_semantics(table: dict, errors: list) -> None:
         if (row < 0 or column < 0 or rowspan < 1 or colspan < 1
                 or row + rowspan > rows or column + colspan > columns):
             errors.append(f"table {table_id} cell is outside declared dimensions")
+    properties = table.get("properties") or {}
+    if properties.get("origin") == "ocr_table_candidate":
+        if properties.get("decision") != "accepted": errors.append("OCR_TABLE_REJECTED_AS_CANONICAL")
+        if not isinstance(table.get("confidence"), (int, float)) or not 0 <= table["confidence"] <= 1: errors.append("OCR_TABLE_CONFIDENCE_INVALID")
+        if not isinstance(table.get("engine"), str) or not table["engine"]: errors.append("OCR_TABLE_DECISION_INVALID")
+        locator = table.get("source_locator") or {}
+        if locator.get("format") != "pdf" or not isinstance(locator.get("page_start"), int) or locator.get("page_start") < 1 or locator.get("page_end") != locator.get("page_start"): errors.append("OCR_TABLE_LOCATOR_INVALID")
     if table.get("source_format") != "html":
         return
     if not isinstance(grid, list) or any(not isinstance(row, list) for row in grid):
@@ -383,6 +391,21 @@ def _validate_html_metrics(report: dict, html_tables: list, errors: list) -> Non
     if source.get("merged_cell_anchor_count", 0) != canonical.get("merged_cell_anchor_count", 0): errors.append("HTML_MERGE_COUNT_MISMATCH")
 
 
+def _validate_ocr_table_metrics(report, table_ids, bundle_dir, errors):
+    details = report.get("details") or {}
+    metrics = details.get("ocr_table_assessment")
+    if not metrics: return
+    keys = ("candidate_count", "accepted_count", "rejected_count", "fallback_to_text_count", "low_confidence_count")
+    if any(not isinstance(metrics.get(k), int) or metrics[k] < 0 for k in keys):
+        errors.append("OCR_TABLE_METRICS_MISMATCH"); return
+    if metrics["candidate_count"] != metrics["accepted_count"] + metrics["rejected_count"] or metrics["fallback_to_text_count"] > metrics["rejected_count"]:
+        errors.append("OCR_TABLE_METRICS_MISMATCH")
+    accepted = 0
+    for table_id in table_ids:
+        path = os.path.join(bundle_dir, "tables", f"{table_id}.json")
+        if os.path.isfile(path) and (_load_json(path).get("properties") or {}).get("origin") == "ocr_table_candidate": accepted += 1
+    if accepted != metrics["accepted_count"]: errors.append("OCR_TABLE_ACCEPTED_COUNT_MISMATCH")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate a converted output bundle")
     parser.add_argument("bundle", help="Output bundle directory")
@@ -390,3 +413,5 @@ if __name__ == "__main__":
     result = validate_bundle(args.bundle)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "passed" else 1)
+
+

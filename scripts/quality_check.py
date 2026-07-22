@@ -142,6 +142,12 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
         })
 
     if file_type in ("pdf", "image") and converter_report.get("ocr_used"):
+        assessment = converter_report.get("ocr_table_assessment")
+        if assessment:
+            for candidate in converter_report.get("ocr_table_candidates", []):
+                for code in candidate.get("reason_codes", []):
+                    if code in {"OCR_TABLE_CANDIDATE_ACCEPTED", "OCR_TABLE_REJECTED", "OCR_TABLE_FALLBACK_TO_TEXT"}: continue
+                    warnings.append({"code": code, "page": candidate["source_locator"].get("page_start"), "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted."})
         low_pages = converter_report.get("ocr_low_confidence_pages", [])
         if low_pages:
             warnings.append({
