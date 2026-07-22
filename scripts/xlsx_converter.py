@@ -31,6 +31,7 @@ v1.4 additions (Office fidelity):
 """
 
 import datetime as dt
+import os
 
 import openpyxl
 from common_utils import extract_ooxml_media, to_bundle_relative_posix_path
@@ -41,7 +42,12 @@ def convert_xlsx(path: str, assets_dir: str = None) -> dict:
     wb_formulas = openpyxl.load_workbook(path, data_only=False)
     media_saved = extract_ooxml_media(path, assets_dir) if assets_dir else []
     if assets_dir:
-        media_saved = [to_bundle_relative_posix_path(__import__("os").path.dirname(assets_dir), __import__("os").path.join(assets_dir, asset)) for asset in media_saved]
+        media_saved = [
+            to_bundle_relative_posix_path(
+                os.path.dirname(assets_dir), os.path.join(assets_dir, asset)
+            )
+            for asset in media_saved
+        ]
     media_cursor = 0
 
     sections = []

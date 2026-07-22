@@ -493,10 +493,10 @@ class TestV16FormatGranularity:
         _run(pptx_picture, tmp_out)
         document = json.load(open(os.path.join(tmp_out, "document.json"), encoding="utf-8"))
         image = next(element for element in document["elements"] if element["type"] == "image")
-        assert image["asset"].startswith("slide-0001-shape-")
+        assert image["asset"].startswith("assets/slide-0001-shape-")
         assert image["source_locator"]["relationship_id"].startswith("rId")
         assert image["source_locator"]["shape_id"] is not None
-        assert os.path.isfile(os.path.join(tmp_out, "assets", image["asset"]))
+        assert os.path.isfile(os.path.join(tmp_out, image["asset"]))
 
     def test_group_shape_is_a_real_parent(self, pptx_group_with_table, tmp_out):
         _run(pptx_group_with_table, tmp_out)
@@ -726,7 +726,11 @@ class TestAssetAndReportContractsV161:
         refs = parse_markdown_image_references(open(os.path.join(tmp_out, "document.md"), encoding="utf-8").read())
         assert refs and refs[0].normalized_target.startswith("assets/")
         assert "\\" not in refs[0].normalized_target
-        assert os.path.isfile(os.path.join(tmp_out, refs[0].normalized_target))
+        document = json.load(open(os.path.join(tmp_out, "document.json"), encoding="utf-8"))
+        canonical_asset = next(element["asset"] for element in document["elements"]
+                               if element["type"] == "image")
+        assert canonical_asset == refs[0].normalized_target
+        assert os.path.isfile(os.path.join(tmp_out, canonical_asset))
         assert _validate(tmp_out)["status"] == "passed"
 
     def test_validator_image_target_policy(self, tmp_path, tmp_out):
@@ -763,3 +767,76 @@ class TestAssetAndReportContractsV161:
         report = _run(xlsx_merged, tmp_out)
         assert report["status"] in ("passed", "passed_with_warnings")
         assert report["engine"] == "openpyxl_custom"
+
+
+class TestCanonicalAssetContractsV161:
+    def _bundle_with_asset(self, tmp_path, tmp_out):
+        source = tmp_path / "input.csv"
+        source.write_text("a,b\n1,2\n", encoding="utf-8")
+        _run(str(source), tmp_out)
+        assets = os.path.join(tmp_out, "assets")
+        os.makedirs(assets)
+        open(os.path.join(assets, "example.png"), "wb").write(b"x")
+        document_path = os.path.join(tmp_out, "document.json")
+        document = json.load(open(document_path, encoding="utf-8"))
+        template = dict(document["elements"][1])
+        template.update({"id": "asset-test", "parent_id": document["root_element_id"],
+                         "type": "image", "asset": "assets/example.png",
+                         "children": [], "child_ids": [],
+                         "ordinal": len(document["elements"])})
+        document["elements"].append(template)
+        root = next(e for e in document["elements"] if e["id"] == document["root_element_id"])
+        root["children"].append("asset-test"); root["child_ids"].append("asset-test")
+        document["element_count"] += 1; document["content_element_count"] += 1
+        with open(document_path, "w", encoding="utf-8") as handle:
+            json.dump(document, handle)
+        return document_path
+
+    def test_validator_accepts_existing_canonical_asset(self, tmp_path, tmp_out):
+        self._bundle_with_asset(tmp_path, tmp_out)
+        assert _validate(tmp_out)["status"] == "passed"
+
+    def test_validator_rejects_missing_canonical_asset(self, tmp_path, tmp_out):
+        path = self._bundle_with_asset(tmp_path, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda d: d["elements"][-1].update(asset="assets/missing.png"))
+        assert any("CANONICAL_ASSET_TARGET_MISSING" in e for e in _validate(tmp_out)["errors"])
+
+    def test_validator_rejects_canonical_asset_path_escape(self, tmp_path, tmp_out):
+        self._bundle_with_asset(tmp_path, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda d: d["elements"][-1].update(asset="assets/../../outside.png"))
+        assert any("CANONICAL_ASSET_TARGET_ESCAPES_BUNDLE" in e for e in _validate(tmp_out)["errors"])
+
+    def test_validator_rejects_absolute_canonical_asset_path(self, tmp_path, tmp_out):
+        self._bundle_with_asset(tmp_path, tmp_out)
+        _mutate_json(tmp_out, "document.json", lambda d: d["elements"][-1].update(asset=r"C:\\outside.png"))
+        assert any("CANONICAL_ASSET_TARGET_ABSOLUTE" in e for e in _validate(tmp_out)["errors"])
+
+    def test_empty_output_failure_has_reason(self):
+        from quality_check import build_report
+        report = build_report("empty.txt", "unknown", {"status": "passed", "engine": "test_engine"}, "")
+        assert report["status"] == "failed"
+        assert report["reason"] == "empty_output"
+
+    def test_docx_inline_image_target_exists(self, tmp_path, tmp_out):
+        from docx import Document
+        from PIL import Image
+        image = tmp_path / "inline.png"; Image.new("RGB", (2, 2), "green").save(image)
+        doc = Document(); doc.add_paragraph().add_run().add_picture(str(image))
+        source = tmp_path / "inline.docx"; doc.save(source)
+        assert _run(str(source), tmp_out)["status"] == "passed"
+        from markdown_refs import parse_markdown_image_references
+        target = parse_markdown_image_references(open(os.path.join(tmp_out, "document.md"), encoding="utf-8").read())[0].normalized_target
+        assert target.startswith("assets/") and os.path.isfile(os.path.join(tmp_out, target))
+
+    def test_xlsx_canonical_image_asset_target_exists(self, tmp_path, tmp_out):
+        from openpyxl import Workbook
+        from openpyxl.drawing.image import Image as XlsxImage
+        from PIL import Image
+        image = tmp_path / "sheet.png"; Image.new("RGB", (2, 2), "blue").save(image)
+        workbook = Workbook(); workbook.active.append(["value"]); workbook.active.add_image(XlsxImage(str(image)), "B2")
+        source = tmp_path / "image.xlsx"; workbook.save(source)
+        assert _run(str(source), tmp_out)["status"] == "passed"
+        document = json.load(open(os.path.join(tmp_out, "document.json"), encoding="utf-8"))
+        asset = next(e["asset"] for e in document["elements"] if e["type"] == "image")
+        assert asset.startswith("assets/") and os.path.isfile(os.path.join(tmp_out, asset))
+        assert _validate(tmp_out)["status"] == "passed"

@@ -20,6 +20,11 @@
 - 未支援副檔名使用 MarkItDown fallback 時新增正式 warning。
 - 增加 Markdown 資產可用性與報告合約的 regression coverage。
 
+### 變更
+
+- 在 v1.6.1 迭代開發期間，暫時將開發驗證 workflows 改為手動 dispatch，以節省 GitHub Actions 用量。
+- Release tag 的 packaging 仍維持自動執行。
+
 ### 規劃中
 
 - 增加真實加密 Office、SmartArt、embedded OLE 與複雜掃描表格的 integration fixtures。

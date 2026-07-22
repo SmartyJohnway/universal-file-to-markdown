@@ -290,7 +290,7 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
             return {"markdown": markdown, "image_count": 1,
                     "chart_count": 0, "tables": [],
                     "items": [{"type": "image", "content": markdown,
-                               "token": shape_token, "asset": os.path.basename(asset),
+                               "token": shape_token, "asset": asset,
                                "source_locator": {**_shape_locator(shape),
                                                   "relationship_id": relationship_id,
                                                   "part": part}}]}

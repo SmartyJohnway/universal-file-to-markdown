@@ -1,16 +1,7 @@
 name: Markdown links
 
 on:
-  pull_request:
-    paths:
-      - "**/*.md"
-      - "scripts/check_markdown_links.py"
-      - ".github/workflows/markdown-link-check.yml"
-  push:
-    branches: [main]
-    paths:
-      - "**/*.md"
-      - "scripts/check_markdown_links.py"
+  workflow_dispatch:
 
 permissions:
   contents: read

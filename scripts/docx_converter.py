@@ -28,6 +28,7 @@ document.json) and `tables` (raw grid per table, for tables/*.csv+*.html).
 """
 
 import re
+import os
 import zipfile
 from xml.etree import ElementTree as ET
 

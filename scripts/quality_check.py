@@ -16,6 +16,7 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
                   fmt_info: dict = None) -> dict:
     warnings = list(converter_report.get("warnings", []))
     status = converter_report.get("status", "passed")
+    failure_reason = None
 
     if status == "failed":
         failed = {
@@ -70,6 +71,7 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
             "message": "Converted Markdown is empty; conversion did not recover content.",
         })
         status = "failed"
+        failure_reason = "empty_output"
 
     # 3. per-format specific carry-overs
     if file_type == "xlsx":
@@ -253,7 +255,7 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
     if status != "failed" and not converter_report.get("engine", "").strip():
         raise ValueError("successful conversion report requires a non-empty primary engine")
 
-    return {
+    report = {
         "source_file": source_path,
         "file_type": file_type,
         "status": status,
@@ -261,3 +263,6 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
         "warnings": warnings,
         "details": converter_report,
     }
+    if status == "failed":
+        report["reason"] = failure_reason or converter_report.get("reason") or "conversion_failed"
+    return report

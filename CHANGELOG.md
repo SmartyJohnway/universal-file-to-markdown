@@ -20,6 +20,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Generic fallback warning for unsupported extensions handled by MarkItDown.
 - Regression coverage for Markdown asset usability and report-contract invariants.
 
+### Changed
+
+- Temporarily changed development validation workflows to manual dispatch to conserve GitHub Actions usage during iterative v1.6.1 development.
+- Release tag packaging remains automatic.
+
 ### Planned
 
 - Expand real-world integration fixtures for encrypted Office files, SmartArt, embedded OLE objects, and complex scanned tables.

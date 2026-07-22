@@ -1,20 +1,7 @@
 name: License files
 
 on:
-  pull_request:
-    paths:
-      - "LICENSE"
-      - "LICENSES.md"
-      - "THIRD_PARTY_NOTICES.md"
-      - "README*.md"
-      - ".github/workflows/license-check.yml"
-  push:
-    branches: [main]
-    paths:
-      - "LICENSE"
-      - "LICENSES.md"
-      - "THIRD_PARTY_NOTICES.md"
-      - "README*.md"
+  workflow_dispatch:
 
 permissions:
   contents: read
