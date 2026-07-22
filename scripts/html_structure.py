@@ -71,12 +71,16 @@ def _markdown_inline(node, base_url, warnings, emitted_urls, emitted_images=None
     return "".join(parts).strip()
 
 
-def extract_cell_blocks(cell, base_url, warnings):
+def extract_cell_blocks(cell, base_url, warnings, emitted_urls=None):
     blocks = []
     for node in cell.find_all(["p", "br", "li", "a", "img"], recursive=True):
         if node.name == "br": blocks.append({"type": "line_break"})
         elif node.name == "li": blocks.append({"type": "list_item", "level": len(node.find_parents(["ul", "ol"])), "ordered": bool(node.find_parent("ol")), "text": _text(node)})
-        elif node.name == "a": blocks.append({"type": "link", "text": _text(node), "url": resolve_url(node.get("href"), base_url, warnings)})
+        elif node.name == "a":
+            url = resolve_url(node.get("href"), base_url, warnings)
+            blocks.append({"type": "link", "text": _text(node), "url": url})
+            if emitted_urls is not None and url:
+                emitted_urls.append((id(node), url))
         elif node.name == "img": blocks.append({"type": "image", "alt": node.get("alt", ""), "url": resolve_url(node.get("src"), base_url, warnings), "remote_resource": True})
         elif node.name == "p": blocks.append({"type": "paragraph", "text": _text(node)})
     return blocks or [{"type": "paragraph", "text": _text(cell)}]
@@ -92,7 +96,7 @@ def _span(cell, name, warnings):
         return 1
 
 
-def extract_table(table, index, base_url, warnings):
+def extract_table(table, index, base_url, warnings, emitted_urls=None):
     occupied, cells, merges, cell_blocks, grid = {}, [], [], [], []
     source_cells = 0
     for row_index, tr in enumerate(table.find_all("tr")):
@@ -113,7 +117,7 @@ def extract_table(table, index, base_url, warnings):
             cells.append({"row": row_index, "column": column, "value": value, "rowspan": rowspan, "colspan": colspan, "is_header": cell.name == "th"})
             if rowspan > 1 or colspan > 1:
                 merges.append({"anchor_row": row_index, "anchor_column": column, "rowspan": rowspan, "colspan": colspan, "value": value})
-            blocks = extract_cell_blocks(cell, base_url, warnings)
+            blocks = extract_cell_blocks(cell, base_url, warnings, emitted_urls)
             if len(blocks) > 1 or blocks[0].get("type") != "paragraph": cell_blocks.append({"row": row_index, "column": column, "blocks": blocks})
             column += colspan
     row_count = max((r for r, _ in occupied), default=-1) + 1
@@ -186,7 +190,7 @@ def extract_html(path, source_url=None):
                 emit_list(node, parent)
             elif node.name == "table":
                 table_index += 1
-                table = extract_table(node, table_index, base_url, warnings)
+                table = extract_table(node, table_index, base_url, warnings, emitted_urls)
                 tables.append(table)
                 element = add("table", render_table(table["grid"]), node, parent)
                 element["table_id"] = table["id"]

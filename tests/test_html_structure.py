@@ -75,3 +75,14 @@ def test_inline_images_count_as_canonical_references(tmp_path):
     metrics = result["report"]["html_structure"]
     assert metrics["source_metrics"]["image_count"] == 3
     assert metrics["canonical_metrics"]["image_reference_count"] == 3
+
+
+def test_table_cell_link_stays_in_table_context(tmp_path):
+    source = tmp_path / "table-link.html"
+    source.write_text('<main><p><a href="/body">body</a></p><table><tr><td>See <a href="/rule.pdf">rule</a></td></tr></table></main>', encoding="utf-8")
+    result = extract_html(str(source), "https://example.test/page.html")
+    assert result["markdown"].count("[rule](https://example.test/rule.pdf)") == 0
+    assert result["markdown"].count("[body](https://example.test/body)") == 1
+    link_blocks = result["tables"][0]["cell_blocks"][0]["blocks"]
+    assert {block.get("url") for block in link_blocks if block["type"] == "link"} == {"https://example.test/rule.pdf"}
+    assert result["report"]["html_structure"]["canonical_metrics"]["resolved_link_count"] == 2
