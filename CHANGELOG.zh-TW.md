@@ -8,6 +8,18 @@
 
 ## [尚未發布]
 
+## [1.6.1-rc2] - 2026-07-22
+
+### 新增
+
+- 以隔離子程序執行 PyMuPDF import 與最小 PDF 功能 smoke test，避免 native dependency crash 終止 capability probe 主程序。
+- capability report 加入 runtime environment 與 PyMuPDF package version evidence。
+- 文件化 Python 與 native dependency 相容性政策。
+
+### 變更
+
+- 將 PyMuPDF 限定為 `>=1.26.4,<1.27`，以提高已測 runtime 的可重現性；這不表示後續版本普遍有問題。
+
 ### 修正
 
 - 修正 PPTX Markdown 圖片路徑，使其透過 bundle 的 `assets/` 目錄解析。

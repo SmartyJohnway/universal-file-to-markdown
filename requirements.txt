@@ -3,7 +3,8 @@ openpyxl>=3.1,<3.2
 python-docx>=1.2,<1.3       # pinned: iter_inner_content()/Hyperlink API used for v1.4 fidelity
 python-pptx>=1.0,<1.1       # v1.5: merge-aware table rendering, chart/notes extraction
 pdfplumber>=0.11,<0.12
-pymupdf>=1.24,<2
+# Reproducibility pin for the supported runtime matrix; not a claim that 1.27+ is universally broken.
+pymupdf>=1.26.4,<1.27
 rapidocr-onnxruntime>=1.4,<2
 pytesseract>=0.3.10,<0.4      # Latin-script fallback for RapidOCR's CJK-model glued-word issue;
                               # requires the `tesseract-ocr` system binary (apt), not just the pip wrapper

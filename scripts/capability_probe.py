@@ -4,8 +4,11 @@
 import argparse
 import importlib.util
 import json
+import platform
 import shutil
 import sys
+
+from native_probe import probe_pymupdf
 
 
 PYTHON_CAPABILITIES = {
@@ -36,10 +39,12 @@ def probe() -> dict:
         name: {"available": shutil.which(name) is not None, "required": required}
         for name, required in SYSTEM_CAPABILITIES.items()
     }
+    pymupdf = probe_pymupdf()
+    python_modules["fitz"].update(pymupdf)
     missing_required = [
         name for name, item in python_modules.items()
         if item["required"] and not item["available"]
-    ] + [
+    ] + ([] if pymupdf["status"] == "passed" else ["pymupdf"]) + [
         name for name, item in system_binaries.items()
         if item["required"] and not item["available"]
     ]
@@ -48,6 +53,13 @@ def probe() -> dict:
         "missing_required": missing_required,
         "python_modules": python_modules,
         "system_binaries": system_binaries,
+        "environment": {
+            "platform_system": platform.system(),
+            "platform_release": platform.release(),
+            "platform_machine": platform.machine(),
+            "python_version": platform.python_version(),
+            "python_implementation": platform.python_implementation(),
+        },
     }
 
 

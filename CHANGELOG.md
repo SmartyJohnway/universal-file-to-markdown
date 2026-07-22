@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.1-rc2] - 2026-07-22
+
+### Added
+
+- Isolated PyMuPDF import and minimal-PDF functional smoke tests that contain native dependency crashes in child processes.
+- Runtime environment and PyMuPDF package-version evidence in capability reports.
+- Documented Python and native-dependency compatibility policy.
+
+### Changed
+
+- Pin PyMuPDF to `>=1.26.4,<1.27` for tested-runtime reproducibility; this is not a claim that later releases are universally faulty.
+
 ### Fixed
 
 - Correct PPTX Markdown image paths to resolve through the bundle `assets/` directory.
