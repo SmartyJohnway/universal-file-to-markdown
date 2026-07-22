@@ -66,3 +66,12 @@ def test_top_level_image_has_one_owner(tmp_path):
     result = extract_html(str(source), "https://example.test/page.html")
     assert result["markdown"].count("only.png") == 1
     assert [element["type"] for element in result["elements"]] == ["image"]
+
+
+def test_inline_images_count_as_canonical_references(tmp_path):
+    source = tmp_path / "images.html"
+    source.write_text('<main><p>paragraph <img src="one.png"></p><ul><li>item <img src="two.png"></li></ul><img src="three.png"></main>', encoding="utf-8")
+    result = extract_html(str(source), "https://example.test/page.html")
+    metrics = result["report"]["html_structure"]
+    assert metrics["source_metrics"]["image_count"] == 3
+    assert metrics["canonical_metrics"]["image_reference_count"] == 3

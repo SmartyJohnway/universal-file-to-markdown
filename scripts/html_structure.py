@@ -44,7 +44,7 @@ def _text(node):
     return " ".join(node.stripped_strings)
 
 
-def _markdown_inline(node, base_url, warnings, emitted_urls):
+def _markdown_inline(node, base_url, warnings, emitted_urls, emitted_images=None):
     """Preserve links/images while flattening only inline HTML markup."""
     parts = []
     for child in node.children:
@@ -52,7 +52,7 @@ def _markdown_inline(node, base_url, warnings, emitted_urls):
             parts.append(child)
         elif child.name == "a":
             url = resolve_url(child.get("href"), base_url, warnings)
-            label = _markdown_inline(child, base_url, warnings, emitted_urls).strip() or url or ""
+            label = _markdown_inline(child, base_url, warnings, emitted_urls, emitted_images).strip() or url or ""
             if url:
                 emitted_urls.append((id(child), url))
                 parts.append(f"[{label}]({url})")
@@ -61,11 +61,13 @@ def _markdown_inline(node, base_url, warnings, emitted_urls):
         elif child.name == "img":
             url = resolve_url(child.get("src"), base_url, warnings)
             if url:
+                if emitted_images is not None:
+                    emitted_images.append({"source_node_id": id(child), "url": url})
                 parts.append(f"![{child.get('alt', '')}]({url})")
         elif child.name == "br":
             parts.append("<br>")
         else:
-            parts.append(_markdown_inline(child, base_url, warnings, emitted_urls))
+            parts.append(_markdown_inline(child, base_url, warnings, emitted_urls, emitted_images))
     return "".join(parts).strip()
 
 
@@ -135,7 +137,7 @@ def extract_html(path, source_url=None):
     soup = parse_html_source(path)
     base_url = source_url or (soup.base.get("href") if soup.base else None)
     main, main_content, warning_codes = extract_main_content(soup)
-    warnings, emitted_urls, elements, tables = set(warning_codes), [], [], []
+    warnings, emitted_urls, emitted_images, elements, tables = set(warning_codes), [], [], [], []
     for node in main.find_all(["script", "style", "noscript", "template"]): node.decompose()
     heading_stack, ordinal, table_index = [], 0, 0
 
@@ -154,7 +156,7 @@ def extract_html(path, source_url=None):
         ordered = list_node.name == "ol"
         container = add("list", "", list_node, parent_id, {"ordered": ordered, "level": level})
         for li in list_node.find_all("li", recursive=False):
-            inline = _markdown_inline(li, base_url, warnings, emitted_urls)
+            inline = _markdown_inline(li, base_url, warnings, emitted_urls, emitted_images)
             # Nested list text is excluded from the item readable projection.
             for nested in li.find_all(["ul", "ol"], recursive=False): inline = inline.replace(_text(nested), "").strip()
             marker = "1." if ordered else "-"
@@ -188,11 +190,17 @@ def extract_html(path, source_url=None):
                 tables.append(table)
                 element = add("table", render_table(table["grid"]), node, parent)
                 element["table_id"] = table["id"]
+                for image in node.find_all("img"):
+                    url = resolve_url(image.get("src"), base_url, warnings)
+                    if url:
+                        emitted_images.append({"source_node_id": id(image), "url": url})
             elif node.name == "img":
                 url = resolve_url(node.get("src"), base_url, warnings)
+                if url:
+                    emitted_images.append({"source_node_id": id(node), "url": url})
                 add("image", f"![{node.get('alt', '')}]({url or ''})", node, parent, {"remote_resource": True, "url": url})
             elif node.name == "p":
-                content = _markdown_inline(node, base_url, warnings, emitted_urls)
+                content = _markdown_inline(node, base_url, warnings, emitted_urls, emitted_images)
                 if content:
                     add("paragraph", content, node, parent)
             else:
@@ -213,7 +221,7 @@ def extract_html(path, source_url=None):
             emitted_urls.append((id(anchor), url))
             add("paragraph", f"[{label}]({url})", anchor, parent, {"link_only_fallback": True})
     source = {"heading_count": len(main.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])), "table_count": len(main.find_all("table")), "table_row_count": sum(len(t.find_all("tr")) for t in main.find_all("table")), "source_cell_count": sum(len(t.find_all(["th", "td"])) for t in main.find_all("table")), "rowspan_anchor_count": sum(_span(c, "rowspan", set()) > 1 for c in main.find_all(["th", "td"])), "colspan_anchor_count": sum(_span(c, "colspan", set()) > 1 for c in main.find_all(["th", "td"])), "merged_cell_anchor_count": sum((_span(c, "rowspan", set()) > 1 or _span(c, "colspan", set()) > 1) for c in main.find_all(["th", "td"])), "link_count": len(main.find_all("a")), "relative_link_count": sum(_relative(a.get("href", "")) for a in main.find_all("a")), "image_count": len(main.find_all("img"))}
-    canonical = {"heading_count": sum(x["type"] == "heading" for x in elements), "table_count": len(tables), "table_row_count": sum(len(t["grid"]) for t in tables), "expanded_grid_cell_count": sum(sum(len(row) for row in t["grid"]) for t in tables), "merged_cell_anchor_count": sum(len(t["merged_cells"]) for t in tables), "resolved_link_count": sum(bool(urlparse(url).scheme) for _, url in emitted_urls), "unresolved_relative_link_count": sum(_relative(url) for _, url in emitted_urls), "image_reference_count": sum(x["type"] == "image" for x in elements)}
+    canonical = {"heading_count": sum(x["type"] == "heading" for x in elements), "table_count": len(tables), "table_row_count": sum(len(t["grid"]) for t in tables), "expanded_grid_cell_count": sum(sum(len(row) for row in t["grid"]) for t in tables), "merged_cell_anchor_count": sum(len(t["merged_cells"]) for t in tables), "resolved_link_count": sum(bool(urlparse(url).scheme) for _, url in emitted_urls), "unresolved_relative_link_count": sum(_relative(url) for _, url in emitted_urls), "image_reference_count": len({image["source_node_id"] for image in emitted_images})}
     return {"markdown": "\n\n".join(x["content"] for x in elements if x["content"]), "elements": elements, "tables": tables, "report": {"status": "passed", "engine": "beautifulsoup4_lxml", "source_url": source_url, "main_content": main_content, "html_structure": {"source_metrics": source, "canonical_metrics": canonical}, "warnings": [{"code": code, "message": code} for code in sorted(warnings)]}}
 
 
@@ -224,6 +232,7 @@ def assess_html_structural_fidelity(structure, tables, elements, chunks, warning
     if source["table_count"] != canonical["table_count"]: failed.append("HTML_TABLE_COUNT_MISMATCH")
     if source["merged_cell_anchor_count"] != canonical["merged_cell_anchor_count"]: failed.append("HTML_MERGE_COUNT_MISMATCH")
     if source["heading_count"] and canonical["heading_count"] < source["heading_count"]: failed.append("HEADING_STRUCTURE_WEAK")
+    if source["image_count"] > canonical["image_reference_count"]: failed.append("HTML_IMAGE_COUNT_MISMATCH")
     if source["link_count"] > canonical["resolved_link_count"] + canonical["unresolved_relative_link_count"]: failed.append("HTML_LINK_COUNT_MISMATCH")
     table_ids = {table["id"] for table in tables}
     if any(el.get("type") == "table" and el.get("table_id") not in table_ids for el in elements): failed.append("HTML_TABLE_REFERENCE_MISSING")
