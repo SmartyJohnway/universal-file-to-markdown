@@ -26,3 +26,17 @@ mistaken for availability. RapidOCR package availability (including any Python
 3.13 installation limitation) remains separate from PyMuPDF qualification.
 Tesseract and Pandoc are optional system binaries: their absence is reported
 but does not fail capability preflight.
+
+### Linux OpenGL runtime
+
+RapidOCR imports OpenCV, which can require an OpenGL runtime even when OCR is
+used headlessly. On Debian/Ubuntu systems, repair a `libGL.so.1` preflight
+failure with:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libgl1
+```
+
+Other Linux distributions should install their equivalent OpenGL runtime
+package, then rerun `python scripts/capability_probe.py --json`.

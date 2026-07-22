@@ -43,6 +43,11 @@ def probe() -> dict:
     rapidocr = probe_rapidocr()
     python_modules["fitz"].update(pymupdf)
     python_modules["rapidocr_onnxruntime"].update(rapidocr)
+    # Native child probes are authoritative for these modules. This keeps the
+    # public availability flag coherent if a future caller selects another
+    # Python executable for qualification.
+    python_modules["fitz"]["available"] = pymupdf.get("module_discovered", python_modules["fitz"]["available"])
+    python_modules["rapidocr_onnxruntime"]["available"] = rapidocr.get("module_discovered", python_modules["rapidocr_onnxruntime"]["available"])
     missing_required = [
         name for name, item in python_modules.items()
         if item["required"] and not item["available"]
