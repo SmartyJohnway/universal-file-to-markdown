@@ -8,7 +8,7 @@ import platform
 import shutil
 import sys
 
-from native_probe import probe_pymupdf
+from native_probe import probe_pymupdf, probe_rapidocr
 
 
 PYTHON_CAPABILITIES = {
@@ -40,11 +40,13 @@ def probe() -> dict:
         for name, required in SYSTEM_CAPABILITIES.items()
     }
     pymupdf = probe_pymupdf()
+    rapidocr = probe_rapidocr()
     python_modules["fitz"].update(pymupdf)
+    python_modules["rapidocr_onnxruntime"].update(rapidocr)
     missing_required = [
         name for name, item in python_modules.items()
         if item["required"] and not item["available"]
-    ] + ([] if pymupdf["status"] == "passed" else ["pymupdf"]) + [
+    ] + ([] if pymupdf["status"] == "passed" else ["pymupdf"]) + ([] if rapidocr["status"] == "passed" else ["rapidocr-onnxruntime"]) + [
         name for name, item in system_binaries.items()
         if item["required"] and not item["available"]
     ]

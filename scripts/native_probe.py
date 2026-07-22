@@ -1,15 +1,12 @@
 """Isolated runtime qualification for native Python dependencies.
 
-This module deliberately never imports :mod:`fitz`.  PyMuPDF imports and PDF
-operations execute in child interpreters, so a native crash is reported rather
-than taking down the capability-probe process.
+The parent process deliberately imports neither PyMuPDF nor RapidOCR/OpenCV.
+Every discovery, distribution-version lookup, import, and native smoke operation
+is performed by the requested child interpreter.
 """
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import importlib.metadata
-import importlib.util
 import json
 import subprocess
 import sys
@@ -36,22 +33,7 @@ class NativeProbeResult:
     probe_mode: str = "subprocess"
 
 
-IMPORT_SMOKE = "import fitz\nprint(getattr(fitz, '__version__', None) or '')\n"
-FUNCTIONAL_SMOKE = """import fitz
-doc = fitz.open()
-doc.new_page()
-payload = doc.tobytes()
-doc.close()
-check = fitz.open(stream=payload, filetype='pdf')
-assert check.page_count == 1
-_ = check[0].rect
-check.close()
-print('functional PDF smoke passed')
-"""
-
-
-def _run_child(command: Sequence[str], timeout_seconds: float) -> tuple[subprocess.CompletedProcess[str] | None, bool, int]:
-    """Run a child interpreter, returning timeout state without raising it."""
+def _run_child(command: Sequence[str], timeout_seconds: float) -> tuple[subprocess.CompletedProcess[str], bool, int]:
     started = time.monotonic()
     try:
         completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout_seconds, check=False)
@@ -62,17 +44,21 @@ def _run_child(command: Sequence[str], timeout_seconds: float) -> tuple[subproce
         return subprocess.CompletedProcess(command, None, "", str(exc)), False, int((time.monotonic() - started) * 1000)
 
 
-def _distribution_version() -> str | None:
-    for distribution in ("PyMuPDF", "pymupdf"):
-        try:
-            return importlib.metadata.version(distribution)
-        except importlib.metadata.PackageNotFoundError:
-            continue
-    return None
+def _child_payload(stdout: str) -> dict | None:
+    """Read the JSON protocol emitted by a child without trusting its parent."""
+    try:
+        return json.loads(stdout)
+    except (TypeError, json.JSONDecodeError):
+        return None
 
 
-def _supported_version(version: str | None) -> bool:
-    """Return whether the reproducibility policy accepts the installed release."""
+def _result(base: dict, **values: object) -> dict:
+    result = asdict(NativeProbeResult(**base, **values))
+    result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
+    return result
+
+
+def _version_supported(version: str | None) -> bool:
     if not version:
         return False
     try:
@@ -82,51 +68,104 @@ def _supported_version(version: str | None) -> bool:
     return (major, minor, patch) >= (1, 26, 4) and (major, minor) < (1, 27)
 
 
-def probe_pymupdf(python_executable: str = sys.executable, timeout_seconds: float = 10.0) -> dict:
-    """Probe PyMuPDF import and minimal PDF open in isolated subprocesses."""
-    discovered = importlib.util.find_spec("fitz") is not None
-    version = _distribution_version()
-    base = dict(package="pymupdf", module="fitz", version=version, module_discovered=discovered)
-    if not discovered:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="module_not_found", functional_status="not_run", return_code=None, signal=None, timed_out=False, stdout="", stderr="", duration_ms=0, reason="module_not_found"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
-    if not _supported_version(version):
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="not_run", functional_status="not_run", return_code=None, signal=None, timed_out=False, stdout="", stderr="", duration_ms=0, reason="unsupported_version"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
+_PYMUPDF_IMPORT = r'''import importlib.metadata as md
+import importlib.util
+import json
+spec = importlib.util.find_spec("fitz")
+result = {"module_discovered": spec is not None, "version": None, "error_message": None}
+if spec is not None:
+    try:
+        result["version"] = md.version("PyMuPDF")
+    except md.PackageNotFoundError:
+        pass
+    try:
+        import fitz
+    except Exception as exc:
+        result["error_message"] = str(exc)
+print(json.dumps(result))
+'''
+_PYMUPDF_FUNCTIONAL = r'''import json
+try:
+    import fitz
+    doc = fitz.open(); doc.new_page(); payload = doc.tobytes(); doc.close()
+    check = fitz.open(stream=payload, filetype="pdf")
+    assert check.page_count == 1
+    _ = check[0].rect
+    check.close()
+    print(json.dumps({"ok": True}))
+except Exception as exc:
+    print(json.dumps({"ok": False, "error_message": str(exc)}))
+    raise
+'''
+_RAPIDOCR_IMPORT = r'''import importlib.metadata as md
+import importlib.util
+import json
+spec = importlib.util.find_spec("rapidocr_onnxruntime")
+result = {"module_discovered": spec is not None, "version": None, "error_message": None}
+if spec is not None:
+    try:
+        result["version"] = md.version("rapidocr-onnxruntime")
+    except md.PackageNotFoundError:
+        pass
+    try:
+        import rapidocr_onnxruntime
+        import cv2
+    except Exception as exc:
+        result["error_message"] = str(exc)
+print(json.dumps(result))
+'''
 
-    import_result, timed_out, duration_ms = _run_child([python_executable, "-c", IMPORT_SMOKE], timeout_seconds)
-    if timed_out:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="dependency_probe_timeout", functional_status="not_run", return_code=None, signal=None, timed_out=True, stdout=import_result.stdout or "", stderr=import_result.stderr or "", duration_ms=duration_ms, reason="dependency_probe_timeout"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
-    if import_result.returncode is None:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="probe_internal_error", functional_status="not_run", return_code=None, signal=None, timed_out=False, stdout=import_result.stdout or "", stderr=import_result.stderr or "", duration_ms=duration_ms, reason="probe_internal_error"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
-    if import_result.returncode < 0:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="native_dependency_crash", functional_status="not_run", return_code=import_result.returncode, signal=-import_result.returncode, timed_out=False, stdout=import_result.stdout, stderr=import_result.stderr, duration_ms=duration_ms, reason="native_dependency_crash"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
-    if import_result.returncode != 0:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="import_error", functional_status="not_run", return_code=import_result.returncode, signal=None, timed_out=False, stdout=import_result.stdout, stderr=import_result.stderr, duration_ms=duration_ms, reason="import_error"))
-        result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-        return result
 
-    functional_result, timed_out, functional_duration = _run_child([python_executable, "-c", FUNCTIONAL_SMOKE], timeout_seconds)
-    total_duration = duration_ms + functional_duration
+def _child_failure(base: dict, completed: subprocess.CompletedProcess[str], timed_out: bool, duration_ms: int, functional: bool = False) -> dict:
     if timed_out:
         reason, signal = "dependency_probe_timeout", None
-    elif functional_result.returncode is None:
+    elif completed.returncode is None:
         reason, signal = "probe_internal_error", None
-    elif functional_result.returncode < 0:
-        reason, signal = "native_dependency_crash", -functional_result.returncode
-    elif functional_result.returncode != 0:
-        reason, signal = "functional_open_failed", None
-    if functional_result.returncode == 0:
-        result = asdict(NativeProbeResult(**base, status="passed", import_status="passed", functional_status="passed", return_code=0, signal=None, timed_out=False, stdout=functional_result.stdout, stderr=functional_result.stderr, duration_ms=total_duration))
+    elif completed.returncode < 0:
+        reason, signal = "native_dependency_crash", -completed.returncode
     else:
-        result = asdict(NativeProbeResult(**base, status="failed", import_status="passed", functional_status=reason, return_code=functional_result.returncode, signal=signal, timed_out=timed_out, stdout=functional_result.stdout or "", stderr=functional_result.stderr or "", duration_ms=total_duration, reason=reason))
-    result.update(import_smoke_test=result["import_status"], minimal_pdf_open_test=result["functional_status"])
-    return result
+        reason, signal = ("functional_open_failed" if functional else "import_error"), None
+    return _result(base, status="failed", import_status="passed" if functional else reason,
+                   functional_status=reason if functional else "not_run", return_code=completed.returncode,
+                   signal=signal, timed_out=timed_out, stdout=completed.stdout or "", stderr=completed.stderr or "",
+                   duration_ms=duration_ms, reason=reason)
+
+
+def probe_pymupdf(python_executable: str = sys.executable, timeout_seconds: float = 10.0) -> dict:
+    """Qualify PyMuPDF in *python_executable*; child evidence is authoritative."""
+    completed, timed_out, duration = _run_child([python_executable, "-c", _PYMUPDF_IMPORT], timeout_seconds)
+    empty = {"package": "pymupdf", "module": "fitz", "version": None, "module_discovered": False}
+    if timed_out or completed.returncode not in (0, None):
+        return _child_failure(empty, completed, timed_out, duration)
+    payload = _child_payload(completed.stdout)
+    if payload is None:
+        return _child_failure(empty, completed, False, duration)
+    base = {**empty, "version": payload.get("version"), "module_discovered": bool(payload.get("module_discovered"))}
+    if not base["module_discovered"]:
+        return _result(base, status="failed", import_status="module_not_found", functional_status="not_run", return_code=completed.returncode, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="module_not_found")
+    if payload.get("error_message"):
+        return _result(base, status="failed", import_status="import_error", functional_status="not_run", return_code=completed.returncode, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="import_error")
+    if not _version_supported(base["version"]):
+        return _result(base, status="failed", import_status="passed", functional_status="not_run", return_code=completed.returncode, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="unsupported_version")
+    functional, timed_out, functional_duration = _run_child([python_executable, "-c", _PYMUPDF_FUNCTIONAL], timeout_seconds)
+    total = duration + functional_duration
+    if timed_out or functional.returncode != 0:
+        return _child_failure(base, functional, timed_out, total, functional=True)
+    return _result(base, status="passed", import_status="passed", functional_status="passed", return_code=0, signal=None, timed_out=False, stdout=functional.stdout, stderr=functional.stderr, duration_ms=total)
+
+
+def probe_rapidocr(python_executable: str = sys.executable, timeout_seconds: float = 10.0) -> dict:
+    """Import RapidOCR and OpenCV in the child to expose missing native libraries."""
+    completed, timed_out, duration = _run_child([python_executable, "-c", _RAPIDOCR_IMPORT], timeout_seconds)
+    empty = {"package": "rapidocr-onnxruntime", "module": "rapidocr_onnxruntime", "version": None, "module_discovered": False}
+    if timed_out or completed.returncode not in (0, None):
+        return _child_failure(empty, completed, timed_out, duration)
+    payload = _child_payload(completed.stdout)
+    if payload is None:
+        return _child_failure(empty, completed, False, duration)
+    base = {**empty, "version": payload.get("version"), "module_discovered": bool(payload.get("module_discovered"))}
+    if not base["module_discovered"]:
+        return _result(base, status="failed", import_status="module_not_found", functional_status="not_run", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="module_not_found")
+    if payload.get("error_message"):
+        return _result(base, status="failed", import_status="import_error", functional_status="not_run", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="import_error")
+    return _result(base, status="passed", import_status="passed", functional_status="not_applicable", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration)

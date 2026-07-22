@@ -19,7 +19,10 @@ isolated subprocesses to import `fitz` and create/reopen a one-page PDF.
 Native crashes and timeouts are reported by the parent process as required
 dependency failures.
 
-RapidOCR is a required Python package for the OCR routes, but package
-availability (including any Python 3.13 installation limitation) is separate
-from PyMuPDF qualification. Tesseract and Pandoc are optional system binaries:
-their absence is reported but does not fail capability preflight.
+RapidOCR is a required Python package for the OCR routes. Its qualification is
+also performed in a subprocess and imports both RapidOCR and OpenCV, so a
+missing native library such as `libGL.so.1` fails preflight rather than being
+mistaken for availability. RapidOCR package availability (including any Python
+3.13 installation limitation) remains separate from PyMuPDF qualification.
+Tesseract and Pandoc are optional system binaries: their absence is reported
+but does not fail capability preflight.
