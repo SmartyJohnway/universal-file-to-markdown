@@ -10,6 +10,8 @@ pytesseract>=0.3.10,<0.4      # Latin-script fallback for RapidOCR's CJK-model g
                               # requires the `tesseract-ocr` system binary (apt), not just the pip wrapper
 charset-normalizer>=3.3,<4
 msoffcrypto-tool>=5.4,<7
+beautifulsoup4>=4.12,<5
+lxml>=5,<7
 
 # Optional fallback engine (only used for unrecognized extensions now that
 # pptx has its own custom converter - see engine_notes.md)

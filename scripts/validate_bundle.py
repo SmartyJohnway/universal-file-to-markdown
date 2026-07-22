@@ -156,6 +156,7 @@ def validate_bundle(bundle_dir: str) -> dict:
             errors.append(f"invalid chunk part index: {chunk.get('chunk_id')}")
 
     table_ids = set()
+    html_tables = []
     table_elements = {element.get("table_id") for element in elements if element.get("table_id")}
     index_path = os.path.join(bundle_dir, "tables", "index.json")
     if os.path.isfile(index_path):
@@ -172,6 +173,8 @@ def validate_bundle(bundle_dir: str) -> dict:
                 table = _load_json(table_json)
                 _schema_validate(table, "table.schema.json", errors)
                 _validate_table_semantics(table, errors)
+                if table.get("source_format") == "html":
+                    html_tables.append(table)
     for chunk in chunks:
         ids = chunk.get("table_ids", [])
         if len(ids) != len(set(ids)):
@@ -182,6 +185,9 @@ def validate_bundle(bundle_dir: str) -> dict:
 
     if table_elements - table_ids:
         errors.append(f"table elements reference missing assets: {sorted(table_elements - table_ids)}")
+
+    report = _load_json(os.path.join(bundle_dir, "conversion-report.json"))
+    _validate_html_metrics(report, html_tables, errors)
 
     if not re.fullmatch(r"[0-9a-f]{64}", manifest.get("source_sha256", "")):
         errors.append("manifest source_sha256 is not a SHA-256 hex digest")
@@ -224,6 +230,7 @@ def _validate_provenance(record: dict, errors: list, subject: str) -> None:
         "csv": bool(locator.get("row_start") and locator.get("row_end")),
         "json": bool(locator.get("json_path")),
         "eml": bool(locator.get("mime_part")),
+        "html": isinstance(locator.get("element_index"), int) and locator.get("element_index") >= 1,
     }
     if precision == "exact" and not exact_evidence.get(fmt, False):
         errors.append("LOCATOR_PRECISION_INVALID")
@@ -341,6 +348,39 @@ def _validate_table_semantics(table: dict, errors: list) -> None:
         if (row < 0 or column < 0 or rowspan < 1 or colspan < 1
                 or row + rowspan > rows or column + colspan > columns):
             errors.append(f"table {table_id} cell is outside declared dimensions")
+    if table.get("source_format") != "html":
+        return
+    if not isinstance(grid, list) or any(not isinstance(row, list) for row in grid):
+        errors.append("HTML_TABLE_GRID_NOT_RECTANGULAR")
+        return
+    if grid and any(len(row) != len(grid[0]) for row in grid): errors.append("HTML_TABLE_GRID_NOT_RECTANGULAR")
+    locator = table.get("source_locator") or {}
+    if not isinstance(locator.get("table_index"), int) or locator["table_index"] < 1: errors.append("HTML_TABLE_REFERENCE_MISSING")
+    occupied = set()
+    for merge in table.get("merged_cells") or []:
+        r, c, rs, cs = (merge.get(k) for k in ("anchor_row", "anchor_column", "rowspan", "colspan"))
+        if not all(isinstance(x, int) for x in (r, c, rs, cs)) or r < 0 or c < 0 or rs < 1 or cs < 1:
+            errors.append("HTML_TABLE_SPAN_INVALID"); continue
+        if r + rs > rows or c + cs > columns:
+            errors.append("HTML_TABLE_SPAN_OUT_OF_BOUNDS"); continue
+        if grid[r][c] != merge.get("value"): errors.append("HTML_TABLE_SPAN_INVALID")
+        cells = {(rr, cc) for rr in range(r, r + rs) for cc in range(c, c + cs)}
+        if occupied.intersection(cells): errors.append("HTML_TABLE_SPAN_OVERLAP")
+        occupied.update(cells)
+
+
+def _validate_html_metrics(report: dict, html_tables: list, errors: list) -> None:
+    structure = (report.get("details") or {}).get("html_structure") or {}
+    if not structure:
+        return
+    source, canonical = structure.get("source_metrics") or {}, structure.get("canonical_metrics") or {}
+    actual_merges = sum(len(table.get("merged_cells") or []) for table in html_tables)
+    actual_cells = sum(sum(len(row) for row in table.get("grid") or []) for table in html_tables)
+    if canonical.get("table_count") != len(html_tables): errors.append("HTML_TABLE_COUNT_MISMATCH")
+    if canonical.get("merged_cell_anchor_count") != actual_merges: errors.append("HTML_MERGE_COUNT_MISMATCH")
+    if canonical.get("expanded_grid_cell_count") != actual_cells: errors.append("HTML_METRICS_MISMATCH")
+    if source.get("table_count", 0) != canonical.get("table_count", 0): errors.append("HTML_TABLE_COUNT_MISMATCH")
+    if source.get("merged_cell_anchor_count", 0) != canonical.get("merged_cell_anchor_count", 0): errors.append("HTML_MERGE_COUNT_MISMATCH")
 
 
 if __name__ == "__main__":

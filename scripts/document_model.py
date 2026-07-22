@@ -37,6 +37,7 @@ _LOCATOR_DEFAULTS = {
     "section_index": None, "element_start": None, "element_end": None,
     "row_start": None, "row_end": None, "json_path": None,
     "mime_part": None, "section": None, "filename": None,
+    "element_index": None, "element_id": None,
 }
 
 
@@ -78,6 +79,8 @@ def _normalize_element(el: dict, default_engine: str, ordinal: int, file_type: s
             precision = "range"
         elif file_type in {"xlsx", "pptx", "csv", "json", "eml"}:
             precision = "exact" if ((file_type == "xlsx" and locator.get("cell_range")) or (file_type == "pptx" and locator.get("shape_id")) or (file_type == "csv" and locator.get("row_start") is not None) or (file_type == "json" and locator.get("json_path")) or (file_type == "eml" and locator.get("mime_part"))) else "unknown"
+        elif file_type == "html":
+            precision = "exact" if locator.get("element_index") is not None else "unknown"
         else:
             precision = "unknown"
     normalized["locator_precision"] = precision
