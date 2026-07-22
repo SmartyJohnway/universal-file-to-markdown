@@ -3,45 +3,195 @@
   "$id": "element.schema.json",
   "title": "Canonical element",
   "type": "object",
-  "required": ["id", "type", "parent_id", "children", "child_ids", "content", "content_format", "heading_path", "engine", "confidence", "source_locator", "properties", "warnings", "ordinal"],
+  "required": [
+    "id",
+    "type",
+    "parent_id",
+    "children",
+    "child_ids",
+    "content",
+    "content_format",
+    "heading_path",
+    "engine",
+    "confidence",
+    "source_locator",
+    "properties",
+    "warnings",
+    "ordinal"
+  ],
   "properties": {
-    "id": {"type": "string", "minLength": 1},
-    "type": {"type": "string", "minLength": 1},
-    "parent_id": {"type": ["string", "null"]},
-    "children": {"type": "array", "items": {"type": "string"}},
-    "child_ids": {"type": "array", "items": {"type": "string"}},
-    "content": {"type": "string"},
-    "content_format": {"const": "markdown"},
-    "heading_path": {"type": "array", "items": {"type": "string"}},
-    "engine": {"type": ["string", "null"]},
-    "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "child_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "content": {
+      "type": "string"
+    },
+    "content_format": {
+      "const": "markdown"
+    },
+    "heading_path": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "engine": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
     "source_locator": {
       "type": "object",
-      "required": ["page", "slide", "sheet", "cell_range", "shape_id", "shape_name", "bbox", "table_index", "relationship_id", "part", "source_file"],
+      "required": [
+        "page",
+        "slide",
+        "sheet",
+        "cell_range",
+        "shape_id",
+        "shape_name",
+        "bbox",
+        "table_index",
+        "relationship_id",
+        "part",
+        "source_file"
+      ],
       "properties": {
-        "page": {"type": ["integer", "null"], "minimum": 1},
-        "slide": {"type": ["integer", "null"], "minimum": 1},
-        "sheet": {"type": ["string", "null"]},
-        "cell_range": {"type": ["string", "null"]},
-        "shape_id": {"type": ["integer", "string", "null"]},
-        "shape_name": {"type": ["string", "null"]},
-        "bbox": {
-          "oneOf": [
-            {"type": "null"},
-            {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4},
-            {"type": "object"}
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "slide": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "sheet": {
+          "type": [
+            "string",
+            "null"
           ]
         },
-        "table_index": {"type": ["integer", "null"], "minimum": 0},
-        "relationship_id": {"type": ["string", "null"]},
-        "part": {"type": ["string", "null"]},
-        "source_file": {"type": ["string", "null"]}
+        "cell_range": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "shape_id": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ]
+        },
+        "shape_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bbox": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "table_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "relationship_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "part": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": true
     },
-    "properties": {"type": "object"},
-    "warnings": {"type": "array"},
-    "ordinal": {"type": "integer", "minimum": 0}
+    "properties": {
+      "type": "object"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "ordinal": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "locator_precision": {
+      "enum": [
+        "exact",
+        "range",
+        "page_only",
+        "derived",
+        "unknown"
+      ]
+    }
   },
   "additionalProperties": true
 }

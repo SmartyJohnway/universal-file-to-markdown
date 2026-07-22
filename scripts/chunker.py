@@ -1,5 +1,6 @@
 """Build bounded, hierarchy-aware chunks for RAG ingestion (v1.6)."""
 
+import json
 import re
 
 
@@ -112,9 +113,8 @@ def _ancestor_labels(element: dict, by_id: dict) -> list:
 
 
 def _resolved_locator(element: dict, by_id: dict) -> dict:
-    resolved = {}
-    current = element
-    visited = set()
+    """Resolve a canonical element locator, inheriting absent fields from parents."""
+    resolved, current, visited = {}, element, set()
     while current and current.get("id") not in visited:
         visited.add(current.get("id"))
         for key, value in (current.get("source_locator") or {}).items():
@@ -123,6 +123,93 @@ def _resolved_locator(element: dict, by_id: dict) -> dict:
         current = by_id.get(current.get("parent_id"))
     return resolved
 
+
+def _a1_bounds(cell_range: str):
+    match = re.fullmatch(r"\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?", cell_range or "")
+    if not match:
+        return None
+    def column(value):
+        result = 0
+        for character in value:
+            result = result * 26 + ord(character) - 64
+        return result
+    end_column, end_row = match.group(3) or match.group(1), match.group(4) or match.group(2)
+    return column(match.group(1)), int(match.group(2)), column(end_column), int(end_row)
+
+
+def _a1_label(min_col, min_row, max_col, max_row):
+    def column(value):
+        result = ""
+        while value:
+            value, remainder = divmod(value - 1, 26)
+            result = chr(65 + remainder) + result
+        return result
+    return f"{column(min_col)}{min_row}:{column(max_col)}{max_row}"
+
+
+def _rectangles_form_contiguous_rectangle(bounds: list[tuple[int, int, int, int]]) -> bool:
+    """Only merge XLSX ranges when their union has no unclaimed cells."""
+    min_col, min_row = min(x[0] for x in bounds), min(x[1] for x in bounds)
+    max_col, max_row = max(x[2] for x in bounds), max(x[3] for x in bounds)
+    # Exact occupancy check avoids fabricating a bounding source area. Typical
+    # extracted blocks are small; huge ranges are accepted only when every
+    # range already spans one complete bounding dimension.
+    area = (max_col - min_col + 1) * (max_row - min_row + 1)
+    if area <= 1_000_000:
+        covered = set()
+        for left, top, right, bottom in bounds:
+            covered.update((col, row) for col in range(left, right + 1) for row in range(top, bottom + 1))
+        return len(covered) == area
+    return all((left == min_col and right == max_col) or (top == min_row and bottom == max_row)
+               for left, top, right, bottom in bounds)
+
+
+def merge_source_locators(locators: list[dict]) -> tuple[dict | list[dict], str]:
+    """Merge compatible locators; preserve disjoint sources as a list."""
+    unique = list(dict.fromkeys(json.dumps(x, sort_keys=True) for x in locators))
+    locators = [json.loads(value) for value in unique]
+    if len(locators) == 1:
+        return locators[0], "exact"
+    formats = {locator.get("format") for locator in locators}
+    if len(formats) != 1:
+        return locators, "range"
+    fmt = formats.pop()
+    if fmt == "xlsx" and len({x.get("sheet_name") for x in locators}) == 1:
+        bounds = [_a1_bounds(x.get("cell_range")) for x in locators]
+        if all(bounds) and _rectangles_form_contiguous_rectangle(bounds):
+            return {"format": fmt, "sheet_name": locators[0]["sheet_name"], "cell_range": _a1_label(min(x[0] for x in bounds), min(x[1] for x in bounds), max(x[2] for x in bounds), max(x[3] for x in bounds))}, "range"
+    if fmt == "pptx" and len({x.get("slide_number") for x in locators}) == 1:
+        shapes = sorted({shape for x in locators for shape in (x.get("shape_ids") or [x.get("shape_id")]) if shape is not None})
+        if shapes:
+            return {"format": fmt, "slide_number": locators[0]["slide_number"], "shape_ids": shapes}, "range"
+    if fmt == "pdf":
+        starts, ends = [x.get("page_start") for x in locators], [x.get("page_end") for x in locators]
+        if all(isinstance(x, int) for x in starts + ends) and max(starts) <= min(ends) + 1:
+            merged = {"format": fmt, "page_start": min(starts), "page_end": max(ends)}
+            bboxes = [bbox for x in locators for bbox in (x.get("bboxes") or [])]
+            if bboxes and merged["page_start"] == merged["page_end"]: merged["bboxes"] = bboxes
+            return merged, "range"
+    for start, end in (("element_start", "element_end"), ("paragraph_start", "paragraph_end"), ("row_start", "row_end")):
+        if all(isinstance(x.get(start), int) and isinstance(x.get(end), int) for x in locators):
+            shared = "section_index" not in locators[0] or len({x.get("section_index") for x in locators}) == 1
+            if shared and max(x[start] for x in locators) <= min(x[end] for x in locators) + 1:
+                merged = {"format": fmt, start: min(x[start] for x in locators), end: max(x[end] for x in locators)}
+                if "section_index" in locators[0]: merged["section_index"] = locators[0]["section_index"]
+                return merged, "range"
+    return locators, "range"
+
+
+def build_chunk_provenance(elements: list, by_id: dict) -> dict:
+    """Collect element/table references and merge compatible source locators."""
+    locators = [_resolved_locator(element, by_id) for element in elements]
+    table_ids = list(dict.fromkeys(element["table_id"] for element in elements if element.get("table_id")))
+    merged, precision = merge_source_locators(locators)
+    if len(locators) == 1:
+        precision = elements[0].get("locator_precision", "unknown")
+    result = ({"source_locator": merged} if isinstance(merged, dict) else {"source_locators": merged})
+    result["locator_precision"] = precision
+    if table_ids: result["table_ids"] = table_ids
+    return result
 
 def build_chunks(markdown: str, elements: list, sha256: str) -> list:
     if not elements:
@@ -142,29 +229,43 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
         return [_chunk(i, [], [], part, sha256, 1, len(source_parts))
                 for i, part in enumerate(source_parts, start=1)]
 
-    chunks = []
+    chunks, pending, pending_text, pending_heading = [], [], "", None
+    def emit_pending():
+        if pending:
+            provenance = build_chunk_provenance(pending, by_id)
+            chunks.append(_chunk(len(chunks) + 1, pending_heading, [e["id"] for e in pending], pending_text, sha256, 1, 1, provenance))
     for element in content_elements:
         parts = _split_markdown(element.get("content", ""))
         heading_path = list(element.get("heading_path") or []) or _ancestor_labels(element, by_id)
-        if element.get("type") == "heading":
+        is_heading = element.get("type") == "heading"
+        if is_heading:
             heading_path = heading_path + [(element.get("content") or "").lstrip("# ")]
-        for part_index, part in enumerate(parts, start=1):
-            locator = _resolved_locator(element, by_id)
-            chunks.append(_chunk(len(chunks) + 1, heading_path, [element.get("id")],
-                                 part, sha256, part_index, len(parts), locator))
+        if is_heading or len(parts) != 1 or (pending and (element.get("parent_id") != pending[-1].get("parent_id") or pending_heading != heading_path or len(pending_text) + len(parts[0]) + 2 > MAX_CHUNK_CHARS)):
+            emit_pending(); pending, pending_text, pending_heading = [], "", None
+        if len(parts) == 1:
+            pending.append(element); pending_text = parts[0] if not pending_text else pending_text + "\n\n" + parts[0]; pending_heading = heading_path
+            if is_heading:
+                emit_pending(); pending, pending_text, pending_heading = [], "", None
+        else:
+            for part_index, part in enumerate(parts, start=1):
+                chunks.append(_chunk(len(chunks) + 1, heading_path, [element["id"]], part, sha256, part_index, len(parts), build_chunk_provenance([element], by_id)))
+    emit_pending()
     return chunks
 
 
 def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_count,
-           locator=None):
-    locator = locator or {}
-    page = locator.get("page")
-    slide = locator.get("slide")
+           provenance=None):
+    provenance = provenance or {"locator_precision": "unknown"}
+    locator = provenance.get("source_locator") or {}
+    page = locator.get("page_start", locator.get("page"))
+    slide = locator.get("slide_number", locator.get("slide"))
     return {
         "schema_version": "1.0",
         "chunk_id": f"chunk-{counter:05d}",
         "heading_path": heading_path,
         "element_ids": element_ids,
+        "table_ids": provenance.get("table_ids", []),
+        "locator_precision": provenance["locator_precision"],
         "text": text,
         "char_count": len(text),
         "part_index": part_index,
@@ -172,9 +273,10 @@ def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_co
         "chunk_index": counter,
         "source_file": locator.get("source_file"),
         "page_start": page,
-        "page_end": page,
-        "sheet_name": locator.get("sheet"),
+        "page_end": locator.get("page_end", page),
+        "sheet_name": locator.get("sheet_name", locator.get("sheet")),
         "slide_start": slide,
         "slide_end": slide,
         "source_sha256": sha256,
+        **({"source_locator": locator} if "source_locator" in provenance else {"source_locators": provenance["source_locators"]} if "source_locators" in provenance else {}),
     }
