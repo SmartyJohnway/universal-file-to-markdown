@@ -4,8 +4,11 @@
 import argparse
 import importlib.util
 import json
+import platform
 import shutil
 import sys
+
+from native_probe import probe_pymupdf, probe_rapidocr
 
 
 PYTHON_CAPABILITIES = {
@@ -36,10 +39,19 @@ def probe() -> dict:
         name: {"available": shutil.which(name) is not None, "required": required}
         for name, required in SYSTEM_CAPABILITIES.items()
     }
+    pymupdf = probe_pymupdf()
+    rapidocr = probe_rapidocr()
+    python_modules["fitz"].update(pymupdf)
+    python_modules["rapidocr_onnxruntime"].update(rapidocr)
+    # Native child probes are authoritative for these modules. This keeps the
+    # public availability flag coherent if a future caller selects another
+    # Python executable for qualification.
+    python_modules["fitz"]["available"] = pymupdf.get("module_discovered", python_modules["fitz"]["available"])
+    python_modules["rapidocr_onnxruntime"]["available"] = rapidocr.get("module_discovered", python_modules["rapidocr_onnxruntime"]["available"])
     missing_required = [
         name for name, item in python_modules.items()
         if item["required"] and not item["available"]
-    ] + [
+    ] + ([] if pymupdf["status"] == "passed" else ["pymupdf"]) + ([] if rapidocr["status"] == "passed" else ["rapidocr-onnxruntime"]) + [
         name for name, item in system_binaries.items()
         if item["required"] and not item["available"]
     ]
@@ -48,6 +60,13 @@ def probe() -> dict:
         "missing_required": missing_required,
         "python_modules": python_modules,
         "system_binaries": system_binaries,
+        "environment": {
+            "platform_system": platform.system(),
+            "platform_release": platform.release(),
+            "platform_machine": platform.machine(),
+            "python_version": platform.python_version(),
+            "python_implementation": platform.python_implementation(),
+        },
     }
 
 
