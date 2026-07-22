@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["schema_version","request_id","source_sha256","canonical_bundle_fingerprint","targets"],"properties":{"schema_version":{"const":"1.0"},"request_id":{"type":"string"},"source_sha256":{"type":"string"},"canonical_bundle_fingerprint":{"type":"string"},"targets":{"type":"array"}}}

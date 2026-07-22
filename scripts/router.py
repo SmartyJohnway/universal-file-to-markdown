@@ -52,7 +52,7 @@ from table_model import normalize_tables
 SKILL_VERSION = "1.7.0-dev"
 _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
-    "conversion-report.json", "_pandoc_tmp.md",
+    "conversion-report.json", "_pandoc_tmp.md", "ai-review-request.json", "ai-review.json", "document-readable.md",
 )
 _GENERATED_DIRS = ("assets", "tables")
 
@@ -369,14 +369,31 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
                 structure, tables, doc_json["elements"], chunks,
                 [w.get("code") for w in full_report.get("warnings", [])], validation)
             full_report["structural_fidelity_status"] = full_report["structural_fidelity"]["status"]
+        full_report["bundle_validation_status"] = validation["status"]
         if validation["status"] != "passed":
             full_report["status"] = "failed"
             full_report["reason"] = "bundle_validation_failed"
+            full_report["ai_review_recommendation_status"] = "prohibited"
+            full_report["ai_review_request_status"] = "not_generated_prohibited"
             manifest["status"] = "failed"
+        else:
+            from ai_review import assess_ai_review_eligibility
+            eligibility = assess_ai_review_eligibility(full_report, tables, True)
+            full_report["quality_risk_assessment"] = eligibility
+            full_report["ai_review_recommended"] = eligibility["recommended"]
+            full_report["ai_review_recommendation_status"] = eligibility["policy_status"]
+            full_report["ai_review_request_status"] = "not_generated_pending_cli" if eligibility["recommended"] else "not_generated_not_recommended"
+            full_report["ai_review_status"] = "not_provided"
+            full_report["readable_projection_status"] = "not_generated"
         with open(os.path.join(output_dir, "manifest.json"), "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
         with open(os.path.join(output_dir, "conversion-report.json"), "w", encoding="utf-8") as f:
             json.dump(full_report, f, indent=2, ensure_ascii=False)
+        if full_report.get("status") != "failed" and full_report.get("ai_review_recommended"):
+            from ai_review import prepare_request
+            prepare_request(output_dir)
+            with open(os.path.join(output_dir, "conversion-report.json"), encoding="utf-8") as f:
+                full_report = json.load(f)
 
     return full_report
 
