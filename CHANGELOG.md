@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Source locator and locator-precision contracts for canonical elements and chunks.
+- Chunk-to-element and chunk-to-table provenance references.
+- Semantic validation for source locators and provenance references.
+
+### Changed
+
+- Active development version is now `1.7.0-dev`.
+
+
 ## [1.6.1-rc2] - 2026-07-22
 
 ### Added

@@ -12,6 +12,8 @@ from urllib.parse import unquote, urlparse
 from markdown_refs import parse_markdown_image_references
 
 HARD_MAX_CHUNK_CHARS = 2000
+LOCATOR_PRECISIONS = {"exact", "range", "page_only", "derived", "unknown"}
+LOCATOR_FORMATS = {"xlsx", "pptx", "pdf", "docx", "eml", "csv", "json", "html", "pandoc", "image", "text", "unknown"}
 
 
 def _load_json(path):
@@ -129,9 +131,13 @@ def validate_bundle(bundle_dir: str) -> dict:
                 errors.append(f"chunk char_count mismatch: {chunk.get('chunk_id')}")
             if len(chunk.get("text", "")) > HARD_MAX_CHUNK_CHARS:
                 errors.append(f"chunk exceeds hard limit: {chunk.get('chunk_id')}")
-            for element_id in chunk.get("element_ids", []):
+            element_ids = chunk.get("element_ids", [])
+            if len(element_ids) != len(set(element_ids)):
+                errors.append("CHUNK_ELEMENT_REFERENCE_MISSING: duplicate element_ids")
+            for element_id in element_ids:
                 if element_id not in by_id:
-                    errors.append(f"chunk references missing element: {element_id}")
+                    errors.append(f"CHUNK_ELEMENT_REFERENCE_MISSING: missing element {element_id}")
+            _validate_chunk_locator(chunk, errors)
 
     chunk_ids = [chunk.get("chunk_id") for chunk in chunks]
     if len(chunk_ids) != len(set(chunk_ids)):
@@ -164,6 +170,14 @@ def validate_bundle(bundle_dir: str) -> dict:
                 table = _load_json(table_json)
                 _schema_validate(table, "table.schema.json", errors)
                 _validate_table_semantics(table, errors)
+    for chunk in chunks:
+        ids = chunk.get("table_ids", [])
+        if len(ids) != len(set(ids)):
+            errors.append("CHUNK_TABLE_REFERENCE_MISSING: duplicate table_ids")
+        for table_id in ids:
+            if table_id not in table_ids:
+                errors.append(f"CHUNK_TABLE_REFERENCE_MISSING: {table_id}")
+
     if table_elements - table_ids:
         errors.append(f"table elements reference missing assets: {sorted(table_elements - table_ids)}")
 
@@ -172,6 +186,58 @@ def validate_bundle(bundle_dir: str) -> dict:
     return {"status": "passed" if not errors else "failed", "errors": errors,
             "warnings": warnings, "counts": {"elements": len(elements),
             "chunks": len(chunks), "tables": len(table_ids)}}
+
+
+def _validate_chunk_locator(chunk: dict, errors: list) -> None:
+    """Validate the documented, version-1.0 optional provenance extension."""
+    precision = chunk.get("locator_precision")
+    if precision is None:
+        # Legacy v1.6.0 chunks are accepted without the extension.
+        return
+    if precision not in LOCATOR_PRECISIONS:
+        errors.append("LOCATOR_PRECISION_INVALID")
+    single, many = chunk.get("source_locator"), chunk.get("source_locators")
+    if single is not None and many is not None:
+        errors.append("CHUNK_LOCATOR_CONFLICT")
+    if many is not None and (not isinstance(many, list) or not many):
+        errors.append("CHUNK_LOCATOR_CONFLICT: source_locators must be non-empty")
+    for locator in ([single] if isinstance(single, dict) else (many or [])):
+        _validate_source_locator(locator, errors)
+
+
+def _validate_source_locator(locator: dict, errors: list) -> None:
+    fmt = locator.get("format")
+    if fmt not in LOCATOR_FORMATS:
+        errors.append("INVALID_SOURCE_LOCATOR_FORMAT")
+        return
+    if fmt == "xlsx":
+        if locator.get("sheet_name") is not None and (not isinstance(locator.get("sheet_name"), str) or not locator["sheet_name"].strip()): errors.append("INVALID_XLSX_SHEET_NAME")
+        if locator.get("cell_range") is not None and not _valid_a1_range(locator.get("cell_range")): errors.append("INVALID_XLSX_CELL_RANGE")
+    elif fmt == "pdf":
+        a, b = locator.get("page_start"), locator.get("page_end")
+        if not isinstance(a, int) or not isinstance(b, int) or a < 1 or b < a: errors.append("INVALID_PDF_PAGE_RANGE")
+        for bbox in locator.get("bboxes") or []:
+            if (not isinstance(bbox, list) or len(bbox) != 4 or not all(isinstance(x, (int,float)) and __import__('math').isfinite(x) for x in bbox) or bbox[2] < bbox[0] or bbox[3] < bbox[1]): errors.append("INVALID_PDF_BBOX")
+    elif fmt == "pptx":
+        if not isinstance(locator.get("slide_number"), int) or locator["slide_number"] < 1: errors.append("INVALID_PPTX_SLIDE_NUMBER")
+        shapes = locator.get("shape_ids") or ([locator["shape_id"]] if locator.get("shape_id") is not None else [])
+        if shapes and (not isinstance(shapes, list) or not all(isinstance(x,int) and x >= 1 for x in shapes)): errors.append("INVALID_PPTX_SHAPE_ID")
+    elif fmt == "csv":
+        a,b=locator.get("row_start"),locator.get("row_end")
+        if not isinstance(a,int) or not isinstance(b,int) or a < 1 or b < a: errors.append("INVALID_CSV_ROW_RANGE")
+    elif fmt == "json":
+        if not isinstance(locator.get("json_path"),str) or not locator["json_path"].startswith("$"): errors.append("INVALID_JSON_PATH")
+
+
+def _valid_a1_range(value) -> bool:
+    if not isinstance(value, str): return False
+    match = re.fullmatch(r"\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?", value)
+    if not match: return False
+    def col(s):
+        n=0
+        for char in s: n=n*26+ord(char)-64
+        return n
+    return int(match.group(2)) >= 1 and (match.group(4) is None or (col(match.group(1)), int(match.group(2))) <= (col(match.group(3)), int(match.group(4))))
 
 
 def _validate_local_asset_target(root: Path, raw_target: str, code_prefix: str,

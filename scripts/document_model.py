@@ -21,6 +21,7 @@ _ELEMENT_DEFAULTS = {
     "engine": None,
     "confidence": None,
     "source_locator": None,
+    "locator_precision": None,
     "properties": None,
     "warnings": None,
 }
@@ -30,10 +31,16 @@ _LOCATOR_DEFAULTS = {
     "shape_id": None, "shape_name": None, "bbox": None,
     "table_index": None, "relationship_id": None, "part": None,
     "source_file": None,
+    "format": None, "sheet_name": None, "anchor_cell": None,
+    "cell_range": None, "slide_number": None, "shape_ids": None,
+    "page_start": None, "page_end": None, "bboxes": None,
+    "section_index": None, "element_start": None, "element_end": None,
+    "row_start": None, "row_end": None, "json_path": None,
+    "mime_part": None, "section": None, "filename": None,
 }
 
 
-def _normalize_element(el: dict, default_engine: str, ordinal: int) -> dict:
+def _normalize_element(el: dict, default_engine: str, ordinal: int, file_type: str) -> dict:
     normalized = dict(_ELEMENT_DEFAULTS)
     normalized.update(el)
     normalized["ordinal"] = ordinal
@@ -46,8 +53,34 @@ def _normalize_element(el: dict, default_engine: str, ordinal: int) -> dict:
         supplied_locator["sheet"] = supplied_locator.pop("sheet_name")
     if "range" in supplied_locator and "cell_range" not in supplied_locator:
         supplied_locator["cell_range"] = supplied_locator.pop("range")
+    # Normalize legacy locator names into the public source-locator contract.
+    if "sheet" in supplied_locator and "sheet_name" not in supplied_locator:
+        supplied_locator["sheet_name"] = supplied_locator["sheet"]
+    if "slide" in supplied_locator and "slide_number" not in supplied_locator:
+        supplied_locator["slide_number"] = supplied_locator["slide"]
+    if "page" in supplied_locator:
+        supplied_locator.setdefault("page_start", supplied_locator["page"])
+        supplied_locator.setdefault("page_end", supplied_locator["page"])
+    if "bbox" in supplied_locator and supplied_locator["bbox"] is not None:
+        supplied_locator.setdefault("bboxes", [supplied_locator["bbox"]])
+    supplied_locator.setdefault("format", file_type)
+    if file_type == "docx":
+        supplied_locator.setdefault("section_index", 0)
+        supplied_locator.setdefault("element_start", ordinal)
+        supplied_locator.setdefault("element_end", ordinal)
     locator.update(supplied_locator)
     normalized["source_locator"] = locator
+    precision = normalized.get("locator_precision")
+    if precision is None:
+        if file_type == "pdf":
+            precision = "derived" if "ocr" in str(normalized.get("engine", "")).lower() else ("exact" if locator.get("bboxes") else "page_only")
+        elif file_type == "docx":
+            precision = "range"
+        elif file_type in {"xlsx", "pptx", "csv", "json", "eml"}:
+            precision = "exact" if any(locator.get(k) is not None for k in ("cell_range", "shape_id", "row_start", "json_path", "mime_part")) else "unknown"
+        else:
+            precision = "unknown"
+    normalized["locator_precision"] = precision
     normalized["heading_path"] = list(normalized.get("heading_path") or [])
     normalized["properties"] = dict(normalized.get("properties") or {})
     normalized["warnings"] = list(normalized.get("warnings") or [])
@@ -65,12 +98,12 @@ def build_document_json(source_path: str, sha256: str, file_type: str, elements:
         "content": "",
         "engine": default_engine,
         "source_locator": {"source_file": os.path.basename(source_path)},
-    }, default_engine, 0)
+    }, default_engine, 0, file_type)
 
     normalized = [root]
     seen = {root_id}
     for ordinal, element in enumerate(elements, start=1):
-        item = _normalize_element(element, default_engine, ordinal)
+        item = _normalize_element(element, default_engine, ordinal, file_type)
         element_id = item.get("id")
         if not isinstance(element_id, str) or not element_id.strip():
             raise ValueError(f"element at ordinal {ordinal} has no valid id")

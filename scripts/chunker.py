@@ -112,9 +112,8 @@ def _ancestor_labels(element: dict, by_id: dict) -> list:
 
 
 def _resolved_locator(element: dict, by_id: dict) -> dict:
-    resolved = {}
-    current = element
-    visited = set()
+    """Resolve a canonical element locator, inheriting absent fields from parents."""
+    resolved, current, visited = {}, element, set()
     while current and current.get("id") not in visited:
         visited.add(current.get("id"))
         for key, value in (current.get("source_locator") or {}).items():
@@ -123,6 +122,24 @@ def _resolved_locator(element: dict, by_id: dict) -> dict:
         current = by_id.get(current.get("parent_id"))
     return resolved
 
+
+def build_chunk_provenance(elements: list, by_id: dict) -> dict:
+    """Produce deterministic provenance for one or more canonical elements."""
+    locators = [_resolved_locator(element, by_id) for element in elements]
+    precisions = [element.get("locator_precision", "unknown") for element in elements]
+    table_ids = list(dict.fromkeys(element["table_id"] for element in elements if element.get("table_id")))
+    # A chunk made from one element is precise exactly as that element is.
+    if len(locators) == 1:
+        result = {"source_locator": locators[0], "locator_precision": precisions[0]}
+    else:
+        unique = []
+        for locator in locators:
+            if locator not in unique:
+                unique.append(locator)
+        result = {"source_locators": unique, "locator_precision": "range"}
+    if table_ids:
+        result["table_ids"] = table_ids
+    return result
 
 def build_chunks(markdown: str, elements: list, sha256: str) -> list:
     if not elements:
@@ -149,22 +166,25 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
         if element.get("type") == "heading":
             heading_path = heading_path + [(element.get("content") or "").lstrip("# ")]
         for part_index, part in enumerate(parts, start=1):
-            locator = _resolved_locator(element, by_id)
+            provenance = build_chunk_provenance([element], by_id)
             chunks.append(_chunk(len(chunks) + 1, heading_path, [element.get("id")],
-                                 part, sha256, part_index, len(parts), locator))
+                                 part, sha256, part_index, len(parts), provenance))
     return chunks
 
 
 def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_count,
-           locator=None):
-    locator = locator or {}
-    page = locator.get("page")
-    slide = locator.get("slide")
+           provenance=None):
+    provenance = provenance or {"locator_precision": "unknown"}
+    locator = provenance.get("source_locator") or {}
+    page = locator.get("page_start", locator.get("page"))
+    slide = locator.get("slide_number", locator.get("slide"))
     return {
         "schema_version": "1.0",
         "chunk_id": f"chunk-{counter:05d}",
         "heading_path": heading_path,
         "element_ids": element_ids,
+        "table_ids": provenance.get("table_ids", []),
+        "locator_precision": provenance["locator_precision"],
         "text": text,
         "char_count": len(text),
         "part_index": part_index,
@@ -172,9 +192,10 @@ def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_co
         "chunk_index": counter,
         "source_file": locator.get("source_file"),
         "page_start": page,
-        "page_end": page,
-        "sheet_name": locator.get("sheet"),
+        "page_end": locator.get("page_end", page),
+        "sheet_name": locator.get("sheet_name", locator.get("sheet")),
         "slide_start": slide,
         "slide_end": slide,
         "source_sha256": sha256,
+        **({"source_locator": locator} if "source_locator" in provenance else {"source_locators": provenance["source_locators"]} if "source_locators" in provenance else {}),
     }

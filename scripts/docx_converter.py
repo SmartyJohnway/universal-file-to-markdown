@@ -117,6 +117,7 @@ def convert_docx(path: str, assets_dir: str = None) -> dict:
                 "engine": "python-docx_custom",
                 "confidence": None,
                 "source_locator": {"table_index": table_count},
+                "table_id": f"table-{table_count:04d}",
             })
             if grid:
                 table_entry = {"id": f"table-{table_count:04d}", "rows": grid,

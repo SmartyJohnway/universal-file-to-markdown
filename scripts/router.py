@@ -49,7 +49,7 @@ from chunker import build_chunks
 from table_export import export_tables
 from table_model import normalize_tables
 
-SKILL_VERSION = "1.6.1-rc2"
+SKILL_VERSION = "1.7.0-dev"
 _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
     "conversion-report.json", "_pandoc_tmp.md",
@@ -195,11 +195,11 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
             "encoding_user_selected": bool(encoding_hint),
         }
         if csv_result.get("rows"):
-            tables = [{"id": "table-0001", "rows": csv_result["rows"], "context": "csv"}]
+            tables = [{"id": "table-0001", "rows": csv_result["rows"], "context": "csv", "source_locator": {"format": "csv", "row_start": 1, "row_end": len(csv_result["rows"])}}]
             elements = [{
                 "id": "csv-table-0001", "type": "table", "content": markdown,
                 "engine": "csv_native", "confidence": None,
-                "source_locator": {"table_index": 1}, "table_id": "table-0001",
+                "source_locator": {"format": "csv", "row_start": 1, "row_end": len(csv_result["rows"])}, "table_id": "table-0001",
             }]
 
     elif file_type == "json":
@@ -213,7 +213,7 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
                   "encoding_user_selected": bool(encoding_hint)}
         elements = [{"id": "json-block-0001", "type": "structured_block",
                      "content": markdown, "engine": "json_native",
-                     "confidence": None, "source_locator": {}}]
+                     "confidence": None, "source_locator": {"format": "json", "json_path": "$"}}]
 
     elif file_type == "eml":
         result = convert_eml_native(input_path)
@@ -227,13 +227,13 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
                   "attachments_extracted": len(result["attachments"])}
         elements = [{"id": "email-content-0001", "type": "email",
                      "content": markdown, "engine": "email_stdlib",
-                     "confidence": None, "source_locator": {}}]
+                     "confidence": None, "source_locator": {"format": "eml", "mime_part": "1", "section": "body"}}]
         for index, att in enumerate(result["attachments"], start=1):
             elements.append({
                 "id": f"email-attachment-{index:04d}", "type": "attachment",
                 "content": f"[{att['original_filename']}](assets/{att['filename']})",
                 "engine": "email_stdlib", "confidence": None,
-                "source_locator": {"part": att["filename"]},
+                "source_locator": {"format": "eml", "mime_part": f"1.{index}", "section": "attachment", "filename": att["original_filename"]},
                 "properties": {"original_filename": att["original_filename"]},
             })
 
