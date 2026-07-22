@@ -147,6 +147,23 @@ def _a1_label(min_col, min_row, max_col, max_row):
     return f"{column(min_col)}{min_row}:{column(max_col)}{max_row}"
 
 
+def _rectangles_form_contiguous_rectangle(bounds: list[tuple[int, int, int, int]]) -> bool:
+    """Only merge XLSX ranges when their union has no unclaimed cells."""
+    min_col, min_row = min(x[0] for x in bounds), min(x[1] for x in bounds)
+    max_col, max_row = max(x[2] for x in bounds), max(x[3] for x in bounds)
+    # Exact occupancy check avoids fabricating a bounding source area. Typical
+    # extracted blocks are small; huge ranges are accepted only when every
+    # range already spans one complete bounding dimension.
+    area = (max_col - min_col + 1) * (max_row - min_row + 1)
+    if area <= 1_000_000:
+        covered = set()
+        for left, top, right, bottom in bounds:
+            covered.update((col, row) for col in range(left, right + 1) for row in range(top, bottom + 1))
+        return len(covered) == area
+    return all((left == min_col and right == max_col) or (top == min_row and bottom == max_row)
+               for left, top, right, bottom in bounds)
+
+
 def merge_source_locators(locators: list[dict]) -> tuple[dict | list[dict], str]:
     """Merge compatible locators; preserve disjoint sources as a list."""
     unique = list(dict.fromkeys(json.dumps(x, sort_keys=True) for x in locators))
@@ -159,7 +176,7 @@ def merge_source_locators(locators: list[dict]) -> tuple[dict | list[dict], str]
     fmt = formats.pop()
     if fmt == "xlsx" and len({x.get("sheet_name") for x in locators}) == 1:
         bounds = [_a1_bounds(x.get("cell_range")) for x in locators]
-        if all(bounds):
+        if all(bounds) and _rectangles_form_contiguous_rectangle(bounds):
             return {"format": fmt, "sheet_name": locators[0]["sheet_name"], "cell_range": _a1_label(min(x[0] for x in bounds), min(x[1] for x in bounds), max(x[2] for x in bounds), max(x[3] for x in bounds))}, "range"
     if fmt == "pptx" and len({x.get("slide_number") for x in locators}) == 1:
         shapes = sorted({shape for x in locators for shape in (x.get("shape_ids") or [x.get("shape_id")]) if shape is not None})
@@ -220,10 +237,15 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
     for element in content_elements:
         parts = _split_markdown(element.get("content", ""))
         heading_path = list(element.get("heading_path") or []) or _ancestor_labels(element, by_id)
-        if len(parts) != 1 or (pending and (element.get("parent_id") != pending[-1].get("parent_id") or pending_heading != heading_path or len(pending_text) + len(parts[0]) + 2 > MAX_CHUNK_CHARS)):
+        is_heading = element.get("type") == "heading"
+        if is_heading:
+            heading_path = heading_path + [(element.get("content") or "").lstrip("# ")]
+        if is_heading or len(parts) != 1 or (pending and (element.get("parent_id") != pending[-1].get("parent_id") or pending_heading != heading_path or len(pending_text) + len(parts[0]) + 2 > MAX_CHUNK_CHARS)):
             emit_pending(); pending, pending_text, pending_heading = [], "", None
         if len(parts) == 1:
             pending.append(element); pending_text = parts[0] if not pending_text else pending_text + "\n\n" + parts[0]; pending_heading = heading_path
+            if is_heading:
+                emit_pending(); pending, pending_text, pending_heading = [], "", None
         else:
             for part_index, part in enumerate(parts, start=1):
                 chunks.append(_chunk(len(chunks) + 1, heading_path, [element["id"]], part, sha256, part_index, len(parts), build_chunk_provenance([element], by_id)))
