@@ -80,6 +80,8 @@ def validate_review(bundle,review_path):
   if not isinstance(x.get('confidence'),(int,float)) or not 0<=x.get('confidence',-1)<=1:errors.append('AI_REVIEW_CONFIDENCE_INVALID')
   if any(not isinstance(o,dict) or o.get('operation') not in ALLOWED_OPERATIONS for o in x.get('operations',[])):errors.append('AI_REVIEW_OPERATION_INVALID')
   if x.get('decision')=='apply_projection' and (not isinstance(text,str) or not text.strip()):errors.append('AI_REVIEW_SCHEMA_INVALID')
+  # Element-range targets are advisory OCR context in Phase 5.  The renderer only owns table replacement, so reject an apply request rather than report a silently ignored projection as host-applied.
+  if tid in tm and tm[tid].get('target_type')=='element_range' and x.get('decision')=='apply_projection':errors.append('AI_REVIEW_ELEMENT_RANGE_APPLY_UNSUPPORTED')
   if len(text)>MAX_TARGET_CHARS:errors.append('AI_REVIEW_CONTENT_TOO_LARGE')
   if isinstance(text,str) and UNSAFE_RE.search(text):errors.append('AI_REVIEW_UNSAFE_CONTENT')
   if tid in tm and isinstance(text,str) and text:
