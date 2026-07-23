@@ -55,14 +55,21 @@ def fingerprint(normalized):
     artifacts = {key: hashlib.sha256(stable_bytes(value)).hexdigest() for key, value in normalized.items() if key not in {"normalization_schema_version"}}
     return {"fingerprint_schema_version":"1.0", "bundle_fingerprint":hashlib.sha256(stable_bytes(normalized)).hexdigest(), "artifact_fingerprints":artifacts}
 
+def _is_ocr_record(value):
+    engine=str(value.get("engine", "")).lower()
+    return any(token in engine for token in ("rapidocr", "tesseract", "ocr")) or value.get("confidence_kind") == "ocr" or value.get("type") in {"ocr_region", "ocr_table"}
+
 def semantically_equal(before, after, path=""):
-    """Compare canonical models, allowing only bounded OCR confidence drift."""
+    """Compare models; tolerance is restricted to explicitly OCR-derived records."""
     if isinstance(before, dict) and isinstance(after, dict):
-        return before.keys()==after.keys() and all(semantically_equal(before[k],after[k],path+'.'+k) for k in before)
+        if before.keys() != after.keys(): return False
+        for key in before:
+            if key == "confidence" and _is_ocr_record(before) and _is_ocr_record(after) and isinstance(before[key],(int,float)) and isinstance(after[key],(int,float)):
+                if abs(before[key]-after[key]) > OCR_TOLERANCE['absolute_tolerance']: return False
+            elif not semantically_equal(before[key],after[key],path+'.'+key): return False
+        return True
     if isinstance(before, list) and isinstance(after, list):
         return len(before)==len(after) and all(semantically_equal(a,b,path+'[]') for a,b in zip(before,after))
-    if path.endswith('.confidence') and isinstance(before,(int,float)) and isinstance(after,(int,float)):
-        return abs(before-after) <= OCR_TOLERANCE['absolute_tolerance']
     return before == after
 
 def diff_models(before, after, excerpt_limit=240):
