@@ -70,7 +70,12 @@ A failed rerun clears known generated artifacts first, preventing stale canonica
 
 ## Installation
 
-Python 3.10 or later is recommended.
+Python 3.10–3.12 is supported. Python 3.11 is the primary qualified runtime
+for the complete OCR and cross-format regression suite. Python 3.13 is not
+currently supported because the declared `rapidocr-onnxruntime` dependency
+does not publish compatible builds for that runtime. OCR requires the native
+`libGL.so.1` runtime; install the Tesseract binary when using the
+`pytesseract` fallback. Pandoc remains an optional tool.
 
 ```bash
 python -m venv .venv

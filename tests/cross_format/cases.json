@@ -519,6 +519,7 @@
       "expected_bundle_validation": "passed",
       "required_warning_codes": [],
       "allowed_warning_codes": [
+        "TESSERACT_FALLBACK_USED",
         "OCR_TABLE_KEY_VALUE_PATTERN",
         "OCR_TABLE_INSUFFICIENT_ROWS",
         "OCR_TABLE_COLUMN_INCONSISTENT",

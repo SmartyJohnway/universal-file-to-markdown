@@ -1,6 +1,7 @@
 import json
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
 from run_cross_format_regression import _workflow_errors, load_workflow_cases
@@ -10,16 +11,18 @@ def _case():
     return load_workflow_cases()[0]
 
 
-def _bundle(tmp_path, *, readable=True, request=True, statuses=True, request_values=None):
-    (tmp_path / 'manifest.json').write_text(json.dumps({'source_sha256': 'a' * 64}))
+def _bundle(tmp_path, *, readable=True, request=True, report=True, manifest=True, statuses=True, request_values=None):
+    if manifest:
+        (tmp_path / 'manifest.json').write_text(json.dumps({'source_sha256': 'a' * 64}))
     (tmp_path / 'document.json').write_text(json.dumps({'elements': []}))
     (tmp_path / 'chunks.jsonl').write_text('')
     (tmp_path / 'tables').mkdir()
     (tmp_path / 'tables' / 'index.json').write_text('[]')
-    report = {'status': 'passed', 'bundle_validation': {'status': 'passed'}, 'warnings': []}
+    report_payload = {'status': 'passed', 'bundle_validation': {'status': 'passed'}, 'warnings': []}
     if statuses:
-        report.update({'ai_review_request_status': 'generated', 'ai_review_status': 'not_provided', 'readable_projection_status': 'deterministic_only'})
-    (tmp_path / 'conversion-report.json').write_text(json.dumps(report))
+        report_payload.update({'ai_review_request_status': 'generated', 'ai_review_status': 'not_provided', 'readable_projection_status': 'deterministic_only'})
+    if report:
+        (tmp_path / 'conversion-report.json').write_text(json.dumps(report_payload))
     if request:
         values = {'schema_version': '1.0', 'request_id': 'ai-review-request-' + 'a' * 16, 'source_sha256': 'a' * 64,
                   'skill_version': '1.7.0-dev', 'canonical_bundle_fingerprint': 'wrong', 'review_scope': 'readable_projection_only',
@@ -86,3 +89,29 @@ def test_projection_step_failure_has_its_own_reason(tmp_path, monkeypatch):
     monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
     assert 'WORKFLOW_READABLE_PROJECTION_FAILED' in _workflow_errors(_case(), tmp_path, 0, 0, 1)
     assert 'WORKFLOW_ROUTER_FAILED' not in _workflow_errors(_case(), tmp_path, 0, 0, 1)
+
+
+@pytest.mark.parametrize(('artifact', 'bundle_args', 'code'), [
+    ('conversion-report.json', {'report': False}, 'WORKFLOW_REPORT_MISSING'),
+    ('manifest.json', {'manifest': False}, 'WORKFLOW_MANIFEST_MISSING'),
+    ('ai-review-request.json', {'request': False}, 'HOST_REVIEW_REQUEST_MISSING'),
+    ('document-readable.md', {'readable': False}, 'READABLE_PROJECTION_MISSING'),
+])
+def test_missing_workflow_artifact_is_structured(tmp_path, monkeypatch, artifact, bundle_args, code):
+    _bundle(tmp_path, **bundle_args)
+    monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
+    errors = _workflow_errors(_case(), tmp_path, 0)
+    assert code in errors
+
+
+@pytest.mark.parametrize(('artifact', 'code'), [
+    ('conversion-report.json', 'WORKFLOW_REPORT_MALFORMED'),
+    ('manifest.json', 'WORKFLOW_MANIFEST_MALFORMED'),
+    ('ai-review-request.json', 'WORKFLOW_REQUEST_MALFORMED'),
+])
+def test_malformed_workflow_json_is_structured(tmp_path, monkeypatch, artifact, code):
+    _bundle(tmp_path)
+    (tmp_path / artifact).write_text('{not json')
+    monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
+    errors = _workflow_errors(_case(), tmp_path, 0)
+    assert code in errors

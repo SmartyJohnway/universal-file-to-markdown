@@ -137,6 +137,19 @@ def _table_index_errors(index_path, table_ids):
         assets=entry.get('assets',{})
         if not isinstance(assets,dict) or any(not _safe_table_asset(index_path.parent,path) for path in assets.values()): errors.append('REFERENCE_ERROR')
     return errors
+def _load_workflow_json(path, missing_code, malformed_code):
+    """Load a workflow object without allowing artifact corruption to abort a run."""
+    try:
+        value=json.loads(path.read_text(encoding='utf-8'))
+    except FileNotFoundError:
+        return None, [missing_code]
+    except json.JSONDecodeError:
+        return None, [malformed_code]
+    except OSError:
+        return None, ['WORKFLOW_ARTIFACT_UNREADABLE']
+    if not isinstance(value, dict):
+        return None, [malformed_code]
+    return value, []
 def assert_contract(case,bundle,router_rc):
     errors=[]
     if not (bundle/'conversion-report.json').exists() or not (bundle/'document.json').exists(): return ['ROUTER_BUNDLE_MISSING'], {}
@@ -219,17 +232,17 @@ def _workflow_errors(case, bundle, router_rc, review_rc=0, projection_rc=0):
     if projection_rc: errors.append('WORKFLOW_READABLE_PROJECTION_FAILED')
     from validate_bundle import validate_bundle
     if validate_bundle(str(bundle)).get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
-    report_path=bundle/'conversion-report.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
-    if not report_path.exists(): return errors+['WORKFLOW_ARTIFACT_MISSING']
-    report=json.loads(report_path.read_text())
-    if not request_path.exists(): errors.append('HOST_REVIEW_REQUEST_MISSING')
-    else:
+    report_path=bundle/'conversion-report.json'; manifest_path=bundle/'manifest.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
+    report, report_errors=_load_workflow_json(report_path, 'WORKFLOW_REPORT_MISSING', 'WORKFLOW_REPORT_MALFORMED')
+    manifest, manifest_errors=_load_workflow_json(manifest_path, 'WORKFLOW_MANIFEST_MISSING', 'WORKFLOW_MANIFEST_MALFORMED')
+    request, request_errors=_load_workflow_json(request_path, 'HOST_REVIEW_REQUEST_MISSING', 'WORKFLOW_REQUEST_MALFORMED')
+    errors.extend(report_errors + manifest_errors + request_errors)
+    if request is not None:
         from ai_review import _schema, fingerprint
-        request=json.loads(request_path.read_text())
         if _schema('ai-review-request.schema.json',request): errors.append('WORKFLOW_REQUEST_SCHEMA_INVALID')
-        if request.get('source_sha256') != json.loads((bundle/'manifest.json').read_text()).get('source_sha256') or request.get('canonical_bundle_fingerprint') != fingerprint(bundle): errors.append('WORKFLOW_REFERENCE_ERROR')
+        if manifest is not None and (request.get('source_sha256') != manifest.get('source_sha256') or request.get('canonical_bundle_fingerprint') != fingerprint(bundle)): errors.append('WORKFLOW_REFERENCE_ERROR')
         if not set(case['required_reason_codes']) <= set(request.get('reason_codes',[])): errors.append('WORKFLOW_REASON_CODE_MISSING')
-    if report.get('ai_review_request_status') != case['expected_request_status'] or report.get('ai_review_status') != case['expected_ai_review_status'] or report.get('readable_projection_status') != case['expected_readable_projection_status']: errors.append('WORKFLOW_STATUS_MISMATCH')
+    if report is not None and (report.get('ai_review_request_status') != case['expected_request_status'] or report.get('ai_review_status') != case['expected_ai_review_status'] or report.get('readable_projection_status') != case['expected_readable_projection_status']): errors.append('WORKFLOW_STATUS_MISMATCH')
     if not readable_path.exists(): errors.append('READABLE_PROJECTION_MISSING')
     else:
         text=readable_path.read_text(encoding='utf-8')
@@ -243,7 +256,12 @@ def run_workflow_case(case, root, reruns, keep):
         router=subprocess.run([sys.executable,str(ROOT/'scripts/router.py'),str(source),'--output',str(bundle),'--source-url','https://example.test/page/index.html'],text=True,capture_output=True)
         review=subprocess.run([sys.executable,str(ROOT/'scripts/ai_review.py'),str(bundle)],text=True,capture_output=True)
         projection=subprocess.run([sys.executable,str(ROOT/'scripts/render_readable_projection.py'),str(bundle)],text=True,capture_output=True)
-        errors.extend(_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)); models.append(normalize_bundle(bundle)); fps.append(fingerprint(models[-1])); bundles.append(bundle)
+        run_errors=_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)
+        errors.extend(run_errors)
+        # Normalization reads workflow artifacts too. Preserve aggregate output
+        # when an artifact contract has already failed instead of reparsing it.
+        model={} if any(code in {'WORKFLOW_REPORT_MISSING','WORKFLOW_REPORT_MALFORMED','WORKFLOW_MANIFEST_MISSING','WORKFLOW_MANIFEST_MALFORMED','HOST_REVIEW_REQUEST_MISSING','WORKFLOW_REQUEST_MALFORMED','WORKFLOW_ARTIFACT_UNREADABLE'} for code in run_errors) else normalize_bundle(bundle)
+        models.append(model); fps.append(fingerprint(model)); bundles.append(bundle)
     if any(not semantically_equal(models[0],model) for model in models[1:]): errors.append('WORKFLOW_NONDETERMINISTIC_RERUN'); write_diff(models[0],models[1],root/'diffs',case['case_id'])
     result={'case_id':case['case_id'],'format':'workflow','workflow':case['workflow'],'status':'passed' if not errors else 'failed','reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'checked-in HTML fixture routed through the production Phase 5 workflow','generated_source_sha256':source_sha,'fingerprints':fps,'normalized_snapshot':models[0]}
     if result['status']!='passed' or keep: result['bundles']=[str(p) for p in bundles]
