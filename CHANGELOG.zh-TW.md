@@ -26,8 +26,9 @@
 
 ### Qualification
 
-- 完整 pytest：194 passed。
-- Unified corpus：18/18 passed。
+- RC head 完整 pytest：197 passed。
+- RC head unified corpus：pending；正式 release qualification 前必須在此 release-candidate head 完成。
+- 歷史 Phase 6 evidence（pre-RC main head）：194 tests passed，unified corpus 18/18 passed。
 
 ## [尚未發布]
 

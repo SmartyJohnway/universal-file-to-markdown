@@ -26,8 +26,9 @@ This is a release candidate, not a published stable release. The published stabl
 
 ### Qualification
 
-- Full pytest: 194 passed.
-- Unified corpus: 18/18 passed.
+- RC-head full pytest: 197 passed.
+- RC-head unified corpus: pending; it must complete on this release-candidate head before release qualification.
+- Historical Phase 6 evidence on the pre-RC main head: 194 tests passed and unified corpus 18/18 passed.
 
 ## [Unreleased]
 

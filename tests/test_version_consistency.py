@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -21,3 +22,8 @@ def test_schema_versions_are_independent_from_skill_version():
     assert version != "1.0"
     assert '"const": "1.0"' in (ROOT / "schemas" / "document.schema.json").read_text(encoding="utf-8")
     assert '"const": "1.0"' in (ROOT / "schemas" / "table.schema.json").read_text(encoding="utf-8")
+
+
+def test_ai_review_request_schema_mirrors_canonical_skill_version():
+    schema = json.loads((ROOT / "schemas" / "ai-review-request.schema.json").read_text(encoding="utf-8"))
+    assert schema["properties"]["skill_version"]["const"] == current_version()

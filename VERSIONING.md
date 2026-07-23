@@ -11,6 +11,10 @@ change. Change a schema version only for a compatible-contract decision that
 requires consumers to distinguish schemas; change bundle or report versions
 only when their respective serialized contracts change.
 
+The `skill_version` `const` in `schemas/ai-review-request.schema.json` is an
+intentional mirrored constraint for the producer version. It must remain equal
+to `VERSION`; `tests/test_version_consistency.py` enforces that synchronization.
+
 Release candidates should preserve backward compatibility unless their release
 notes state otherwise. Stable-release metadata, tags, and release artifacts are
 created only by the release process after qualification.

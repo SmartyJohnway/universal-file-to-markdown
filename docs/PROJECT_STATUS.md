@@ -8,6 +8,12 @@ Target stable release: `v1.7.0`
 
 Phase 6 implementation blockers: none. Final integrated review blockers: none.
 
+RC-head full pytest qualification: 197 passed.
+
+RC-head unified 18-case corpus qualification: pending. The 18/18 result is
+historical Phase 6 evidence from the pre-RC main head and is not RC-head
+qualification.
+
 Data schema version: `1.0` (independent from the skill version)
 
 Governance model: maintainer-led
