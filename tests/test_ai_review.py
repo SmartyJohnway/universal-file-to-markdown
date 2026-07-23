@@ -40,3 +40,17 @@ def test_rejected_review_removes_stale_artifacts(tmp_path,monkeypatch):
  try: renderer.main(b,p)
  except SystemExit: pass
  assert not (b/'ai-review.json').exists() and not (b/'document-readable.md').exists()
+
+def test_deterministic_projection_restores_table_cell_links(tmp_path,monkeypatch):
+ b=bundle(tmp_path);table=json.loads((b/'tables/table-html-0001.json').read_text());table['cell_blocks']=[{'row':0,'column':0,'blocks':[{'type':'link','text':'Motor','url':'https://example.test/motor'}]}];(b/'tables/table-html-0001.json').write_text(json.dumps(table));(b/'document.md').write_text('| Motor | https://example.test/pump |\n| --- | --- |')
+ import render_readable_projection as renderer
+ monkeypatch.setattr(renderer,'validate_bundle',lambda _: {'status':'passed'})
+ before=(b/'tables/table-html-0001.json').read_bytes();renderer.main(b)
+ assert '[Motor](https://example.test/motor)' in (b/'document-readable.md').read_text();assert before==(b/'tables/table-html-0001.json').read_bytes();assert json.loads((b/'conversion-report.json').read_text())['readable_projection_status']=='deterministic_only'
+
+def test_router_cleanup_removes_stale_ai_artifacts(tmp_path):
+ import router
+ b=tmp_path/'out';b.mkdir()
+ for name in ('ai-review-request.json','ai-review.json','document-readable.md'):(b/name).write_text('stale')
+ router._clear_previous_bundle(str(b))
+ assert not any((b/name).exists() for name in ('ai-review-request.json','ai-review.json','document-readable.md'))
