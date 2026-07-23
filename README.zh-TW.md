@@ -137,7 +137,8 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 技能版本與資料 schema 版本彼此獨立：
 
 ```text
-skill_version: 1.6.0
+published_stable_version: 1.6.0
+active_development_version: 1.7.0-dev
 document/table/chunk schema_version: 1.0
 ```
 
@@ -162,7 +163,7 @@ python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
 
-GitHub Actions 會在 push 與 pull request 時執行上述檢查。發布專用檢查請參考 `RELEASING.md` 與 `RELEASE_CHECKLIST.md`。
+GitHub Actions 目前依 repository CI execution policy 採 **manual-only**；請在本機執行上述檢查或手動觸發已記錄的 workflow。發布專用檢查請參考 `RELEASING.md` 與 `RELEASE_CHECKLIST.md`。
 
 ## 專案結構
 

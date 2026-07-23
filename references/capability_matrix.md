@@ -1,4 +1,4 @@
-# v1.6 capability matrix
+# Format capability matrix
 
 Use this matrix to judge the output's granularity. A check means the converter
 emits the element or metadata deterministically; it does not promise visual
