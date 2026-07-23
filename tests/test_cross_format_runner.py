@@ -35,3 +35,19 @@ def test_malformed_table_index_is_structured_failure(tmp_path):
 def test_unsafe_table_index_asset_fails(tmp_path):
     path=tmp_path/'index.json'; path.write_text(json.dumps([{'id':'table-1','assets':{'csv':'../outside.csv'}}]))
     assert 'REFERENCE_ERROR' in _table_index_errors(path,{'table-1'})
+
+def test_baseline_update_refuses_contract_failures_without_writing(tmp_path, monkeypatch):
+    baseline=tmp_path/'baseline'; baseline.mkdir(); fingerprints=baseline/'fingerprints.json'; snapshot=baseline/'json-unicode.normalized.json'
+    fingerprints.write_bytes(b'{"json-unicode":"old"}\n'); snapshot.write_bytes(b'{"old":true}\n'); before=(fingerprints.read_bytes(),snapshot.read_bytes())
+    failed=_passing_case(); failed['status']='failed'; failed['reason_codes']=['REFERENCE_ERROR']
+    monkeypatch.setattr('run_cross_format_regression.run_case',lambda *args: failed)
+    args=type('Args',(),{'update_baseline':True,'confirm_baseline_update':True,'profile':'core','case':'json-unicode','format':None,'output':str(tmp_path/'out'),'reruns':1,'keep_bundles':False,'baseline_dir':str(baseline)})()
+    import pytest
+    with pytest.raises(SystemExit): main(args)
+    assert (fingerprints.read_bytes(),snapshot.read_bytes()) == before
+
+def test_non_update_baseline_drift_fails_without_writing(tmp_path, monkeypatch):
+    baseline=tmp_path/'baseline'; baseline.mkdir(); path=baseline/'fingerprints.json'; path.write_bytes(b'{"json-unicode":"old"}\n'); before=path.read_bytes()
+    monkeypatch.setattr('run_cross_format_regression.run_case',lambda *args: _passing_case())
+    args=type('Args',(),{'update_baseline':False,'confirm_baseline_update':False,'profile':'core','case':'json-unicode','format':None,'output':str(tmp_path/'out'),'reruns':1,'keep_bundles':False,'baseline_dir':str(baseline)})()
+    assert main(args)==1 and path.read_bytes()==before
