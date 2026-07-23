@@ -32,6 +32,7 @@ import shutil
 import sys
 import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -49,7 +50,9 @@ from chunker import build_chunks
 from table_export import export_tables
 from table_model import normalize_tables
 
-SKILL_VERSION = "1.7.0-dev"
+SKILL_VERSION = (Path(__file__).resolve().parents[1] / "VERSION").read_text(
+    encoding="utf-8"
+).strip()
 _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
     "conversion-report.json", "_pandoc_tmp.md", "ai-review-request.json", "ai-review.json", "document-readable.md",

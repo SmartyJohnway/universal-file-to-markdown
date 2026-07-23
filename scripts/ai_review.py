@@ -1,6 +1,7 @@
 """Deterministic, offline contracts for host supplied readable projections."""
 import hashlib,json,re
 from pathlib import Path
+SKILL_VERSION=(Path(__file__).resolve().parents[1]/'VERSION').read_text(encoding='utf-8').strip()
 REQUEST_SCHEMA_VERSION="1.0"; MAX_TARGET_CHARS=12000; MAX_REQUEST_CHARS=100000
 ALLOWED_OPERATIONS={"improve_heading_readability","render_table_cell_links","render_table_cell_lists","reduce_duplicate_visual_labels","add_non-factual_section_spacing","annotate_uncertain_structure"}; DECISIONS={"apply_projection","no_change","needs_human_review","reject_target"}
 TOKEN_RE=re.compile(r"https?://[^\s)\]>]+|\b\d{4}-\d{2}-\d{2}\b|\b\d{2,3}年\d{1,2}月\d{1,2}日|\btable-[A-Za-z0-9._-]+\b|\$[\d,]+(?:\.\d+)?|\b\d+(?:\.\d+)?%|\b\d+(?:\.\d+)?\b")
@@ -57,7 +58,7 @@ def prepare_request(bundle):
   for i,x in enumerate([x for x in load(b/'document.json').get('elements',[]) if x.get('text') or x.get('content')],1):
    if f'ocr-element-{i:04d}' in ids:
     t={'target_type':'element_range','target_id':f'ocr-element-{i:04d}','reason_codes':[r for r in e['reason_codes'] if r.startswith('OCR_')],'source_locator':x.get('source_locator',{}),'element_ids':[x.get('id',f'element-{i}')],'heading_path':[],'canonical':{'text':x.get('text') or x.get('content')},'faithful_markdown':x.get('text') or x.get('content')};_bound(t,tr);ts.append(t)
- m=load(b/'manifest.json');r={'schema_version':'1.0','request_id':'ai-review-request-'+m['source_sha256'][:16],'source_sha256':m['source_sha256'],'skill_version':'1.7.0-dev','canonical_bundle_fingerprint':fingerprint(b),'review_scope':'readable_projection_only','instructions':{'preserve_facts':True,'preserve_numbers':True,'preserve_urls':True,'preserve_table_ids':True,'preserve_source_order':True,'do_not_modify_canonical':True},'reason_codes':e['reason_codes'],'targets':ts,'allowed_operations':sorted(ALLOWED_OPERATIONS),'prohibited_operations':['invent_content','remove_source_content','change_numbers','change_dates','change_urls','change table geometry','merge unrelated source sections','rewrite canonical JSON','change provenance'],'truncation':tr}
+ m=load(b/'manifest.json');r={'schema_version':'1.0','request_id':'ai-review-request-'+m['source_sha256'][:16],'source_sha256':m['source_sha256'],'skill_version':SKILL_VERSION,'canonical_bundle_fingerprint':fingerprint(b),'review_scope':'readable_projection_only','instructions':{'preserve_facts':True,'preserve_numbers':True,'preserve_urls':True,'preserve_table_ids':True,'preserve_source_order':True,'do_not_modify_canonical':True},'reason_codes':e['reason_codes'],'targets':ts,'allowed_operations':sorted(ALLOWED_OPERATIONS),'prohibited_operations':['invent_content','remove_source_content','change_numbers','change_dates','change_urls','change table geometry','merge unrelated source sections','rewrite canonical JSON','change provenance'],'truncation':tr}
  errors=_schema('ai-review-request.schema.json',r)
  if len(stable_json(r))>MAX_REQUEST_CHARS:errors.append('AI_REVIEW_CONTENT_TOO_LARGE')
  if errors:raise ValueError('; '.join(errors))

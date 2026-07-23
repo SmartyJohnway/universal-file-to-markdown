@@ -6,6 +6,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
 from run_cross_format_regression import _workflow_errors, load_workflow_cases
 
+ROOT = Path(__file__).parents[1]
+SKILL_VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+
 
 def _case():
     return load_workflow_cases()[0]
@@ -25,7 +28,7 @@ def _bundle(tmp_path, *, readable=True, request=True, report=True, manifest=True
         (tmp_path / 'conversion-report.json').write_text(json.dumps(report_payload))
     if request:
         values = {'schema_version': '1.0', 'request_id': 'ai-review-request-' + 'a' * 16, 'source_sha256': 'a' * 64,
-                  'skill_version': '1.7.0-dev', 'canonical_bundle_fingerprint': 'wrong', 'review_scope': 'readable_projection_only',
+                  'skill_version': SKILL_VERSION, 'canonical_bundle_fingerprint': 'wrong', 'review_scope': 'readable_projection_only',
                   'instructions': {'preserve_facts': True, 'preserve_numbers': True, 'preserve_urls': True, 'preserve_table_ids': True, 'preserve_source_order': True, 'do_not_modify_canonical': True},
                   'reason_codes': ['HTML_MERGED_TABLE_COMPLEX'], 'targets': [], 'allowed_operations': [], 'prohibited_operations': [], 'truncation': []}
         values.update(request_values or {})
