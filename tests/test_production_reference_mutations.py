@@ -4,6 +4,8 @@ import shutil
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parents[1] / "scripts"))
 import openpyxl
 import router
@@ -34,6 +36,11 @@ def _reference_failure(bundle):
     errors, _ = assert_contract(_case(), bundle, 0)
     assert "REFERENCE_ERROR" in errors
 
+def _malformed_failure(bundle):
+    assert "TABLE_INDEX_MALFORMED" in validate_bundle(str(bundle))["errors"]
+    errors, _ = assert_contract(_case(), bundle, 0)
+    assert "TABLE_INDEX_MALFORMED" in errors
+
 def test_production_bundle_reference_mutation_matrix(tmp_path):
     valid = _bundle(tmp_path)
     # Each copy receives exactly one reference-category mutation.
@@ -47,4 +54,15 @@ def test_production_table_index_assets_and_malformed_shapes(tmp_path):
     for name, replacement in (("missing", "nope.csv"), ("traversal", "../outside.csv"), ("absolute", "/tmp/outside.csv"), ("nonstring", 7)):
         bundle = _mutated(tmp_path, valid, name); index = _json(bundle / "tables/index.json"); index[0]["assets"]["csv"] = replacement; _write(bundle / "tables/index.json", index); _reference_failure(bundle)
     for name, content in (("invalid", "{"), ("shape", json.dumps({})), ("entry", json.dumps([7]))):
-        bundle = _mutated(tmp_path, valid, name); (bundle / "tables/index.json").write_text(content); assert "TABLE_INDEX_MALFORMED" in validate_bundle(str(bundle))["errors"]
+        bundle = _mutated(tmp_path, valid, name); (bundle / "tables/index.json").write_text(content); _malformed_failure(bundle)
+
+def test_production_table_index_symlink_escape_is_rejected(tmp_path):
+    valid = _bundle(tmp_path); bundle = _mutated(tmp_path, valid, "symlink")
+    outside = tmp_path / "outside.csv"; outside.write_text("outside", encoding="utf-8")
+    link = bundle / "tables" / "escape.csv"
+    try:
+        link.symlink_to(outside)
+    except OSError as exc:
+        pytest.skip(f"symlinks unavailable on this platform: {exc}")
+    index = _json(bundle / "tables/index.json"); index[0]["assets"]["csv"] = link.name; _write(bundle / "tables/index.json", index)
+    _reference_failure(bundle)

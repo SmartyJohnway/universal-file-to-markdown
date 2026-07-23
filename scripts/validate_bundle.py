@@ -180,10 +180,14 @@ def validate_bundle(bundle_dir: str) -> dict:
             if not isinstance(assets, dict):
                 errors.append("TABLE_INDEX_MALFORMED")
                 assets = {}
+            table_root = Path(bundle_dir, "tables").resolve()
             for asset in assets.values():
-                table_root = os.path.abspath(os.path.join(bundle_dir, "tables"))
-                target = os.path.abspath(os.path.join(table_root, asset)) if isinstance(asset, str) else ""
-                if not target.startswith(table_root + os.sep) or not os.path.isfile(target):
+                target = (table_root / asset).resolve(strict=False) if isinstance(asset, str) else None
+                try:
+                    contained = target is not None and target.relative_to(table_root)
+                except ValueError:
+                    contained = None
+                if contained is None or target is None or not target.is_file():
                     errors.append(f"missing table asset: {asset}")
             table_json = os.path.join(bundle_dir, "tables", f"{table_id}.json")
             if os.path.isfile(table_json):
@@ -430,4 +434,3 @@ if __name__ == "__main__":
     result = validate_bundle(args.bundle)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "passed" else 1)
-
