@@ -74,3 +74,12 @@ def test_required_ancestor_types_distinguishes_grouped_table(tmp_path, monkeypat
     grouped=[{'id':'slide','type':'slide','source_locator':{'format':'pptx'}},{'id':'group','parent_id':'slide','type':'group','source_locator':{'format':'pptx'}},{'id':'table','parent_id':'group','type':'table','source_locator':{'format':'pptx'}}]
     (tmp_path/'document.json').write_text(json.dumps({'elements':grouped})); assert not assert_contract(case,tmp_path,0)[0]
     grouped[-1]['parent_id']='slide'; (tmp_path/'document.json').write_text(json.dumps({'elements':grouped})); assert 'ANCESTOR_SEMANTIC_MISSING' in assert_contract(case,tmp_path,0)[0]
+
+def test_ancestor_cycle_is_a_structured_reference_error(tmp_path, monkeypatch):
+    import validate_bundle; monkeypatch.setattr(validate_bundle,'validate_bundle',lambda _: {'status':'passed'})
+    (tmp_path/'conversion-report.json').write_text(json.dumps({'status':'passed','engine':'python-pptx_custom','bundle_validation':{'status':'passed'},'warnings':[]})); (tmp_path/'chunks.jsonl').write_text('')
+    case=_semantic_case(required_element_types=['table'], required_element_ancestor_types={'table':['group']})
+    cyclic=[{'id':'group','parent_id':'table','type':'group','source_locator':{'format':'pptx'}},{'id':'table','parent_id':'group','type':'table','source_locator':{'format':'pptx'}}]
+    (tmp_path/'document.json').write_text(json.dumps({'elements':cyclic}))
+    errors,_=assert_contract(case,tmp_path,0)
+    assert 'REFERENCE_ERROR' in errors and 'ANCESTOR_SEMANTIC_MISSING' in errors

@@ -20,8 +20,11 @@ def load_cases(path=MANIFEST):
         assert case['determinism'] == {'normalized_reruns_must_match':True}
         patterns=case.get('required_list_markdown_patterns',[])
         assert isinstance(patterns,list) and all(isinstance(pattern,str) and pattern for pattern in patterns)
+        for pattern in patterns:
+            try: re.compile(pattern)
+            except re.error as exc: raise AssertionError(f'invalid required_list_markdown_patterns regex: {exc}')
         ancestors=case.get('required_element_ancestor_types',{})
-        assert isinstance(ancestors,dict) and all(isinstance(key,str) and isinstance(value,list) and value for key,value in ancestors.items())
+        assert isinstance(ancestors,dict) and all(isinstance(key,str) and isinstance(value,list) and value and all(isinstance(ancestor,str) and ancestor for ancestor in value) for key,value in ancestors.items())
     return data['cases']
 def generate(name, directory):
     directory.mkdir(parents=True,exist_ok=True)
@@ -110,11 +113,16 @@ def assert_contract(case,bundle,router_rc):
     for element_type, required_ancestors in case.get('required_element_ancestor_types',{}).items():
         matches=[element for element in elements if element.get('type') == element_type]
         def ancestor_types(element):
-            result=[]; parent=by_id.get(element.get('parent_id'))
+            result=[]; visited={element.get('id')}; parent=by_id.get(element.get('parent_id')); cycle=False
             while parent:
-                result.append(parent.get('type')); parent=by_id.get(parent.get('parent_id'))
-            return result
-        if not any(all(kind in ancestor_types(element) for kind in required_ancestors) for element in matches): errors.append('ANCESTOR_SEMANTIC_MISSING')
+                parent_id=parent.get('id')
+                if parent_id in visited:
+                    cycle=True; break
+                visited.add(parent_id); result.append(parent.get('type')); parent=by_id.get(parent.get('parent_id'))
+            return result, cycle
+        candidates=[ancestor_types(element) for element in matches]
+        if any(cycle for _,cycle in candidates): errors.append('REFERENCE_ERROR')
+        if not any(not cycle and all(kind in types for kind in required_ancestors) for types,cycle in candidates): errors.append('ANCESTOR_SEMANTIC_MISSING')
     for element in elements:
         locator=element.get('source_locator',{})
         if not all(field in locator for field in case['required_locator_fields']): errors.append('LOCATOR_MISSING')
