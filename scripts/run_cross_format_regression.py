@@ -212,9 +212,11 @@ def assert_contract(case,bundle,router_rc):
         if any((table.get('properties') or {}).get('candidate_id') not in accepted_ids for table in canonical_ocr): errors.append('OCR_TABLE_CONTAINMENT_FAILED')
         if ocr.get('min_accepted_tables',0) and len(canonical_ocr) < ocr['min_accepted_tables']: errors.append('OCR_TABLE_CONTAINMENT_FAILED')
     return errors, report
-def _workflow_errors(case, bundle, router_rc):
+def _workflow_errors(case, bundle, router_rc, review_rc=0, projection_rc=0):
     errors=[]
     if router_rc: errors.append('WORKFLOW_ROUTER_FAILED')
+    if review_rc: errors.append('WORKFLOW_REVIEW_REQUEST_FAILED')
+    if projection_rc: errors.append('WORKFLOW_READABLE_PROJECTION_FAILED')
     from validate_bundle import validate_bundle
     if validate_bundle(str(bundle)).get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
     report_path=bundle/'conversion-report.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
@@ -241,7 +243,7 @@ def run_workflow_case(case, root, reruns, keep):
         router=subprocess.run([sys.executable,str(ROOT/'scripts/router.py'),str(source),'--output',str(bundle),'--source-url','https://example.test/page/index.html'],text=True,capture_output=True)
         review=subprocess.run([sys.executable,str(ROOT/'scripts/ai_review.py'),str(bundle)],text=True,capture_output=True)
         projection=subprocess.run([sys.executable,str(ROOT/'scripts/render_readable_projection.py'),str(bundle)],text=True,capture_output=True)
-        errors.extend(_workflow_errors(case,bundle,router.returncode or review.returncode or projection.returncode)); models.append(normalize_bundle(bundle)); fps.append(fingerprint(models[-1])); bundles.append(bundle)
+        errors.extend(_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)); models.append(normalize_bundle(bundle)); fps.append(fingerprint(models[-1])); bundles.append(bundle)
     if any(not semantically_equal(models[0],model) for model in models[1:]): errors.append('WORKFLOW_NONDETERMINISTIC_RERUN'); write_diff(models[0],models[1],root/'diffs',case['case_id'])
     result={'case_id':case['case_id'],'format':'workflow','workflow':case['workflow'],'status':'passed' if not errors else 'failed','reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'checked-in HTML fixture routed through the production Phase 5 workflow','generated_source_sha256':source_sha,'fingerprints':fps,'normalized_snapshot':models[0]}
     if result['status']!='passed' or keep: result['bundles']=[str(p) for p in bundles]
@@ -262,8 +264,11 @@ def run_case(case, root, reruns, keep):
     return result
 def main(args):
     if args.update_baseline and not args.confirm_baseline_update: raise SystemExit('--update-baseline requires --confirm-baseline-update')
-    format_cases=[c for c in load_cases() if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and (not args.format or c['format']==args.format)]
-    workflow_cases=[c for c in load_workflow_cases() if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and not args.format]
+    all_format_cases=load_cases(); all_workflow_cases=load_workflow_cases()
+    duplicate_case_ids={c['case_id'] for c in all_format_cases} & {c['case_id'] for c in all_workflow_cases}
+    if duplicate_case_ids: raise AssertionError('duplicate case_id across format and workflow cases: '+', '.join(sorted(duplicate_case_ids)))
+    format_cases=[c for c in all_format_cases if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and (not args.format or c['format']==args.format)]
+    workflow_cases=[c for c in all_workflow_cases if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and not args.format]
     cases=format_cases+workflow_cases
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True);env=environment_manifest('pandoc-enabled' if args.profile=='optional-pandoc' else 'core-no-pandoc');(output/'environment-manifest.json').write_text(json.dumps(env,indent=2)+'\n')
     results=[run_case(c,output,args.reruns,args.keep_bundles) if 'format' in c else run_workflow_case(c,output,args.reruns,args.keep_bundles) for c in cases]
@@ -292,7 +297,9 @@ def main(args):
         for result in results: (baseline_dir/(result['case_id']+'.normalized.json')).write_text(json.dumps(result['normalized_snapshot'],ensure_ascii=False,indent=2)+'\n')
     counts=Counter(r['status'] for r in results); formats=defaultdict(lambda:Counter())
     for r in results: formats[r['format']][r['status']]+=1
-    summary={'schema_version':'1.0','task':'V1.7.0-DEV-PHASE-6-REPRODUCIBLE-CROSS-FORMAT-REGRESSION','profile':args.profile,'environment_profile':env['profile'],'format_case_count':len(format_cases),'workflow_case_count':len(workflow_cases),'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING','TABLE_INDEX_MALFORMED')) for r in results),'rerun_mismatches':sum('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results),'baseline_mismatches':len(baseline_mismatches),'workflow_failures':sum(r.get('format')=='workflow' and r['status']=='failed' for r in results),'normalized_determinism_status':'passed' if not any('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results) else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
+    def has_rerun_mismatch(result): return bool({'CROSS_FORMAT_NONDETERMINISTIC_RERUN','WORKFLOW_NONDETERMINISTIC_RERUN'} & set(result.get('reason_codes',[])))
+    rerun_mismatches=sum(has_rerun_mismatch(r) for r in results)
+    summary={'schema_version':'1.0','task':'V1.7.0-DEV-PHASE-6-REPRODUCIBLE-CROSS-FORMAT-REGRESSION','profile':args.profile,'environment_profile':env['profile'],'format_case_count':len(format_cases),'workflow_case_count':len(workflow_cases),'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING','TABLE_INDEX_MALFORMED')) for r in results),'rerun_mismatches':rerun_mismatches,'baseline_mismatches':len(baseline_mismatches),'workflow_failures':sum(r.get('format')=='workflow' and r['status']=='failed' for r in results),'normalized_determinism_status':'passed' if not rerun_mismatches else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
     public_results=[{k:v for k,v in result.items() if k!='normalized_snapshot'} for result in results]
     summary['cases']=public_results
     (output/'cross-format-regression-cases.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in public_results));(output/'artifact-fingerprints.json').write_text(json.dumps({r['case_id']:r.get('fingerprints',[]) for r in results},indent=2)+'\n');(output/'cross-format-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2));return 1 if counts['failed'] else 0

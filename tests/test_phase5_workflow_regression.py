@@ -72,3 +72,17 @@ def test_semantic_rerun_mismatch_is_structured(tmp_path, monkeypatch):
     result = runner.run_workflow_case(_case(), tmp_path, 2, False)
     assert result['status'] == 'failed'
     assert result['reason_codes'] == ['WORKFLOW_NONDETERMINISTIC_RERUN']
+
+
+def test_review_step_failure_has_its_own_reason(tmp_path, monkeypatch):
+    _bundle(tmp_path)
+    monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
+    assert 'WORKFLOW_REVIEW_REQUEST_FAILED' in _workflow_errors(_case(), tmp_path, 0, 1, 0)
+    assert 'WORKFLOW_ROUTER_FAILED' not in _workflow_errors(_case(), tmp_path, 0, 1, 0)
+
+
+def test_projection_step_failure_has_its_own_reason(tmp_path, monkeypatch):
+    _bundle(tmp_path)
+    monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
+    assert 'WORKFLOW_READABLE_PROJECTION_FAILED' in _workflow_errors(_case(), tmp_path, 0, 0, 1)
+    assert 'WORKFLOW_ROUTER_FAILED' not in _workflow_errors(_case(), tmp_path, 0, 0, 1)
