@@ -70,7 +70,10 @@ conversion-report.json   引擎細節、警告與 bundle 驗證結果
 
 ## 安裝
 
-建議使用 Python 3.10 以上版本。
+目前支援 Python 3.10–3.12。完整 OCR 與跨格式回歸測試主要以 Python 3.11
+驗證。由於宣告使用的 `rapidocr-onnxruntime` 目前沒有適用於 Python 3.13 的
+相容版本，因此暫不支援 Python 3.13。OCR 需要原生 `libGL.so.1` 執行階段；使用
+`pytesseract` fallback 時需安裝 Tesseract binary。Pandoc 仍為選用工具。
 
 ```bash
 python -m venv .venv

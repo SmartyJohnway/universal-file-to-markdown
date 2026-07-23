@@ -111,6 +111,18 @@ def test_workflow_rerun_mismatch_is_reflected_in_summary(tmp_path, monkeypatch):
     assert summary['workflow_failures']==1 and summary['validation_status']=='failed'
 
 
+def test_workflow_artifact_failure_writes_aggregate_summary(tmp_path, monkeypatch):
+    failed={'case_id':'workflow','format':'workflow','status':'failed','reason_codes':['WORKFLOW_REPORT_MALFORMED'],'fingerprints':[{'bundle_fingerprint':'new'}],'normalized_snapshot':{}}
+    monkeypatch.setattr('run_cross_format_regression.load_cases', lambda: [])
+    monkeypatch.setattr('run_cross_format_regression.load_workflow_cases', lambda: [{'case_id':'workflow','profile':'core'}])
+    monkeypatch.setattr('run_cross_format_regression.run_workflow_case', lambda *args: failed)
+    args=type('Args',(),{'update_baseline':False,'confirm_baseline_update':False,'profile':'core','case':None,'format':None,'output':str(tmp_path/'out'),'reruns':1,'keep_bundles':False,'baseline_dir':str(tmp_path/'baseline')})()
+    assert main(args)==1
+    summary=json.loads((tmp_path/'out'/'cross-format-regression-summary.json').read_text())
+    assert summary['workflow_failures']==1 and summary['validation_status']=='failed'
+    assert summary['cases'][0]['reason_codes'] == ['WORKFLOW_REPORT_MALFORMED']
+
+
 def test_cross_type_case_id_collision_is_rejected(tmp_path, monkeypatch):
     monkeypatch.setattr('run_cross_format_regression.load_cases', lambda: [{'case_id':'same','profile':'core','format':'json'}])
     monkeypatch.setattr('run_cross_format_regression.load_workflow_cases', lambda: [{'case_id':'same','profile':'core'}])

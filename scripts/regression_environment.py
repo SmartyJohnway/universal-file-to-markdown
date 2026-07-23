@@ -15,7 +15,7 @@ def environment_manifest(profile="core-no-pandoc"):
             try: importlib.import_module(module); imported="passed"
             except Exception as exc: imported="failed:"+type(exc).__name__
         except importlib.metadata.PackageNotFoundError: installed=None; imported="failed"; satisfied=False
-        status="functional_with_version_caveat" if name == "rapidocr-onnxruntime" and installed == "1.2.3" else "declared" if satisfied else "unavailable"
+        status="declared" if satisfied else "unavailable"
         dependencies[name]={"declared":declared,"installed":installed,"requirement_satisfied":satisfied,"import_status":imported,"status":status}
     result={"schema_version":"1.0","python":{"version":platform.python_version(),"implementation":platform.python_implementation()},"platform":{"system":platform.system(),"machine":platform.machine()},"profile":profile,"dependencies":dependencies,"system_tools":{name:{"available":bool(shutil.which(name))} for name in ("pandoc","tesseract")}}
     result["system_tools"]["libGL.so.1"]={"available":bool(shutil.which("ldconfig")) and "libGL.so.1" in __import__("subprocess").run(["ldconfig","-p"],capture_output=True,text=True).stdout}

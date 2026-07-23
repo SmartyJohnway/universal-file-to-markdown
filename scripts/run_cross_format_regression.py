@@ -21,7 +21,7 @@ def resolve_ocr_font(image_font, size=72, candidates=OCR_FONT_CANDIDATES):
             return image_font.truetype(str(candidate), size)
     return image_font.load_default(size=size)
 def load_cases(path=MANIFEST):
-    data=json.loads(Path(path).read_text()); seen=set()
+    data=json.loads(Path(path).read_text(encoding='utf-8')); seen=set()
     for case in data['cases']:
         assert case['case_id'] not in seen, 'duplicate case_id'; seen.add(case['case_id'])
         assert case['format'] in FORMATS and case['profile'] in {'core','optional-pandoc'}
@@ -46,7 +46,7 @@ def load_cases(path=MANIFEST):
         assert all(isinstance(ocr.get(key,0),int) and ocr.get(key,0) >= 0 for key in ('min_accepted_tables','min_rejected_tables'))
     return data['cases']
 def load_workflow_cases(path=MANIFEST):
-    data=json.loads(Path(path).read_text()); seen=set()
+    data=json.loads(Path(path).read_text(encoding='utf-8')); seen=set()
     for case in data.get('workflow_cases',[]):
         assert case['case_id'] not in seen, 'duplicate workflow case_id'; seen.add(case['case_id'])
         assert case['profile'] in {'core','optional-pandoc'} and case['workflow'] == 'readable_projection_host_review'
@@ -115,7 +115,7 @@ def generate(name, directory):
     if name=='csv_big5':
         p=directory/'big5.csv';p.write_bytes('名稱,數量\n鋼管,10\n'.encode('big5'));return p
     if name=='json_unicode':
-        p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False));return p
+        p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False),encoding='utf-8');return p
 def warning_codes(report): return {w.get('code') for w in report.get('warnings',[]) if w.get('code')}
 def _safe_table_asset(tables_dir, value):
     """Resolve canonical table assets without permitting bundle traversal."""
@@ -125,7 +125,7 @@ def _safe_table_asset(tables_dir, value):
     except ValueError: return False
     return candidate.is_file()
 def _table_index_errors(index_path, table_ids):
-    try: entries=json.loads(index_path.read_text())
+    try: entries=json.loads(index_path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError): return ['TABLE_INDEX_MALFORMED']
     # Production table_export writes a list. Reject other shapes structurally,
     # rather than accidentally iterating mapping keys or crashing the runner.
@@ -137,10 +137,23 @@ def _table_index_errors(index_path, table_ids):
         assets=entry.get('assets',{})
         if not isinstance(assets,dict) or any(not _safe_table_asset(index_path.parent,path) for path in assets.values()): errors.append('REFERENCE_ERROR')
     return errors
+def _load_workflow_json(path, missing_code, malformed_code):
+    """Load a workflow object without allowing artifact corruption to abort a run."""
+    try:
+        value=json.loads(path.read_text(encoding='utf-8'))
+    except FileNotFoundError:
+        return None, [missing_code]
+    except json.JSONDecodeError:
+        return None, [malformed_code]
+    except OSError:
+        return None, ['WORKFLOW_ARTIFACT_UNREADABLE']
+    if not isinstance(value, dict):
+        return None, [malformed_code]
+    return value, []
 def assert_contract(case,bundle,router_rc):
     errors=[]
     if not (bundle/'conversion-report.json').exists() or not (bundle/'document.json').exists(): return ['ROUTER_BUNDLE_MISSING'], {}
-    report=json.loads((bundle/'conversion-report.json').read_text()); doc=json.loads((bundle/'document.json').read_text())
+    report=json.loads((bundle/'conversion-report.json').read_text(encoding='utf-8')); doc=json.loads((bundle/'document.json').read_text(encoding='utf-8'))
     if router_rc or report.get('status') not in case['expected_status']: errors.append('STATUS_MISMATCH')
     if report.get('bundle_validation',{}).get('status') != case['expected_bundle_validation']: errors.append('BUNDLE_VALIDATION_FAILED')
     from validate_bundle import validate_bundle
@@ -202,13 +215,13 @@ def assert_contract(case,bundle,router_rc):
     assets=list((bundle/'assets').rglob('*')) if (bundle/'assets').exists() else []
     asset_count=len([x for x in assets if x.is_file()])
     if asset_count<case['asset_count'].get('min',0) or asset_count>case['asset_count'].get('max',10**9): errors.append('ASSET_COUNT')
-    chunks=[json.loads(x) for x in (bundle/'chunks.jsonl').read_text().splitlines() if x] if (bundle/'chunks.jsonl').exists() else []
+    chunks=[json.loads(x) for x in (bundle/'chunks.jsonl').read_text(encoding='utf-8').splitlines() if x] if (bundle/'chunks.jsonl').exists() else []
     for chunk in chunks:
         if any(value not in idset for value in chunk.get('element_ids',[])) or any(value not in table_ids for value in chunk.get('table_ids',[])): errors.append('REFERENCE_ERROR')
     if any(len(c.get('content',''))>case['max_chunk_chars'] for c in chunks): errors.append('CHUNK_LIMIT')
     if ocr:
         accepted_ids={candidate.get('candidate_id') for candidate in report.get('details',{}).get('ocr_table_candidates',[]) if candidate.get('decision')=='accepted'}
-        canonical_ocr=[json.loads(path.read_text()) for path in tables if (json.loads(path.read_text()).get('properties') or {}).get('origin')=='ocr_table_candidate']
+        canonical_ocr=[json.loads(path.read_text(encoding='utf-8')) for path in tables if (json.loads(path.read_text(encoding='utf-8')).get('properties') or {}).get('origin')=='ocr_table_candidate']
         if any((table.get('properties') or {}).get('candidate_id') not in accepted_ids for table in canonical_ocr): errors.append('OCR_TABLE_CONTAINMENT_FAILED')
         if ocr.get('min_accepted_tables',0) and len(canonical_ocr) < ocr['min_accepted_tables']: errors.append('OCR_TABLE_CONTAINMENT_FAILED')
     return errors, report
@@ -218,18 +231,23 @@ def _workflow_errors(case, bundle, router_rc, review_rc=0, projection_rc=0):
     if review_rc: errors.append('WORKFLOW_REVIEW_REQUEST_FAILED')
     if projection_rc: errors.append('WORKFLOW_READABLE_PROJECTION_FAILED')
     from validate_bundle import validate_bundle
-    if validate_bundle(str(bundle)).get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
-    report_path=bundle/'conversion-report.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
-    if not report_path.exists(): return errors+['WORKFLOW_ARTIFACT_MISSING']
-    report=json.loads(report_path.read_text())
-    if not request_path.exists(): errors.append('HOST_REVIEW_REQUEST_MISSING')
+    try:
+        validation=validate_bundle(str(bundle))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        errors.append('BUNDLE_VALIDATION_FAILED')
     else:
+        if validation.get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
+    report_path=bundle/'conversion-report.json'; manifest_path=bundle/'manifest.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
+    report, report_errors=_load_workflow_json(report_path, 'WORKFLOW_REPORT_MISSING', 'WORKFLOW_REPORT_MALFORMED')
+    manifest, manifest_errors=_load_workflow_json(manifest_path, 'WORKFLOW_MANIFEST_MISSING', 'WORKFLOW_MANIFEST_MALFORMED')
+    request, request_errors=_load_workflow_json(request_path, 'HOST_REVIEW_REQUEST_MISSING', 'WORKFLOW_REQUEST_MALFORMED')
+    errors.extend(report_errors + manifest_errors + request_errors)
+    if request is not None:
         from ai_review import _schema, fingerprint
-        request=json.loads(request_path.read_text())
         if _schema('ai-review-request.schema.json',request): errors.append('WORKFLOW_REQUEST_SCHEMA_INVALID')
-        if request.get('source_sha256') != json.loads((bundle/'manifest.json').read_text()).get('source_sha256') or request.get('canonical_bundle_fingerprint') != fingerprint(bundle): errors.append('WORKFLOW_REFERENCE_ERROR')
+        if manifest is not None and (request.get('source_sha256') != manifest.get('source_sha256') or request.get('canonical_bundle_fingerprint') != fingerprint(bundle)): errors.append('WORKFLOW_REFERENCE_ERROR')
         if not set(case['required_reason_codes']) <= set(request.get('reason_codes',[])): errors.append('WORKFLOW_REASON_CODE_MISSING')
-    if report.get('ai_review_request_status') != case['expected_request_status'] or report.get('ai_review_status') != case['expected_ai_review_status'] or report.get('readable_projection_status') != case['expected_readable_projection_status']: errors.append('WORKFLOW_STATUS_MISMATCH')
+    if report is not None and (report.get('ai_review_request_status') != case['expected_request_status'] or report.get('ai_review_status') != case['expected_ai_review_status'] or report.get('readable_projection_status') != case['expected_readable_projection_status']): errors.append('WORKFLOW_STATUS_MISMATCH')
     if not readable_path.exists(): errors.append('READABLE_PROJECTION_MISSING')
     else:
         text=readable_path.read_text(encoding='utf-8')
@@ -243,7 +261,12 @@ def run_workflow_case(case, root, reruns, keep):
         router=subprocess.run([sys.executable,str(ROOT/'scripts/router.py'),str(source),'--output',str(bundle),'--source-url','https://example.test/page/index.html'],text=True,capture_output=True)
         review=subprocess.run([sys.executable,str(ROOT/'scripts/ai_review.py'),str(bundle)],text=True,capture_output=True)
         projection=subprocess.run([sys.executable,str(ROOT/'scripts/render_readable_projection.py'),str(bundle)],text=True,capture_output=True)
-        errors.extend(_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)); models.append(normalize_bundle(bundle)); fps.append(fingerprint(models[-1])); bundles.append(bundle)
+        run_errors=_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)
+        errors.extend(run_errors)
+        # Normalization reads workflow artifacts too. Preserve aggregate output
+        # when an artifact contract has already failed instead of reparsing it.
+        model={} if any(code in {'WORKFLOW_REPORT_MISSING','WORKFLOW_REPORT_MALFORMED','WORKFLOW_MANIFEST_MISSING','WORKFLOW_MANIFEST_MALFORMED','HOST_REVIEW_REQUEST_MISSING','WORKFLOW_REQUEST_MALFORMED','WORKFLOW_ARTIFACT_UNREADABLE'} for code in run_errors) else normalize_bundle(bundle)
+        models.append(model); fps.append(fingerprint(model)); bundles.append(bundle)
     if any(not semantically_equal(models[0],model) for model in models[1:]): errors.append('WORKFLOW_NONDETERMINISTIC_RERUN'); write_diff(models[0],models[1],root/'diffs',case['case_id'])
     result={'case_id':case['case_id'],'format':'workflow','workflow':case['workflow'],'status':'passed' if not errors else 'failed','reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'checked-in HTML fixture routed through the production Phase 5 workflow','generated_source_sha256':source_sha,'fingerprints':fps,'normalized_snapshot':models[0]}
     if result['status']!='passed' or keep: result['bundles']=[str(p) for p in bundles]
@@ -271,8 +294,13 @@ def main(args):
     workflow_cases=[c for c in all_workflow_cases if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and not args.format]
     cases=format_cases+workflow_cases
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True);env=environment_manifest('pandoc-enabled' if args.profile=='optional-pandoc' else 'core-no-pandoc');(output/'environment-manifest.json').write_text(json.dumps(env,indent=2)+'\n')
-    results=[run_case(c,output,args.reruns,args.keep_bundles) if 'format' in c else run_workflow_case(c,output,args.reruns,args.keep_bundles) for c in cases]
-    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
+    results=[]
+    for case in cases:
+        print(f"[cross-format] starting {case['case_id']}", file=sys.stderr, flush=True)
+        result=run_case(case,output,args.reruns,args.keep_bundles) if 'format' in case else run_workflow_case(case,output,args.reruns,args.keep_bundles)
+        results.append(result)
+        print(f"[cross-format] finished {case['case_id']}: {result['status']}", file=sys.stderr, flush=True)
+    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text(encoding='utf-8')) if baseline_path.exists() else {}
     baseline_mismatches=[]
     for result in results:
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
@@ -282,11 +310,11 @@ def main(args):
         # A fingerprint can differ solely because an OCR confidence moved within
         # the declared tolerance; snapshots make that distinction auditable.
         if baseline_changed and snapshot.exists():
-            baseline_changed=not semantically_equal(json.loads(snapshot.read_text()),result['normalized_snapshot'])
+            baseline_changed=not semantically_equal(json.loads(snapshot.read_text(encoding='utf-8')),result['normalized_snapshot'])
         if result['status']=='passed' and baseline_changed:
             result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
             if not args.update_baseline: result['status']='failed'
-            if snapshot.exists(): write_diff(json.loads(snapshot.read_text()),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
+            if snapshot.exists(): write_diff(json.loads(snapshot.read_text(encoding='utf-8')),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
     if args.update_baseline:
         if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass contract validation')
         updated={r['case_id']:r['fingerprints'][0]['bundle_fingerprint'] for r in results}
