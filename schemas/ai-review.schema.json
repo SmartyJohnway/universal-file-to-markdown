@@ -1,1 +1,138 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["schema_version","request_id","source_sha256","canonical_bundle_fingerprint","review_status","target_reviews"],"properties":{"schema_version":{"const":"1.0"},"target_reviews":{"type":"array"}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "source_sha256",
+    "canonical_bundle_fingerprint",
+    "reviewer",
+    "review_status",
+    "target_reviews"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^ai-review-request-[0-9a-f]{16}$"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "canonical_bundle_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "type": {
+          "const": "host_ai"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "review_status": {
+      "const": "completed"
+    },
+    "target_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_id",
+          "decision",
+          "confidence",
+          "operations",
+          "notes",
+          "uncertainties"
+        ],
+        "properties": {
+          "target_id": {
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "apply_projection",
+              "no_change",
+              "needs_human_review",
+              "reject_target"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "readable_markdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000
+          },
+          "notes": {
+            "type": "array"
+          },
+          "uncertainties": {
+            "type": "array"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "decision": {
+                  "const": "apply_projection"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "readable_markdown"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "readable_markdown"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

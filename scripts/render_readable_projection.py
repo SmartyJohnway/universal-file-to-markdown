@@ -28,8 +28,8 @@ def main(bundle, review_file=None):
  if review_file:
   result=validate_review(str(b),review_file)
   if result['status']!='passed':
-   report=load(b/'conversion-report.json');report['ai_review_status']='rejected';report['readable_projection_status']='not_generated';(b/'conversion-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');(b/'document-readable.md').unlink(missing_ok=True); raise SystemExit('review rejected: '+','.join(result['errors']))
-  review={x['target_id']:x for x in result['review'].get('target_reviews',[])}
+   report=load(b/'conversion-report.json');report['ai_review_status']='rejected';report['readable_projection_status']='not_generated';(b/'conversion-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');(b/'document-readable.md').unlink(missing_ok=True);(b/'ai-review.json').unlink(missing_ok=True); raise SystemExit('review rejected: '+','.join(result['errors']))
+  (b/'ai-review.json').write_text(json.dumps(result['review'],ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); review={x['target_id']:x for x in result['review'].get('target_reviews',[])}
  text=(b/'document.md').read_text(encoding='utf-8')
  for p in sorted((b/'tables').glob('*.json')) if (b/'tables').exists() else []:
   if p.name=='index.json':continue
