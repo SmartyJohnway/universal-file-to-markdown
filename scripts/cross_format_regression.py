@@ -77,6 +77,23 @@ def diff_models(before, after, excerpt_limit=240):
     changes=[]
     def add(kind, path, old=None, new=None):
         changes.append({"category":kind,"path":path,"before":str(old)[:excerpt_limit],"after":str(new)[:excerpt_limit]})
+    old_elements={item.get('id'):item for item in before.get('document',{}).get('elements',[]) if item.get('id')}
+    new_elements={item.get('id'):item for item in after.get('document',{}).get('elements',[]) if item.get('id')}
+    for ident in sorted(new_elements.keys()-old_elements.keys()): add('element_added','document.elements.'+ident,None,new_elements[ident])
+    for ident in sorted(old_elements.keys()-new_elements.keys()): add('element_removed','document.elements.'+ident,old_elements[ident],None)
+    for ident in sorted(old_elements.keys()&new_elements.keys()):
+        old,new=old_elements[ident],new_elements[ident]
+        if old.get('type') != new.get('type'): add('element_type_changed','document.elements.'+ident+'.type',old.get('type'),new.get('type'))
+        if old.get('source_locator') != new.get('source_locator'): add('locator_changed','document.elements.'+ident+'.source_locator',old.get('source_locator'),new.get('source_locator'))
+        if old.get('heading_path') != new.get('heading_path'): add('heading_path_changed','document.elements.'+ident+'.heading_path',old.get('heading_path'),new.get('heading_path'))
+        if old.get('content') != new.get('content'): add('content_changed','document.elements.'+ident+'.content',old.get('content'),new.get('content'))
+    old_tables={item.get('id'):item for item in before.get('tables',[]) if item.get('id')}; new_tables={item.get('id'):item for item in after.get('tables',[]) if item.get('id')}
+    for ident in sorted(new_tables.keys()-old_tables.keys()): add('table_added','tables.'+ident,None,new_tables[ident])
+    for ident in sorted(old_tables.keys()-new_tables.keys()): add('table_removed','tables.'+ident,old_tables[ident],None)
+    for ident in sorted(old_tables.keys()&new_tables.keys()):
+        old,new=old_tables[ident],new_tables[ident]
+        if (old.get('rows'),old.get('cols')) != (new.get('rows'),new.get('cols')): add('table_dimensions_changed','tables.'+ident,(old.get('rows'),old.get('cols')),(new.get('rows'),new.get('cols')))
+        if old.get('merged_cells') != new.get('merged_cells'): add('merge_changed','tables.'+ident+'.merged_cells',old.get('merged_cells'),new.get('merged_cells'))
     for key, category in (("document", "content_changed"), ("tables", "table_cell_changed"), ("chunks", "chunk_boundary_changed"), ("assets", "asset_hash_changed"), ("ai_artifacts", "AI artifact changed")):
         if before.get(key) != after.get(key): add(category, key, before.get(key), after.get(key))
     old_report,new_report=before.get('report_contract',{}),after.get('report_contract',{})
