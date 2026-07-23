@@ -160,13 +160,34 @@ def validate_bundle(bundle_dir: str) -> dict:
     table_elements = {element.get("table_id") for element in elements if element.get("table_id")}
     index_path = os.path.join(bundle_dir, "tables", "index.json")
     if os.path.isfile(index_path):
-        for entry in _load_json(index_path):
+        try:
+            index_entries = _load_json(index_path)
+        except (OSError, json.JSONDecodeError):
+            errors.append("TABLE_INDEX_MALFORMED")
+            index_entries = []
+        if not isinstance(index_entries, list):
+            errors.append("TABLE_INDEX_MALFORMED")
+            index_entries = []
+        for entry in index_entries:
+            if not isinstance(entry, dict):
+                errors.append("TABLE_INDEX_MALFORMED")
+                continue
             table_id = entry.get("id")
             if table_id in table_ids:
                 errors.append(f"duplicate table ID in index: {table_id}")
             table_ids.add(table_id)
-            for asset in (entry.get("assets") or {}).values():
-                if not os.path.isfile(os.path.join(bundle_dir, "tables", asset)):
+            assets = entry.get("assets") or {}
+            if not isinstance(assets, dict):
+                errors.append("TABLE_INDEX_MALFORMED")
+                assets = {}
+            table_root = Path(bundle_dir, "tables").resolve()
+            for asset in assets.values():
+                target = (table_root / asset).resolve(strict=False) if isinstance(asset, str) else None
+                try:
+                    contained = target is not None and target.relative_to(table_root)
+                except ValueError:
+                    contained = None
+                if contained is None or target is None or not target.is_file():
                     errors.append(f"missing table asset: {asset}")
             table_json = os.path.join(bundle_dir, "tables", f"{table_id}.json")
             if os.path.isfile(table_json):
@@ -413,5 +434,3 @@ if __name__ == "__main__":
     result = validate_bundle(args.bundle)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "passed" else 1)
-
-

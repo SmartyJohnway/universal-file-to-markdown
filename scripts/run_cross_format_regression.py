@@ -85,7 +85,8 @@ def _table_index_errors(index_path, table_ids):
     if not isinstance(entries,list): return ['TABLE_INDEX_MALFORMED']
     errors=[]
     for entry in entries:
-        if not isinstance(entry,dict) or entry.get('id') not in table_ids: errors.append('REFERENCE_ERROR'); continue
+        if not isinstance(entry,dict): errors.append('TABLE_INDEX_MALFORMED'); continue
+        if entry.get('id') not in table_ids: errors.append('REFERENCE_ERROR'); continue
         assets=entry.get('assets',{})
         if not isinstance(assets,dict) or any(not _safe_table_asset(index_path.parent,path) for path in assets.values()): errors.append('REFERENCE_ERROR')
     return errors
