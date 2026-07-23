@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Run the declared, reproducible cross-format corpus through production router."""
-import argparse, hashlib, json, shutil, subprocess, sys, tempfile
+import argparse, hashlib, json, re, shutil, subprocess, sys, tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -18,6 +18,13 @@ def load_cases(path=MANIFEST):
             value=case[key]; assert value.get('min',0)>=0 and value.get('max', value.get('min',0)) >= value.get('min',0)
         assert case['max_chunk_chars'] <= 2000 and all(len(x)==len(set(x)) for x in (case['required_warning_codes'],case['allowed_warning_codes'],case['forbidden_warning_codes']))
         assert case['determinism'] == {'normalized_reruns_must_match':True}
+        patterns=case.get('required_list_markdown_patterns',[])
+        assert isinstance(patterns,list) and all(isinstance(pattern,str) and pattern for pattern in patterns)
+        for pattern in patterns:
+            try: re.compile(pattern)
+            except re.error as exc: raise AssertionError(f'invalid required_list_markdown_patterns regex: {exc}')
+        ancestors=case.get('required_element_ancestor_types',{})
+        assert isinstance(ancestors,dict) and all(isinstance(key,str) and isinstance(value,list) and value and all(isinstance(ancestor,str) and ancestor for ancestor in value) for key,value in ancestors.items())
     return data['cases']
 def generate(name, directory):
     directory.mkdir(parents=True,exist_ok=True)
@@ -100,6 +107,22 @@ def assert_contract(case,bundle,router_rc):
     elements=doc.get('elements',[]); ids=[e.get('id') for e in elements]
     if len(ids)!=len(set(ids)) or any(not ident for ident in ids): errors.append('ELEMENT_ID_INVALID')
     idset=set(ids)
+    by_id={element.get('id'): element for element in elements}
+    for pattern in case.get('required_list_markdown_patterns',[]):
+        if not any(element.get('type') == 'list' and re.search(pattern, element.get('content',''), re.MULTILINE) for element in elements): errors.append('LIST_SEMANTIC_MISSING')
+    for element_type, required_ancestors in case.get('required_element_ancestor_types',{}).items():
+        matches=[element for element in elements if element.get('type') == element_type]
+        def ancestor_types(element):
+            result=[]; visited={element.get('id')}; parent=by_id.get(element.get('parent_id')); cycle=False
+            while parent:
+                parent_id=parent.get('id')
+                if parent_id in visited:
+                    cycle=True; break
+                visited.add(parent_id); result.append(parent.get('type')); parent=by_id.get(parent.get('parent_id'))
+            return result, cycle
+        candidates=[ancestor_types(element) for element in matches]
+        if any(cycle for _,cycle in candidates): errors.append('REFERENCE_ERROR')
+        if not any(not cycle and all(kind in types for kind in required_ancestors) for types,cycle in candidates): errors.append('ANCESTOR_SEMANTIC_MISSING')
     for element in elements:
         locator=element.get('source_locator',{})
         if not all(field in locator for field in case['required_locator_fields']): errors.append('LOCATOR_MISSING')
