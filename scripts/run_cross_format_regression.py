@@ -231,7 +231,12 @@ def _workflow_errors(case, bundle, router_rc, review_rc=0, projection_rc=0):
     if review_rc: errors.append('WORKFLOW_REVIEW_REQUEST_FAILED')
     if projection_rc: errors.append('WORKFLOW_READABLE_PROJECTION_FAILED')
     from validate_bundle import validate_bundle
-    if validate_bundle(str(bundle)).get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
+    try:
+        validation=validate_bundle(str(bundle))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        errors.append('BUNDLE_VALIDATION_FAILED')
+    else:
+        if validation.get('status') != 'passed': errors.append('BUNDLE_VALIDATION_FAILED')
     report_path=bundle/'conversion-report.json'; manifest_path=bundle/'manifest.json'; request_path=bundle/'ai-review-request.json'; readable_path=bundle/'document-readable.md'
     report, report_errors=_load_workflow_json(report_path, 'WORKFLOW_REPORT_MISSING', 'WORKFLOW_REPORT_MALFORMED')
     manifest, manifest_errors=_load_workflow_json(manifest_path, 'WORKFLOW_MANIFEST_MISSING', 'WORKFLOW_MANIFEST_MALFORMED')

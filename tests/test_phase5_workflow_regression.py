@@ -115,3 +115,35 @@ def test_malformed_workflow_json_is_structured(tmp_path, monkeypatch, artifact, 
     monkeypatch.setattr('validate_bundle.validate_bundle', lambda _: {'status': 'passed'})
     errors = _workflow_errors(_case(), tmp_path, 0)
     assert code in errors
+
+
+@pytest.mark.parametrize(('artifact', 'code'), [
+    ('conversion-report.json', 'WORKFLOW_REPORT_MALFORMED'),
+    ('manifest.json', 'WORKFLOW_MANIFEST_MALFORMED'),
+])
+def test_real_validator_malformed_artifact_remains_structured(tmp_path, artifact, code):
+    """The production validator must not prevent workflow-specific diagnosis."""
+    _bundle(tmp_path)
+    (tmp_path / artifact).write_text('{not json')
+    errors = _workflow_errors(_case(), tmp_path, 0)
+    assert {'BUNDLE_VALIDATION_FAILED', code} <= set(errors)
+
+
+@pytest.mark.parametrize(('artifact', 'code'), [
+    ('conversion-report.json', 'WORKFLOW_REPORT_MALFORMED'),
+    ('manifest.json', 'WORKFLOW_MANIFEST_MALFORMED'),
+])
+def test_run_workflow_case_survives_real_validator_malformed_artifact(tmp_path, monkeypatch, artifact, code):
+    import run_cross_format_regression as runner
+    source = tmp_path / 'source.html'; source.write_text('<html></html>')
+    monkeypatch.setattr(runner, 'generate', lambda *_: source)
+    def fake_run(args, **kwargs):
+        if str(args[1]).endswith('router.py'):
+            bundle = Path(args[args.index('--output') + 1])
+            _bundle(bundle)
+            (bundle / artifact).write_text('{not json')
+        return type('Result', (), {'returncode': 0})()
+    monkeypatch.setattr(runner.subprocess, 'run', fake_run)
+    result = runner.run_workflow_case(_case(), tmp_path, 1, False)
+    assert result['status'] == 'failed'
+    assert {'BUNDLE_VALIDATION_FAILED', code} <= set(result['reason_codes'])
