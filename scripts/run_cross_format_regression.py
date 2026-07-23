@@ -74,15 +74,23 @@ def assert_contract(case,bundle,router_rc):
     idset=set(ids)
     for element in elements:
         locator=element.get('source_locator',{})
-        if not all(field in locator or field == 'format' for field in case['required_locator_fields']): errors.append('LOCATOR_MISSING')
+        if not all(field in locator for field in case['required_locator_fields']): errors.append('LOCATOR_MISSING')
         if element.get('parent_id') and element['parent_id'] not in idset: errors.append('REFERENCE_ERROR')
+        if any(child not in idset for child in element.get('children',element.get('child_ids',[]))): errors.append('REFERENCE_ERROR')
     tables=list((bundle/'tables').glob('*.json')) if (bundle/'tables').exists() else []; tables=[p for p in tables if p.name!='index.json']
+    table_ids={path.stem for path in tables}
+    index_path=bundle/'tables'/'index.json'
+    if index_path.exists():
+        for entry in json.loads(index_path.read_text()):
+            if entry.get('id') not in table_ids or any(not (bundle/'tables'/name).is_file() for name in entry.get('assets',{}).values()): errors.append('REFERENCE_ERROR')
     lo,hi=case['table_count'].get('min',0),case['table_count'].get('max',10**9)
     if not lo<=len(tables)<=hi: errors.append('TABLE_COUNT')
     assets=list((bundle/'assets').rglob('*')) if (bundle/'assets').exists() else []
     asset_count=len([x for x in assets if x.is_file()])
     if asset_count<case['asset_count'].get('min',0) or asset_count>case['asset_count'].get('max',10**9): errors.append('ASSET_COUNT')
     chunks=[json.loads(x) for x in (bundle/'chunks.jsonl').read_text().splitlines() if x] if (bundle/'chunks.jsonl').exists() else []
+    for chunk in chunks:
+        if any(value not in idset for value in chunk.get('element_ids',[])) or any(value not in table_ids for value in chunk.get('table_ids',[])): errors.append('REFERENCE_ERROR')
     if any(len(c.get('content',''))>case['max_chunk_chars'] for c in chunks): errors.append('CHUNK_LIMIT')
     return errors, report
 def run_case(case, root, reruns, keep):
@@ -95,7 +103,7 @@ def run_case(case, root, reruns, keep):
         process=subprocess.run(args,text=True,capture_output=True); current,report=assert_contract(case,bundle,process.returncode); errors += current; models.append(normalize_bundle(bundle));fps.append(fingerprint(models[-1]));bundles.append(bundle)
     rerun_mismatch=len(set(fp['bundle_fingerprint'] for fp in fps))>1
     if rerun_mismatch: errors.append('CROSS_FORMAT_NONDETERMINISTIC_RERUN');write_diff(models[0],models[1],root/'diffs',case['case_id'])
-    status='passed' if not errors else 'failed'; result={'case_id':case['case_id'],'format':case['format'],'status':status,'reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'programmatically generated regression source','generator_dependency':'repository test dependencies','generated_source_sha256':source_sha,'fingerprints':fps}
+    status='passed' if not errors else 'failed'; result={'case_id':case['case_id'],'format':case['format'],'status':status,'reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'programmatically generated regression source','generator_dependency':'repository test dependencies','generated_source_sha256':source_sha,'fingerprints':fps,'normalized_snapshot':models[0]}
     if status!='passed' or keep: result['bundles']=[str(p) for p in bundles]
     return result
 def main(args):
@@ -103,22 +111,28 @@ def main(args):
     cases=[c for c in load_cases() if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and (not args.format or c['format']==args.format)]
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True);env=environment_manifest('pandoc-enabled' if args.profile=='optional-pandoc' else 'core-no-pandoc');(output/'environment-manifest.json').write_text(json.dumps(env,indent=2)+'\n')
     results=[run_case(c,output,args.reruns,args.keep_bundles) for c in cases]
-    baseline_path=Path(args.baseline_dir)/'fingerprints.json'; baseline=json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
+    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
     baseline_mismatches=[]
     for result in results:
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
         expected=baseline.get(result['case_id'])
         if result['status']=='passed' and expected and expected != current:
             result['status']='failed'; result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
+            snapshot=baseline_dir/(result['case_id']+'.normalized.json')
+            if snapshot.exists(): write_diff(json.loads(snapshot.read_text()),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
     if args.update_baseline:
         if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass')
         updated={r['case_id']:r['fingerprints'][0]['bundle_fingerprint'] for r in results}
+        merged=dict(baseline); merged.update(updated)
         baseline_path.parent.mkdir(parents=True,exist_ok=True)
-        report={'old':baseline,'new':updated,'changed':[key for key in updated if baseline.get(key)!=updated[key]]}
-        (output/'baseline-update-report.json').write_text(json.dumps(report,indent=2)+'\n'); baseline_path.write_text(json.dumps(updated,indent=2)+'\n')
+        report={'old':baseline,'new':merged,'changed':[key for key in updated if baseline.get(key)!=updated[key]],'preserved':[key for key in baseline if key not in updated]}
+        (output/'baseline-update-report.json').write_text(json.dumps(report,indent=2)+'\n'); baseline_path.write_text(json.dumps(merged,indent=2)+'\n')
+        for result in results: (baseline_dir/(result['case_id']+'.normalized.json')).write_text(json.dumps(result['normalized_snapshot'],ensure_ascii=False,indent=2)+'\n')
     counts=Counter(r['status'] for r in results); formats=defaultdict(lambda:Counter())
     for r in results: formats[r['format']][r['status']]+=1
     summary={'schema_version':'1.0','task':'V1.7.0-DEV-PHASE-6-REPRODUCIBLE-CROSS-FORMAT-REGRESSION','profile':args.profile,'environment_profile':env['profile'],'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING')) for r in results),'rerun_mismatches':sum('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results),'baseline_mismatches':len(baseline_mismatches),'normalized_determinism_status':'passed' if not any('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results) else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
-    (output/'cross-format-regression-cases.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in results));(output/'artifact-fingerprints.json').write_text(json.dumps({r['case_id']:r.get('fingerprints',[]) for r in results},indent=2)+'\n');(output/'cross-format-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2));return 1 if counts['failed'] else 0
+    public_results=[{k:v for k,v in result.items() if k!='normalized_snapshot'} for result in results]
+    summary['cases']=public_results
+    (output/'cross-format-regression-cases.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in public_results));(output/'artifact-fingerprints.json').write_text(json.dumps({r['case_id']:r.get('fingerprints',[]) for r in results},indent=2)+'\n');(output/'cross-format-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2));return 1 if counts['failed'] else 0
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--profile',default='core',choices=['core','optional-pandoc']);p.add_argument('--case');p.add_argument('--format');p.add_argument('--reruns',type=int,default=2);p.add_argument('--baseline-dir',default=str(ROOT/'tests/cross_format/baselines'));p.add_argument('--update-baseline',action='store_true');p.add_argument('--confirm-baseline-update',action='store_true');p.add_argument('--keep-bundles',action='store_true');a=p.parse_args();sys.exit(main(a))
