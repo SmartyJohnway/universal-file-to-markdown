@@ -39,12 +39,21 @@ def generate(name, directory):
         from pptx import Presentation
         from pptx.util import Inches
         p=Presentation(); slide=p.slides.add_slide(p.slide_layouts[6])
-        if name=='pptx_text': slide.shapes.add_textbox(Inches(1),Inches(1),Inches(4),Inches(2)).text_frame.text='Slide title\nBullet one'
+        if name=='pptx_text':
+            from pptx.oxml.ns import qn
+            from lxml import etree
+            box=slide.shapes.add_textbox(Inches(1),Inches(1),Inches(4),Inches(2)); frame=box.text_frame
+            first=frame.paragraphs[0]; first.text='Explicit bullet'; etree.SubElement(first._p.get_or_add_pPr(),qn('a:buChar'),{'char':'•'})
+            second=frame.add_paragraph(); second.text='Explicit numbered bullet'; etree.SubElement(second._p.get_or_add_pPr(),qn('a:buAutoNum'),{'type':'arabicPeriod'})
         elif name=='pptx_picture':
             from PIL import Image
             image=directory/'pixel.png';Image.new('RGB',(4,4),'red').save(image);slide.shapes.add_picture(str(image),Inches(1),Inches(1),Inches(1),Inches(1))
         else:
             shape=slide.shapes.add_table(2,2,Inches(1),Inches(1),Inches(4),Inches(2)); shape.table.cell(0,0).text='Merged';shape.table.cell(0,0).merge(shape.table.cell(0,1));shape.table.cell(1,0).text='A';shape.table.cell(1,1).text='B'
+            if name=='pptx_grouped':
+                # Preserve the actual table XML under a group shape, matching
+                # the production converter's recursive group traversal path.
+                slide.shapes._spTree.remove(shape._element); group=slide.shapes.add_group_shape([]); group._element.append(shape._element)
         out=directory/(name+'.pptx');p.save(out);return out
     if name=='pdf_digital':
         from reportlab.pdfgen import canvas

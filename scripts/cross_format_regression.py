@@ -90,11 +90,15 @@ def diff_models(before, after, excerpt_limit=240):
     old_tables={item.get('id'):item for item in before.get('tables',[]) if item.get('id')}; new_tables={item.get('id'):item for item in after.get('tables',[]) if item.get('id')}
     for ident in sorted(new_tables.keys()-old_tables.keys()): add('table_added','tables.'+ident,None,new_tables[ident])
     for ident in sorted(old_tables.keys()-new_tables.keys()): add('table_removed','tables.'+ident,old_tables[ident],None)
+    table_specific=False
     for ident in sorted(old_tables.keys()&new_tables.keys()):
         old,new=old_tables[ident],new_tables[ident]
-        if (old.get('rows'),old.get('cols')) != (new.get('rows'),new.get('cols')): add('table_dimensions_changed','tables.'+ident,(old.get('rows'),old.get('cols')),(new.get('rows'),new.get('cols')))
-        if old.get('merged_cells') != new.get('merged_cells'): add('merge_changed','tables.'+ident+'.merged_cells',old.get('merged_cells'),new.get('merged_cells'))
-    for key, category in (("document", "content_changed"), ("tables", "table_cell_changed"), ("chunks", "chunk_boundary_changed"), ("assets", "asset_hash_changed"), ("ai_artifacts", "AI artifact changed")):
+        if old.get('dimensions') != new.get('dimensions'):
+            add('table_dimensions_changed','tables.'+ident+'.dimensions',old.get('dimensions'),new.get('dimensions')); table_specific=True
+        def merges(table): return sorted((cell.get('row'),cell.get('column'),cell.get('rowspan',1),cell.get('colspan',1)) for cell in table.get('cells',[]) if cell.get('rowspan',1)>1 or cell.get('colspan',1)>1)
+        if merges(old) != merges(new): add('merge_changed','tables.'+ident+'.cells',merges(old),merges(new)); table_specific=True
+        if old.get('cells') != new.get('cells') and not table_specific: add('table_cell_changed','tables.'+ident+'.cells',old.get('cells'),new.get('cells'))
+    for key, category in (("document", "content_changed"), ("chunks", "chunk_boundary_changed"), ("assets", "asset_hash_changed"), ("ai_artifacts", "AI artifact changed")):
         if before.get(key) != after.get(key): add(category, key, before.get(key), after.get(key))
     old_report,new_report=before.get('report_contract',{}),after.get('report_contract',{})
     if old_report.get('status') != new_report.get('status'): add('status_changed','report_contract.status',old_report.get('status'),new_report.get('status'))

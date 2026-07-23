@@ -14,6 +14,9 @@ def test_element_locator_and_heading_changes_are_classified():
     categories={item['category'] for item in diff_models(before,after)}
     assert {'element_type_changed','locator_changed','heading_path_changed','content_changed'} <= categories
 def test_table_dimension_and_merge_changes_are_classified():
-    before={'tables':[{'id':'t1','rows':1,'cols':2,'merged_cells':[]}]}; after={'tables':[{'id':'t1','rows':2,'cols':2,'merged_cells':[{'anchor':'A1'}]}]}
+    before={'tables':[{'id':'t1','dimensions':{'rows':1,'columns':2},'cells':[{'row':0,'column':0,'rowspan':1,'colspan':1}]}]}; after={'tables':[{'id':'t1','dimensions':{'rows':2,'columns':2},'cells':[{'row':0,'column':0,'rowspan':2,'colspan':1}]}]}
     categories={item['category'] for item in diff_models(before,after)}
     assert {'table_dimensions_changed','merge_changed'} <= categories
+def test_added_and_removed_entities_are_classified():
+    categories={item['category'] for item in diff_models({'document':{'elements':[{'id':'old'}]},'tables':[{'id':'old-table'}]},{'document':{'elements':[{'id':'new'}]},'tables':[{'id':'new-table'}]})}
+    assert {'element_added','element_removed','table_added','table_removed'} <= categories
