@@ -51,3 +51,26 @@ def test_non_update_baseline_drift_fails_without_writing(tmp_path, monkeypatch):
     monkeypatch.setattr('run_cross_format_regression.run_case',lambda *args: _passing_case())
     args=type('Args',(),{'update_baseline':False,'confirm_baseline_update':False,'profile':'core','case':'json-unicode','format':None,'output':str(tmp_path/'out'),'reruns':1,'keep_bundles':False,'baseline_dir':str(baseline)})()
     assert main(args)==1 and path.read_bytes()==before
+
+def _semantic_bundle(tmp_path, content, parent_type='slide'):
+    (tmp_path/'conversion-report.json').write_text(json.dumps({'status':'passed','engine':'python-pptx_custom','bundle_validation':{'status':'passed'},'warnings':[]}))
+    elements=[{'id':'slide','type':parent_type,'source_locator':{'format':'pptx'}}, {'id':'item','parent_id':'slide','type':'list','content':content,'source_locator':{'format':'pptx'}}]
+    (tmp_path/'document.json').write_text(json.dumps({'elements':elements})); (tmp_path/'chunks.jsonl').write_text('')
+
+def _semantic_case(**optional):
+    case={'expected_status':['passed'],'expected_bundle_validation':'passed','expected_engine':'python-pptx','required_warning_codes':[],'allowed_warning_codes':[],'forbidden_warning_codes':[],'required_element_types':['list'],'required_locator_fields':['format'],'table_count':{'min':0},'asset_count':{'min':0},'max_chunk_chars':2000}; case.update(optional); return case
+
+def test_list_markdown_semantics_require_each_kind(tmp_path, monkeypatch):
+    import validate_bundle; monkeypatch.setattr(validate_bundle,'validate_bundle',lambda _: {'status':'passed'})
+    case=_semantic_case(required_list_markdown_patterns=[r'^- bullet$', r'^1\. number$'])
+    _semantic_bundle(tmp_path, '- bullet\n1. number'); assert not assert_contract(case,tmp_path,0)[0]
+    _semantic_bundle(tmp_path, '- bullet'); assert 'LIST_SEMANTIC_MISSING' in assert_contract(case,tmp_path,0)[0]
+    _semantic_bundle(tmp_path, '• bullet\n1. number'); assert 'LIST_SEMANTIC_MISSING' in assert_contract(case,tmp_path,0)[0]
+
+def test_required_ancestor_types_distinguishes_grouped_table(tmp_path, monkeypatch):
+    import validate_bundle; monkeypatch.setattr(validate_bundle,'validate_bundle',lambda _: {'status':'passed'})
+    (tmp_path/'conversion-report.json').write_text(json.dumps({'status':'passed','engine':'python-pptx_custom','bundle_validation':{'status':'passed'},'warnings':[]})); (tmp_path/'chunks.jsonl').write_text('')
+    case=_semantic_case(required_element_types=['table'], required_element_ancestor_types={'table':['group','slide']})
+    grouped=[{'id':'slide','type':'slide','source_locator':{'format':'pptx'}},{'id':'group','parent_id':'slide','type':'group','source_locator':{'format':'pptx'}},{'id':'table','parent_id':'group','type':'table','source_locator':{'format':'pptx'}}]
+    (tmp_path/'document.json').write_text(json.dumps({'elements':grouped})); assert not assert_contract(case,tmp_path,0)[0]
+    grouped[-1]['parent_id']='slide'; (tmp_path/'document.json').write_text(json.dumps({'elements':grouped})); assert 'ANCESTOR_SEMANTIC_MISSING' in assert_contract(case,tmp_path,0)[0]
