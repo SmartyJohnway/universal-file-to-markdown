@@ -2,7 +2,7 @@
 
 [繁體中文](README.zh-TW.md) · [Changelog](CHANGELOG.md)
 
-A deterministic, offline-first document normalization skill that converts supported files into Markdown and a schema-validated bundle for AI analysis, RAG, auditing, and downstream automation.
+Evidence-first, fidelity-oriented document extraction skill for AI agents. It extracts supported files into Markdown and a schema-validated bundle while prioritizing source correctness, content completeness, traceability, and AI handoff.
 
 The project is designed for environments where conversion must remain transparent and traceable. It does not treat `document.md` alone as proof of success: every run also produces a quality report, source manifest, canonical elements, bounded chunks, table assets, and validation results.
 
@@ -13,6 +13,7 @@ The project is designed for environments where conversion must remain transparen
 - [English changelog](CHANGELOG.md)
 - [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
 - [AI skill operating contract](SKILL.md)
+- [Versioning](VERSIONING.md)
 - [Format capability matrix](references/capability_matrix.md)
 - [Engine notes and escalation guidance](references/engine_notes.md)
 - [Contributing](CONTRIBUTING.md)
@@ -70,12 +71,15 @@ A failed rerun clears known generated artifacts first, preventing stale canonica
 
 ## Installation
 
-Python 3.10–3.12 is supported. Python 3.11 is the primary qualified runtime
-for the complete OCR and cross-format regression suite. Python 3.13 is not
-currently supported because the declared `rapidocr-onnxruntime` dependency
-does not publish compatible builds for that runtime. OCR requires the native
-`libGL.so.1` runtime; install the Tesseract binary when using the
-`pytesseract` fallback. Pandoc remains an optional tool.
+Supported Python: 3.10–3.12. Primary qualified runtime: Python 3.11. Python 3.13 is not currently supported.
+
+Declared RapidOCR requirement: `rapidocr-onnxruntime>=1.4,<2`. Qualified version: `1.4.4`.
+
+**Linux:** `libGL.so.1` may be required for OpenCV/RapidOCR. Tesseract is required when using the `pytesseract` fallback.
+
+**Windows:** the Microsoft Visual C++ runtime may be required for OpenCV. The Tesseract executable must be installed and discoverable when the fallback is used.
+
+Pandoc is an optional dependency: it is not required for the core profile and is required only for optional Pandoc-enabled routes.
 
 ```bash
 python -m venv .venv
@@ -139,13 +143,11 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Skill and schema versions are independent:
+Current release candidate: `1.7.0-rc1`<br>
+Published stable release: `1.6.0`<br>
+Target stable release: `1.7.0`
 
-```text
-published_stable_version: 1.6.0
-active_development_version: 1.7.0-dev
-document/table/chunk schema_version: 1.0
-```
+`VERSION` is the canonical current skill-version source. Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version. The current document/table/chunk schema version is `1.0`; see [VERSIONING.md](VERSIONING.md).
 
 Every canonical element has fixed fields for hierarchy, content format, engine, confidence, source locator, properties, and warnings. Canonical tables preserve merge anchors in `cells` and provide a rectangular `grid` for CSV and downstream processing.
 

@@ -1,9 +1,11 @@
 ---
 name: universal-file-to-markdown
-description: Convert PDF, scanned images, Word (.docx), Excel (.xlsx/.xlsm), PowerPoint (.pptx), CSV/TSV, JSON, EML, and Pandoc-supported markup into clean Markdown plus schema-validated canonical elements, bounded RAG chunks, tables, assets, manifest, and an explicit quality report. Use when an AI conversation needs to read, normalize, OCR, inspect, or prepare supported files for analysis/RAG, especially Traditional Chinese Big5/CP950 data, merged Office tables, mixed digital/scanned PDFs, or documents requiring traceable page/sheet/slide/shape locators. Prefer this deterministic offline-first workflow before escalating low-confidence or unsupported structures to a heavier parser.
+version: 1.7.0-rc1
+release_status: release_candidate
+description: Evidence-first, fidelity-oriented document extraction skill for AI agents. Extract, preserve, validate, report uncertainty, and prepare supported documents for AI handoff with traceable source locators.
 ---
 
-# Universal File to Markdown v1.7.0-dev
+# Universal File to Markdown v1.7.0-rc1
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -11,8 +13,9 @@ and bundle validation result every time.
 
 ## Run
 
-Install Python dependencies from `requirements.txt`. Tesseract and Pandoc are
-optional system binaries used only for their documented paths.
+Install Python dependencies from `requirements.txt`. Supported Python is 3.10–3.12; Python 3.11 is the primary qualified runtime, and Python 3.13 is not currently supported. RapidOCR is declared as `rapidocr-onnxruntime>=1.4,<2` and qualified at 1.4.4. Pandoc is optional: it is not required for the core profile and is required only for Pandoc-enabled routes.
+
+On Linux, OpenCV/RapidOCR may require `libGL.so.1`; install Tesseract only when using the `pytesseract` fallback. On Windows, OpenCV may require the Microsoft Visual C++ runtime, and the Tesseract executable must be installed and discoverable when that fallback is used.
 
 Verify the environment before conversion. Missing required Python dependencies
 produce an explicit non-zero preflight result; optional binaries are reported
@@ -87,10 +90,12 @@ OOXML first, then rerun.
 
 ## Canonical contracts
 
-Skill version and data schema version are different:
+Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.7.0-dev
+skill_version: 1.7.0-rc1 (release candidate)
+published_stable_version: 1.6.0
+target_stable_release: 1.7.0
 document/table/chunk schema_version: 1.0
 ```
 

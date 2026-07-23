@@ -6,6 +6,29 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.7.0-rc1] - 2026-07-23
+
+This is a release candidate, not a published stable release. The published stable release remains `1.6.0`; `1.7.0` is the target stable release.
+
+### Added
+
+- Reproducible cross-format regression runner, deterministic normalization and fingerprints, Phase 5 workflow coverage, OCR containment cases, and per-case progress reporting.
+
+### Changed
+
+- Qualified RapidOCR `1.4.4` with declared requirement `rapidocr-onnxruntime>=1.4,<2`.
+- Documented Python 3.10–3.12 support, Python 3.11 as the primary qualified runtime, and explicit Python 3.13 exclusion.
+- Reconciled version, runtime, dependency, format, and capability documentation; schema versions remain independent from the skill version.
+
+### Fixed
+
+- Malformed workflow artifacts no longer crash the unified runner; readable-projection writes and absolute-path validation are portable across platforms.
+
+### Qualification
+
+- Full pytest: 194 passed.
+- Unified corpus: 18/18 passed.
+
 ## [Unreleased]
 
 ### Added
@@ -16,7 +39,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Active development version is now `1.7.0-dev`.
 
 
 ## [1.6.1-rc2] - 2026-07-22

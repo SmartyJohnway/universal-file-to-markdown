@@ -25,7 +25,7 @@ def _bundle(tmp_path, *, readable=True, request=True, report=True, manifest=True
         (tmp_path / 'conversion-report.json').write_text(json.dumps(report_payload))
     if request:
         values = {'schema_version': '1.0', 'request_id': 'ai-review-request-' + 'a' * 16, 'source_sha256': 'a' * 64,
-                  'skill_version': '1.7.0-dev', 'canonical_bundle_fingerprint': 'wrong', 'review_scope': 'readable_projection_only',
+                  'skill_version': '1.7.0-rc1', 'canonical_bundle_fingerprint': 'wrong', 'review_scope': 'readable_projection_only',
                   'instructions': {'preserve_facts': True, 'preserve_numbers': True, 'preserve_urls': True, 'preserve_table_ids': True, 'preserve_source_order': True, 'do_not_modify_canonical': True},
                   'reason_codes': ['HTML_MERGED_TABLE_COMPLEX'], 'targets': [], 'allowed_operations': [], 'prohibited_operations': [], 'truncation': []}
         values.update(request_values or {})

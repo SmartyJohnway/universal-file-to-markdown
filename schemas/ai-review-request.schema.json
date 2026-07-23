@@ -29,7 +29,7 @@
       "pattern": "^[0-9a-f]{64}$"
     },
     "skill_version": {
-      "const": "1.7.0-dev"
+      "const": "1.7.0-rc1"
     },
     "canonical_bundle_fingerprint": {
       "type": "string",

@@ -2,7 +2,7 @@
 
 [English](README.md) · [變更紀錄](CHANGELOG.zh-TW.md)
 
-這是一套具決定性、離線優先的文件正規化技能，可將支援的檔案轉換成 Markdown，以及供 AI 分析、RAG、稽核與後續自動化使用的 schema 驗證輸出包。
+這是一套以原文正確性、內容完整性、來源可追溯與 AI 可接手性為優先的文件擷取技能，可將支援的檔案轉換成 Markdown，以及供 AI 分析、RAG、稽核與後續自動化使用的 schema 驗證輸出包。
 
 本專案重視透明度與可追溯性，不會只把 `document.md` 視為成功證據。每次轉換還會產出品質報告、來源 manifest、canonical elements、受限長度 chunks、表格資產與 bundle 驗證結果。
 
@@ -13,6 +13,7 @@
 - [English changelog](CHANGELOG.md)
 - [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
 - [AI 技能操作合約](SKILL.md)
+- [版本說明](VERSIONING.md)
 - [格式能力矩陣](references/capability_matrix.md)
 - [引擎說明與升級指引](references/engine_notes.md)
 - [貢獻指南](CONTRIBUTING.md)
@@ -70,10 +71,15 @@ conversion-report.json   引擎細節、警告與 bundle 驗證結果
 
 ## 安裝
 
-目前支援 Python 3.10–3.12。完整 OCR 與跨格式回歸測試主要以 Python 3.11
-驗證。由於宣告使用的 `rapidocr-onnxruntime` 目前沒有適用於 Python 3.13 的
-相容版本，因此暫不支援 Python 3.13。OCR 需要原生 `libGL.so.1` 執行階段；使用
-`pytesseract` fallback 時需安裝 Tesseract binary。Pandoc 仍為選用工具。
+支援的 Python：3.10–3.12。主要合格驗證 runtime：Python 3.11。Python 3.13：目前不支援。
+
+宣告的 RapidOCR requirement：`rapidocr-onnxruntime>=1.4,<2`。合格驗證版本：`1.4.4`。
+
+**Linux：** OpenCV/RapidOCR 可能需要 `libGL.so.1`；使用 `pytesseract` fallback 時需要 Tesseract。
+
+**Windows：** OpenCV 可能需要 Microsoft Visual C++ runtime；使用 fallback 時，必須安裝且系統可找到 Tesseract executable。
+
+Pandoc 是選用 dependency：core profile 不需要，只有選用的 Pandoc-enabled routes 需要。
 
 ```bash
 python -m venv .venv
@@ -137,13 +143,11 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 ## Canonical contracts
 
-技能版本與資料 schema 版本彼此獨立：
+目前 release candidate：`1.7.0-rc1`<br>
+已發布 stable release：`1.6.0`<br>
+目標 stable release：`1.7.0`
 
-```text
-published_stable_version: 1.6.0
-active_development_version: 1.7.0-dev
-document/table/chunk schema_version: 1.0
-```
+`VERSION` 是目前技能版本的 canonical source。技能版本、schema 版本、bundle schema 版本與 report schema 版本是各自獨立的合約；技能發布不會自動要求每個 schema 版本都與技能版本相同。目前 document/table/chunk schema 版本為 `1.0`；請參閱 [VERSIONING.md](VERSIONING.md)。
 
 所有 canonical element 都具有固定的階層、content format、engine、confidence、source locator、properties 與 warnings 欄位。Canonical table 以 `cells` 保留 merge anchors，並提供矩形 `grid` 供 CSV 與後續處理使用。
 

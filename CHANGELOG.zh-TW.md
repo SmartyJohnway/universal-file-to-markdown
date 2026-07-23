@@ -6,6 +6,29 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.7.0-rc1] - 2026-07-23
+
+此版本為 release candidate，並非已發布的 stable release。已發布的 stable release 仍為 `1.6.0`，`1.7.0` 是目標 stable release。
+
+### 新增
+
+- 可重現跨格式 regression runner、決定性正規化與 fingerprints、Phase 5 workflow coverage、OCR containment cases，以及逐 case progress reporting。
+
+### 變更
+
+- 合格驗證 RapidOCR `1.4.4`；宣告 requirement 為 `rapidocr-onnxruntime>=1.4,<2`。
+- 文件化 Python 3.10–3.12 支援範圍、Python 3.11 主要合格 runtime 與明確的 Python 3.13 排除。
+- 統一版本、runtime、dependency、格式與 capability 文件；schema 版本仍獨立於技能版本。
+
+### 修正
+
+- 格式錯誤的 workflow artifacts 不再使 unified runner crash；readable-projection writes 與 absolute-path validation 可跨平台執行。
+
+### Qualification
+
+- 完整 pytest：194 passed。
+- Unified corpus：18/18 passed。
+
 ## [尚未發布]
 
 ## [1.6.1-rc2] - 2026-07-22
