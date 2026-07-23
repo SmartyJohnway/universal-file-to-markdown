@@ -21,3 +21,9 @@ def test_empty_required_ancestor_type_is_rejected_during_loading(tmp_path):
     path=tmp_path/'cases.json'
     path.write_text(json.dumps({'cases':[{'case_id':'ancestor','format':'json','profile':'core','fixture':'json_unicode','expected_status':['passed'],'table_count':{'min':0},'asset_count':{'min':0},'max_chunk_chars':2000,'required_warning_codes':[],'allowed_warning_codes':[],'forbidden_warning_codes':[],'determinism':{'normalized_reruns_must_match':True},'required_element_ancestor_types':{'table':['']}}]}))
     with pytest.raises(AssertionError): load_cases(path)
+
+def test_invalid_ocr_contract_is_rejected_during_loading(tmp_path):
+    import json
+    path=tmp_path/'cases.json'
+    path.write_text(json.dumps({'cases':[{'case_id':'ocr','format':'pdf','profile':'core','fixture':'pdf_ocr_text','expected_status':['passed'],'table_count':{'min':0},'asset_count':{'min':0},'max_chunk_chars':2000,'required_warning_codes':[],'allowed_warning_codes':[],'forbidden_warning_codes':[],'determinism':{'normalized_reruns_must_match':True},'required_ocr':{'min_accepted_tables':'one'}}]}))
+    with pytest.raises(AssertionError): load_cases(path)
