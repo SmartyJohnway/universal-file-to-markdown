@@ -54,6 +54,25 @@ def generate(name, directory):
     if name=='json_unicode':
         p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False));return p
 def warning_codes(report): return {w.get('code') for w in report.get('warnings',[]) if w.get('code')}
+def _safe_table_asset(tables_dir, value):
+    """Resolve canonical table assets without permitting bundle traversal."""
+    if not isinstance(value, str): return False
+    candidate=(tables_dir/value).resolve()
+    try: candidate.relative_to(tables_dir.resolve())
+    except ValueError: return False
+    return candidate.is_file()
+def _table_index_errors(index_path, table_ids):
+    try: entries=json.loads(index_path.read_text())
+    except (OSError, json.JSONDecodeError): return ['TABLE_INDEX_MALFORMED']
+    # Production table_export writes a list. Reject other shapes structurally,
+    # rather than accidentally iterating mapping keys or crashing the runner.
+    if not isinstance(entries,list): return ['TABLE_INDEX_MALFORMED']
+    errors=[]
+    for entry in entries:
+        if not isinstance(entry,dict) or entry.get('id') not in table_ids: errors.append('REFERENCE_ERROR'); continue
+        assets=entry.get('assets',{})
+        if not isinstance(assets,dict) or any(not _safe_table_asset(index_path.parent,path) for path in assets.values()): errors.append('REFERENCE_ERROR')
+    return errors
 def assert_contract(case,bundle,router_rc):
     errors=[]
     if not (bundle/'conversion-report.json').exists() or not (bundle/'document.json').exists(): return ['ROUTER_BUNDLE_MISSING'], {}
@@ -81,8 +100,7 @@ def assert_contract(case,bundle,router_rc):
     table_ids={path.stem for path in tables}
     index_path=bundle/'tables'/'index.json'
     if index_path.exists():
-        for entry in json.loads(index_path.read_text()):
-            if entry.get('id') not in table_ids or any(not (bundle/'tables'/name).is_file() for name in entry.get('assets',{}).values()): errors.append('REFERENCE_ERROR')
+        errors.extend(_table_index_errors(index_path,table_ids))
     lo,hi=case['table_count'].get('min',0),case['table_count'].get('max',10**9)
     if not lo<=len(tables)<=hi: errors.append('TABLE_COUNT')
     assets=list((bundle/'assets').rglob('*')) if (bundle/'assets').exists() else []
@@ -117,11 +135,12 @@ def main(args):
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
         expected=baseline.get(result['case_id'])
         if result['status']=='passed' and expected and expected != current:
-            result['status']='failed'; result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
+            result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
+            if not args.update_baseline: result['status']='failed'
             snapshot=baseline_dir/(result['case_id']+'.normalized.json')
             if snapshot.exists(): write_diff(json.loads(snapshot.read_text()),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
     if args.update_baseline:
-        if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass')
+        if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass contract validation')
         updated={r['case_id']:r['fingerprints'][0]['bundle_fingerprint'] for r in results}
         merged=dict(baseline); merged.update(updated)
         baseline_path.parent.mkdir(parents=True,exist_ok=True)
@@ -130,7 +149,7 @@ def main(args):
         for result in results: (baseline_dir/(result['case_id']+'.normalized.json')).write_text(json.dumps(result['normalized_snapshot'],ensure_ascii=False,indent=2)+'\n')
     counts=Counter(r['status'] for r in results); formats=defaultdict(lambda:Counter())
     for r in results: formats[r['format']][r['status']]+=1
-    summary={'schema_version':'1.0','task':'V1.7.0-DEV-PHASE-6-REPRODUCIBLE-CROSS-FORMAT-REGRESSION','profile':args.profile,'environment_profile':env['profile'],'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING')) for r in results),'rerun_mismatches':sum('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results),'baseline_mismatches':len(baseline_mismatches),'normalized_determinism_status':'passed' if not any('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results) else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
+    summary={'schema_version':'1.0','task':'V1.7.0-DEV-PHASE-6-REPRODUCIBLE-CROSS-FORMAT-REGRESSION','profile':args.profile,'environment_profile':env['profile'],'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING','TABLE_INDEX_MALFORMED')) for r in results),'rerun_mismatches':sum('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results),'baseline_mismatches':len(baseline_mismatches),'normalized_determinism_status':'passed' if not any('CROSS_FORMAT_NONDETERMINISTIC_RERUN' in r.get('reason_codes',[]) for r in results) else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
     public_results=[{k:v for k,v in result.items() if k!='normalized_snapshot'} for result in results]
     summary['cases']=public_results
     (output/'cross-format-regression-cases.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in public_results));(output/'artifact-fingerprints.json').write_text(json.dumps({r['case_id']:r.get('fingerprints',[]) for r in results},indent=2)+'\n');(output/'cross-format-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2));return 1 if counts['failed'] else 0
