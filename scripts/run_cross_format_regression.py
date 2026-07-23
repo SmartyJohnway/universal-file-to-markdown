@@ -8,6 +8,18 @@ from cross_format_regression import normalize_bundle, fingerprint, write_diff, s
 from regression_environment import environment_manifest
 
 ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","pdf_ocr_text","pdf_ocr_table_accepted","pdf_ocr_table_rejected","csv_big5","json_unicode","html_complex"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html"}
+OCR_FONT_CANDIDATES=(
+    ROOT/'tests'/'fixtures'/'fonts'/'DejaVuSans-Bold.ttf',
+    Path('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    Path('/Library/Fonts/Arial Bold.ttf'),
+    Path('C:/Windows/Fonts/arialbd.ttf'),
+)
+def resolve_ocr_font(image_font, size=72, candidates=OCR_FONT_CANDIDATES):
+    """Choose a readable TrueType font, with Pillow's scalable built-in fallback."""
+    for candidate in candidates:
+        if candidate.is_file():
+            return image_font.truetype(str(candidate), size)
+    return image_font.load_default(size=size)
 def load_cases(path=MANIFEST):
     data=json.loads(Path(path).read_text()); seen=set()
     for case in data['cases']:
@@ -28,6 +40,9 @@ def load_cases(path=MANIFEST):
         ocr=case.get('required_ocr',{})
         assert isinstance(ocr,dict) and set(ocr) <= {'content_patterns','element_types','locator_fields','min_accepted_tables','min_rejected_tables','candidate_reason_codes'}
         assert all(isinstance(ocr.get(key,[]),list) and all(isinstance(value,str) and value for value in ocr.get(key,[])) for key in ('content_patterns','element_types','locator_fields','candidate_reason_codes'))
+        for pattern in ocr.get('content_patterns',[]):
+            try: re.compile(pattern)
+            except re.error as exc: raise AssertionError(f'invalid required_ocr.content_patterns regex: {exc}')
         assert all(isinstance(ocr.get(key,0),int) and ocr.get(key,0) >= 0 for key in ('min_accepted_tables','min_rejected_tables'))
     return data['cases']
 def generate(name, directory):
@@ -71,8 +86,7 @@ def generate(name, directory):
         p=directory/'digital.pdf';c=canvas.Canvas(str(p));c.drawString(100,700,'Digital PDF Test 123');c.save();return p
     if name.startswith('pdf_ocr_'):
         from PIL import Image, ImageDraw, ImageFont
-        font_path='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-        font=ImageFont.truetype(font_path, 72)
+        font=resolve_ocr_font(ImageFont, 72)
         image=Image.new('RGB',(1800,1100),'white'); draw=ImageDraw.Draw(image)
         if name=='pdf_ocr_text':
             draw.text((130,180),'OCR SAMPLE 12345',font=font,fill='black')

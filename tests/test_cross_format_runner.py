@@ -2,7 +2,7 @@ import sys
 import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from run_cross_format_regression import load_cases, main, assert_contract, _table_index_errors
+from run_cross_format_regression import load_cases, main, assert_contract, _table_index_errors, resolve_ocr_font
 def test_summary_manifest_has_at_least_twelve_core_cases(): assert len([c for c in load_cases() if c['profile']=='core']) >= 12
 def test_optional_missing_tool_is_declared(): assert any(c['profile']=='optional-pandoc' for c in load_cases())
 
@@ -91,3 +91,9 @@ def test_ocr_contract_reports_missing_evidence(tmp_path, monkeypatch):
     case={'expected_status':['passed'],'expected_bundle_validation':'passed','expected_engine':'rapidocr','required_warning_codes':[],'allowed_warning_codes':[],'forbidden_warning_codes':[],'required_element_types':['page'],'required_locator_fields':['format'],'table_count':{'min':0},'asset_count':{'min':0},'max_chunk_chars':2000,'required_ocr':{'content_patterns':['TOKEN'],'element_types':['text'],'locator_fields':['page'],'min_rejected_tables':1}}
     errors,_=assert_contract(case,tmp_path,0)
     assert {'OCR_EVIDENCE_MISSING','OCR_CONTENT_MISSING','OCR_TABLE_REJECTION_MISSING'} <= set(errors)
+
+def test_ocr_font_uses_scalable_pillow_fallback_when_candidates_are_missing(tmp_path):
+    class Font:
+        def truetype(self, *_): raise AssertionError('missing candidates must not be opened')
+        def load_default(self, *, size): return ('fallback', size)
+    assert resolve_ocr_font(Font(), 72, (tmp_path/'missing.ttf',)) == ('fallback', 72)
