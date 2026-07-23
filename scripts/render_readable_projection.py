@@ -37,7 +37,10 @@ def main(bundle, review_file=None):
   if item and item['decision']=='apply_projection': choice=item['readable_markdown']
   elif item and item['decision'] in {'needs_human_review','reject_target'}: choice=faithful+'\n\n> Review note: structure may need human confirmation.'
   text=text.replace(faithful,choice,1)
- fd,tmp=tempfile.mkstemp(dir=b,prefix='.readable-',text=True);os.close(fd);Path(tmp).write_text(text,encoding='utf-8');os.replace(tmp,b/'document-readable.md')
+ fd,tmp=tempfile.mkstemp(dir=b,prefix='.readable-')
+ with os.fdopen(fd, 'w', encoding='utf-8') as f:
+  f.write(text)
+ os.replace(tmp,b/'document-readable.md')
  if hashes(b)!=before: raise SystemExit('AI_REVIEW_CANONICAL_MUTATION_DETECTED')
  report=load(b/'conversion-report.json');report['ai_review_status']='validated' if review else report.get('ai_review_status','not_provided');report['readable_projection_status']='host_ai_applied' if review else 'deterministic_only';(b/'conversion-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
 if __name__=='__main__':

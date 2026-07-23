@@ -21,7 +21,7 @@ def resolve_ocr_font(image_font, size=72, candidates=OCR_FONT_CANDIDATES):
             return image_font.truetype(str(candidate), size)
     return image_font.load_default(size=size)
 def load_cases(path=MANIFEST):
-    data=json.loads(Path(path).read_text()); seen=set()
+    data=json.loads(Path(path).read_text(encoding='utf-8')); seen=set()
     for case in data['cases']:
         assert case['case_id'] not in seen, 'duplicate case_id'; seen.add(case['case_id'])
         assert case['format'] in FORMATS and case['profile'] in {'core','optional-pandoc'}
@@ -46,7 +46,7 @@ def load_cases(path=MANIFEST):
         assert all(isinstance(ocr.get(key,0),int) and ocr.get(key,0) >= 0 for key in ('min_accepted_tables','min_rejected_tables'))
     return data['cases']
 def load_workflow_cases(path=MANIFEST):
-    data=json.loads(Path(path).read_text()); seen=set()
+    data=json.loads(Path(path).read_text(encoding='utf-8')); seen=set()
     for case in data.get('workflow_cases',[]):
         assert case['case_id'] not in seen, 'duplicate workflow case_id'; seen.add(case['case_id'])
         assert case['profile'] in {'core','optional-pandoc'} and case['workflow'] == 'readable_projection_host_review'
@@ -115,7 +115,7 @@ def generate(name, directory):
     if name=='csv_big5':
         p=directory/'big5.csv';p.write_bytes('名稱,數量\n鋼管,10\n'.encode('big5'));return p
     if name=='json_unicode':
-        p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False));return p
+        p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False),encoding='utf-8');return p
 def warning_codes(report): return {w.get('code') for w in report.get('warnings',[]) if w.get('code')}
 def _safe_table_asset(tables_dir, value):
     """Resolve canonical table assets without permitting bundle traversal."""
@@ -125,7 +125,7 @@ def _safe_table_asset(tables_dir, value):
     except ValueError: return False
     return candidate.is_file()
 def _table_index_errors(index_path, table_ids):
-    try: entries=json.loads(index_path.read_text())
+    try: entries=json.loads(index_path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError): return ['TABLE_INDEX_MALFORMED']
     # Production table_export writes a list. Reject other shapes structurally,
     # rather than accidentally iterating mapping keys or crashing the runner.
@@ -153,7 +153,7 @@ def _load_workflow_json(path, missing_code, malformed_code):
 def assert_contract(case,bundle,router_rc):
     errors=[]
     if not (bundle/'conversion-report.json').exists() or not (bundle/'document.json').exists(): return ['ROUTER_BUNDLE_MISSING'], {}
-    report=json.loads((bundle/'conversion-report.json').read_text()); doc=json.loads((bundle/'document.json').read_text())
+    report=json.loads((bundle/'conversion-report.json').read_text(encoding='utf-8')); doc=json.loads((bundle/'document.json').read_text(encoding='utf-8'))
     if router_rc or report.get('status') not in case['expected_status']: errors.append('STATUS_MISMATCH')
     if report.get('bundle_validation',{}).get('status') != case['expected_bundle_validation']: errors.append('BUNDLE_VALIDATION_FAILED')
     from validate_bundle import validate_bundle
@@ -215,13 +215,13 @@ def assert_contract(case,bundle,router_rc):
     assets=list((bundle/'assets').rglob('*')) if (bundle/'assets').exists() else []
     asset_count=len([x for x in assets if x.is_file()])
     if asset_count<case['asset_count'].get('min',0) or asset_count>case['asset_count'].get('max',10**9): errors.append('ASSET_COUNT')
-    chunks=[json.loads(x) for x in (bundle/'chunks.jsonl').read_text().splitlines() if x] if (bundle/'chunks.jsonl').exists() else []
+    chunks=[json.loads(x) for x in (bundle/'chunks.jsonl').read_text(encoding='utf-8').splitlines() if x] if (bundle/'chunks.jsonl').exists() else []
     for chunk in chunks:
         if any(value not in idset for value in chunk.get('element_ids',[])) or any(value not in table_ids for value in chunk.get('table_ids',[])): errors.append('REFERENCE_ERROR')
     if any(len(c.get('content',''))>case['max_chunk_chars'] for c in chunks): errors.append('CHUNK_LIMIT')
     if ocr:
         accepted_ids={candidate.get('candidate_id') for candidate in report.get('details',{}).get('ocr_table_candidates',[]) if candidate.get('decision')=='accepted'}
-        canonical_ocr=[json.loads(path.read_text()) for path in tables if (json.loads(path.read_text()).get('properties') or {}).get('origin')=='ocr_table_candidate']
+        canonical_ocr=[json.loads(path.read_text(encoding='utf-8')) for path in tables if (json.loads(path.read_text(encoding='utf-8')).get('properties') or {}).get('origin')=='ocr_table_candidate']
         if any((table.get('properties') or {}).get('candidate_id') not in accepted_ids for table in canonical_ocr): errors.append('OCR_TABLE_CONTAINMENT_FAILED')
         if ocr.get('min_accepted_tables',0) and len(canonical_ocr) < ocr['min_accepted_tables']: errors.append('OCR_TABLE_CONTAINMENT_FAILED')
     return errors, report
@@ -300,7 +300,7 @@ def main(args):
         result=run_case(case,output,args.reruns,args.keep_bundles) if 'format' in case else run_workflow_case(case,output,args.reruns,args.keep_bundles)
         results.append(result)
         print(f"[cross-format] finished {case['case_id']}: {result['status']}", file=sys.stderr, flush=True)
-    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
+    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text(encoding='utf-8')) if baseline_path.exists() else {}
     baseline_mismatches=[]
     for result in results:
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
@@ -310,11 +310,11 @@ def main(args):
         # A fingerprint can differ solely because an OCR confidence moved within
         # the declared tolerance; snapshots make that distinction auditable.
         if baseline_changed and snapshot.exists():
-            baseline_changed=not semantically_equal(json.loads(snapshot.read_text()),result['normalized_snapshot'])
+            baseline_changed=not semantically_equal(json.loads(snapshot.read_text(encoding='utf-8')),result['normalized_snapshot'])
         if result['status']=='passed' and baseline_changed:
             result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
             if not args.update_baseline: result['status']='failed'
-            if snapshot.exists(): write_diff(json.loads(snapshot.read_text()),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
+            if snapshot.exists(): write_diff(json.loads(snapshot.read_text(encoding='utf-8')),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
     if args.update_baseline:
         if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass contract validation')
         updated={r['case_id']:r['fingerprints'][0]['bundle_fingerprint'] for r in results}

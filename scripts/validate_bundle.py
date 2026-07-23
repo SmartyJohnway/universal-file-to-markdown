@@ -306,7 +306,7 @@ def _validate_local_asset_target(root: Path, raw_target: str, code_prefix: str,
     parsed = urlparse(normalized)
     details = f"{context} raw_target={raw_target!r} normalized_path={normalized!r}"
     if (parsed.scheme == "file" or re.match(r"^[A-Za-z]:[\\/]", normalized)
-            or normalized.startswith("\\") or Path(normalized).is_absolute()):
+            or normalized.startswith("\\") or normalized.startswith("/") or Path(normalized).is_absolute()):
         errors.append(f"{code_prefix}_ABSOLUTE: {details}; reason=absolute path")
         return
     resolved = (root / Path(normalized)).resolve()
