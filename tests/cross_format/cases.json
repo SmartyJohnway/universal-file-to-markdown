@@ -1,0 +1,754 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "case_id": "docx-basic-formatting",
+      "format": "docx",
+      "profile": "core",
+      "fixture": "docx_basic",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-docx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "paragraph"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "docx-horizontal-merge",
+      "format": "docx",
+      "profile": "core",
+      "fixture": "docx_horizontal_merge",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-docx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "docx-vertical-merge",
+      "format": "docx",
+      "profile": "core",
+      "fixture": "docx_vertical_merge",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-docx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "xlsx-merged-table",
+      "format": "xlsx",
+      "profile": "core",
+      "fixture": "xlsx_merged",
+      "fixture_kind": "programmatic",
+      "expected_engine": "openpyxl",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "FORMULA_RESULT_UNAVAILABLE"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "xlsx-two-blocks",
+      "format": "xlsx",
+      "profile": "core",
+      "fixture": "xlsx_two_blocks",
+      "fixture_kind": "programmatic",
+      "expected_engine": "openpyxl",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 2,
+        "max": 2
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "xlsx-formula-no-cache",
+      "format": "xlsx",
+      "profile": "core",
+      "fixture": "xlsx_formula",
+      "fixture_kind": "programmatic",
+      "expected_engine": "openpyxl",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [
+        "FORMULA_RESULT_UNAVAILABLE"
+      ],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pptx-text-and-bullets",
+      "format": "pptx",
+      "profile": "core",
+      "fixture": "pptx_text",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-pptx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "list"
+      ],
+      "required_list_markdown_patterns": [
+        "^- Explicit bullet$",
+        "^1\\. Explicit numbered bullet$"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pptx-merged-table",
+      "format": "pptx",
+      "profile": "core",
+      "fixture": "pptx_table",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-pptx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pptx-picture",
+      "format": "pptx",
+      "profile": "core",
+      "fixture": "pptx_picture",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-pptx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "asset_count": {
+        "min": 1
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pptx-grouped-table",
+      "format": "pptx",
+      "profile": "core",
+      "fixture": "pptx_grouped",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-pptx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_element_ancestor_types": {
+        "table": [
+          "group",
+          "slide"
+        ]
+      },
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pdf-short-digital",
+      "format": "pdf",
+      "profile": "core",
+      "fixture": "pdf_digital",
+      "fixture_kind": "programmatic",
+      "expected_engine": "pdfplumber",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "page"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format",
+        "page"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "csv-big5",
+      "format": "csv",
+      "profile": "core",
+      "fixture": "csv_big5",
+      "fixture_kind": "programmatic",
+      "expected_engine": "native",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "ENCODING_AMBIGUOUS"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "json-unicode",
+      "format": "json",
+      "profile": "core",
+      "fixture": "json_unicode",
+      "fixture_kind": "programmatic",
+      "expected_engine": "native",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "structured_block"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "html-native-complex-table",
+      "format": "html",
+      "profile": "core",
+      "fixture": "html_complex",
+      "fixture_kind": "checked_in",
+      "expected_engine": "beautifulsoup4",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "MAIN_CONTENT_NOT_IDENTIFIED",
+        "BOILERPLATE_MAY_BE_INCLUDED",
+        "RELATIVE_URL_UNRESOLVED"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "fixture_kind": "programmatic",
+      "expected_engine": "rapidocr_onnxruntime",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "TESSERACT_FALLBACK_USED",
+        "OCR_TABLE_KEY_VALUE_PATTERN",
+        "OCR_TABLE_INSUFFICIENT_ROWS",
+        "OCR_TABLE_COLUMN_INCONSISTENT",
+        "OCR_TABLE_IRREGULAR_ROWS",
+        "OCR_TABLE_EMPTY",
+        "OCR_TABLE_LOW_CONFIDENCE",
+        "LOW_OCR_CONFIDENCE_PAGES",
+        "TABLE_STRUCTURE_UNVERIFIED",
+        "TABLE_STRUCTURE_HEURISTIC"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format",
+        "page"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      },
+      "case_id": "pdf-ocr-representative",
+      "format": "pdf",
+      "profile": "core",
+      "fixture": "pdf_ocr_text",
+      "required_element_types": [
+        "page",
+        "text"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "required_ocr": {
+        "content_patterns": [
+          "OCR SAMPLE.*12345"
+        ],
+        "element_types": [
+          "page",
+          "text"
+        ],
+        "locator_fields": [
+          "page"
+        ],
+        "min_rejected_tables": 1,
+        "candidate_reason_codes": [
+          "OCR_TABLE_REJECTED"
+        ]
+      }
+    },
+    {
+      "fixture_kind": "programmatic",
+      "expected_engine": "rapidocr_onnxruntime",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "OCR_TABLE_KEY_VALUE_PATTERN",
+        "OCR_TABLE_INSUFFICIENT_ROWS",
+        "OCR_TABLE_COLUMN_INCONSISTENT",
+        "OCR_TABLE_IRREGULAR_ROWS",
+        "OCR_TABLE_EMPTY",
+        "OCR_TABLE_LOW_CONFIDENCE",
+        "LOW_OCR_CONFIDENCE_PAGES",
+        "TABLE_STRUCTURE_UNVERIFIED",
+        "TABLE_STRUCTURE_HEURISTIC"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format",
+        "page"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      },
+      "case_id": "pdf-ocr-table-accepted",
+      "format": "pdf",
+      "profile": "core",
+      "fixture": "pdf_ocr_table_accepted",
+      "required_element_types": [
+        "page",
+        "table"
+      ],
+      "table_count": {
+        "min": 1,
+        "max": 1
+      },
+      "required_ocr": {
+        "content_patterns": [
+          "MOTOR"
+        ],
+        "element_types": [
+          "page",
+          "table"
+        ],
+        "locator_fields": [
+          "page"
+        ],
+        "min_accepted_tables": 1
+      }
+    },
+    {
+      "fixture_kind": "programmatic",
+      "expected_engine": "rapidocr_onnxruntime",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "OCR_TABLE_KEY_VALUE_PATTERN",
+        "OCR_TABLE_INSUFFICIENT_ROWS",
+        "OCR_TABLE_COLUMN_INCONSISTENT",
+        "OCR_TABLE_IRREGULAR_ROWS",
+        "OCR_TABLE_EMPTY",
+        "OCR_TABLE_LOW_CONFIDENCE",
+        "LOW_OCR_CONFIDENCE_PAGES",
+        "TABLE_STRUCTURE_UNVERIFIED",
+        "TABLE_STRUCTURE_HEURISTIC"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format",
+        "page"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      },
+      "case_id": "pdf-ocr-table-rejected",
+      "format": "pdf",
+      "profile": "core",
+      "fixture": "pdf_ocr_table_rejected",
+      "required_element_types": [
+        "page",
+        "text"
+      ],
+      "table_count": {
+        "min": 0,
+        "max": 0
+      },
+      "required_ocr": {
+        "content_patterns": [
+          "ABC-100"
+        ],
+        "element_types": [
+          "page",
+          "text"
+        ],
+        "locator_fields": [
+          "page"
+        ],
+        "min_rejected_tables": 1,
+        "candidate_reason_codes": [
+          "OCR_TABLE_REJECTED",
+          "OCR_TABLE_FALLBACK_TO_TEXT"
+        ]
+      }
+    },
+    {
+      "case_id": "pandoc-html",
+      "format": "html",
+      "profile": "optional-pandoc",
+      "fixture": "html_complex",
+      "fixture_kind": "checked_in",
+      "expected_engine": "pandoc",
+      "expected_status": [
+        "passed"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [],
+      "table_count": {
+        "min": 0
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    }
+  ],
+  "workflow_cases": [
+    {
+      "case_id": "phase5-readable-projection-host-review",
+      "profile": "core",
+      "fixture": "html_complex",
+      "workflow": "readable_projection_host_review",
+      "expected_status": "passed",
+      "expected_request_status": "generated",
+      "expected_ai_review_status": "not_provided",
+      "expected_readable_projection_status": "deterministic_only",
+      "required_projection_patterns": [
+        "# Trading",
+        "## Rates",
+        "| Kind | Rates | Rates |",
+        "| Stock | 1 | Two<br>- detail |"
+      ],
+      "required_reason_codes": [
+        "HTML_MERGED_TABLE_COMPLEX"
+      ],
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    }
+  ]
+}

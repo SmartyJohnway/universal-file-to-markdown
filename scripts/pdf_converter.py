@@ -263,7 +263,8 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
         img_bytes = pix.tobytes("png")
 
         result, _ = engine(img_bytes)
-        boxes = [(r[0], r[1], r[2]) for r in result] if result else []
+        # RapidOCR may return confidence values as strings or numeric values.
+        boxes = [(r[0], r[1], float(r[2])) for r in result] if result else []
 
         combined_text = " ".join(b[1] for b in boxes)
         glued = _looks_glued(combined_text)
@@ -371,6 +372,10 @@ def _looks_glued(text: str) -> bool:
     if any(len(c) >= 6 and _CASE_TRANSITION.search(c) for c in cores):
         return True
     if any(len(c) >= VERY_LONG_TOKEN_THRESHOLD for c in cores):
+        return True
+    # RapidOCR 1.4 can concatenate all-caps labels and trailing numbers
+    # (for example ``OCRSAMPLE12345``) without a case transition.
+    if any(re.fullmatch(r"[A-Z]{6,}\d+", token) for token in tokens):
         return True
     medium = [c for c in cores if len(c) >= MEDIUM_TOKEN_THRESHOLD]
     if len(medium) >= MEDIUM_TOKEN_MIN_COUNT:

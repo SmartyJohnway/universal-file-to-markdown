@@ -70,7 +70,12 @@ A failed rerun clears known generated artifacts first, preventing stale canonica
 
 ## Installation
 
-Python 3.10 or later is recommended.
+Python 3.10–3.12 is supported. Python 3.11 is the primary qualified runtime
+for the complete OCR and cross-format regression suite. Python 3.13 is not
+currently supported because the declared `rapidocr-onnxruntime` dependency
+does not publish compatible builds for that runtime. OCR requires the native
+`libGL.so.1` runtime; install the Tesseract binary when using the
+`pytesseract` fallback. Pandoc remains an optional tool.
 
 ```bash
 python -m venv .venv
@@ -137,7 +142,8 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 Skill and schema versions are independent:
 
 ```text
-skill_version: 1.6.0
+published_stable_version: 1.6.0
+active_development_version: 1.7.0-dev
 document/table/chunk schema_version: 1.0
 ```
 
@@ -162,7 +168,7 @@ python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
 
-GitHub Actions runs these checks on pushes and pull requests. Release-specific checks are documented in `RELEASING.md` and `RELEASE_CHECKLIST.md`.
+GitHub Actions are currently **manual-only** under the repository CI execution policy; run these checks locally or dispatch the documented manual workflows. Release-specific checks are documented in `RELEASING.md` and `RELEASE_CHECKLIST.md`.
 
 ## Project structure
 
