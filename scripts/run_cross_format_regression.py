@@ -294,7 +294,12 @@ def main(args):
     workflow_cases=[c for c in all_workflow_cases if c['profile']==args.profile and (not args.case or c['case_id']==args.case) and not args.format]
     cases=format_cases+workflow_cases
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True);env=environment_manifest('pandoc-enabled' if args.profile=='optional-pandoc' else 'core-no-pandoc');(output/'environment-manifest.json').write_text(json.dumps(env,indent=2)+'\n')
-    results=[run_case(c,output,args.reruns,args.keep_bundles) if 'format' in c else run_workflow_case(c,output,args.reruns,args.keep_bundles) for c in cases]
+    results=[]
+    for case in cases:
+        print(f"[cross-format] starting {case['case_id']}", file=sys.stderr, flush=True)
+        result=run_case(case,output,args.reruns,args.keep_bundles) if 'format' in case else run_workflow_case(case,output,args.reruns,args.keep_bundles)
+        results.append(result)
+        print(f"[cross-format] finished {case['case_id']}: {result['status']}", file=sys.stderr, flush=True)
     baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text()) if baseline_path.exists() else {}
     baseline_mismatches=[]
     for result in results:
