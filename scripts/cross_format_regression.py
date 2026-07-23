@@ -55,13 +55,28 @@ def fingerprint(normalized):
     artifacts = {key: hashlib.sha256(stable_bytes(value)).hexdigest() for key, value in normalized.items() if key not in {"normalization_schema_version"}}
     return {"fingerprint_schema_version":"1.0", "bundle_fingerprint":hashlib.sha256(stable_bytes(normalized)).hexdigest(), "artifact_fingerprints":artifacts}
 
+def semantically_equal(before, after, path=""):
+    """Compare canonical models, allowing only bounded OCR confidence drift."""
+    if isinstance(before, dict) and isinstance(after, dict):
+        return before.keys()==after.keys() and all(semantically_equal(before[k],after[k],path+'.'+k) for k in before)
+    if isinstance(before, list) and isinstance(after, list):
+        return len(before)==len(after) and all(semantically_equal(a,b,path+'[]') for a,b in zip(before,after))
+    if path.endswith('.confidence') and isinstance(before,(int,float)) and isinstance(after,(int,float)):
+        return abs(before-after) <= OCR_TOLERANCE['absolute_tolerance']
+    return before == after
+
 def diff_models(before, after, excerpt_limit=240):
     """Bounded, human-oriented differences rather than an opaque hash mismatch."""
     changes=[]
     def add(kind, path, old=None, new=None):
         changes.append({"category":kind,"path":path,"before":str(old)[:excerpt_limit],"after":str(new)[:excerpt_limit]})
-    for key, category in (("document", "content_changed"), ("tables", "table_cell_changed"), ("chunks", "chunk_boundary_changed"), ("assets", "asset_hash_changed"), ("report_contract", "warning_added"), ("ai_artifacts", "AI artifact changed")):
+    for key, category in (("document", "content_changed"), ("tables", "table_cell_changed"), ("chunks", "chunk_boundary_changed"), ("assets", "asset_hash_changed"), ("ai_artifacts", "AI artifact changed")):
         if before.get(key) != after.get(key): add(category, key, before.get(key), after.get(key))
+    old_report,new_report=before.get('report_contract',{}),after.get('report_contract',{})
+    if old_report.get('status') != new_report.get('status'): add('status_changed','report_contract.status',old_report.get('status'),new_report.get('status'))
+    old_codes={w.get('code') for w in old_report.get('warnings',[]) if isinstance(w,dict)}; new_codes={w.get('code') for w in new_report.get('warnings',[]) if isinstance(w,dict)}
+    for code in sorted(new_codes-old_codes): add('warning_added','warnings',None,code)
+    for code in sorted(old_codes-new_codes): add('warning_removed','warnings',code,None)
     if before.get("document_markdown") != after.get("document_markdown"): add("content_changed", "document.md", before.get("document_markdown"), after.get("document_markdown"))
     return changes
 

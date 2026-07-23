@@ -4,7 +4,7 @@ import argparse, hashlib, json, shutil, subprocess, sys, tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from cross_format_regression import normalize_bundle, fingerprint, write_diff
+from cross_format_regression import normalize_bundle, fingerprint, write_diff, semantically_equal
 from regression_environment import environment_manifest
 
 ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","csv_big5","json_unicode","html_complex"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html"}
@@ -119,7 +119,7 @@ def run_case(case, root, reruns, keep):
         args=[sys.executable,str(ROOT/'scripts/router.py'),str(source),'--output',str(bundle)]
         if case['format']=='html': args += ['--source-url','https://example.test/page/index.html']
         process=subprocess.run(args,text=True,capture_output=True); current,report=assert_contract(case,bundle,process.returncode); errors += current; models.append(normalize_bundle(bundle));fps.append(fingerprint(models[-1]));bundles.append(bundle)
-    rerun_mismatch=len(set(fp['bundle_fingerprint'] for fp in fps))>1
+    rerun_mismatch=any(not semantically_equal(models[0],model) for model in models[1:])
     if rerun_mismatch: errors.append('CROSS_FORMAT_NONDETERMINISTIC_RERUN');write_diff(models[0],models[1],root/'diffs',case['case_id'])
     status='passed' if not errors else 'failed'; result={'case_id':case['case_id'],'format':case['format'],'status':status,'reason_codes':sorted(set(errors)),'fixture_recipe_id':case['fixture'],'fixture_description':'programmatically generated regression source','generator_dependency':'repository test dependencies','generated_source_sha256':source_sha,'fingerprints':fps,'normalized_snapshot':models[0]}
     if status!='passed' or keep: result['bundles']=[str(p) for p in bundles]
@@ -134,10 +134,15 @@ def main(args):
     for result in results:
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
         expected=baseline.get(result['case_id'])
-        if result['status']=='passed' and expected and expected != current:
+        snapshot=baseline_dir/(result['case_id']+'.normalized.json')
+        baseline_changed=expected and expected != current
+        # A fingerprint can differ solely because an OCR confidence moved within
+        # the declared tolerance; snapshots make that distinction auditable.
+        if baseline_changed and snapshot.exists():
+            baseline_changed=not semantically_equal(json.loads(snapshot.read_text()),result['normalized_snapshot'])
+        if result['status']=='passed' and baseline_changed:
             result['reason_codes'].append('BASELINE_FINGERPRINT_MISMATCH'); baseline_mismatches.append(result['case_id'])
             if not args.update_baseline: result['status']='failed'
-            snapshot=baseline_dir/(result['case_id']+'.normalized.json')
             if snapshot.exists(): write_diff(json.loads(snapshot.read_text()),result['normalized_snapshot'],output/'diffs',result['case_id']+'-baseline')
     if args.update_baseline:
         if any(r['status']!='passed' for r in results): raise SystemExit('baseline update refused: all selected cases must pass contract validation')
