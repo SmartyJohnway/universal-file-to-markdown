@@ -263,7 +263,9 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
         img_bytes = pix.tobytes("png")
 
         result, _ = engine(img_bytes)
-        boxes = [(r[0], r[1], r[2]) for r in result] if result else []
+        # RapidOCR 1.2.3 (the documented functional substitution) returns
+        # confidence strings, while newer releases return numeric values.
+        boxes = [(r[0], r[1], float(r[2])) for r in result] if result else []
 
         combined_text = " ".join(b[1] for b in boxes)
         glued = _looks_glued(combined_text)

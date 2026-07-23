@@ -7,7 +7,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 from cross_format_regression import normalize_bundle, fingerprint, write_diff, semantically_equal
 from regression_environment import environment_manifest
 
-ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","csv_big5","json_unicode","html_complex"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html"}
+ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","pdf_ocr_text","pdf_ocr_table_accepted","pdf_ocr_table_rejected","csv_big5","json_unicode","html_complex"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html"}
+OCR_FONT_CANDIDATES=(
+    ROOT/'tests'/'fixtures'/'fonts'/'DejaVuSans-Bold.ttf',
+    Path('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    Path('/Library/Fonts/Arial Bold.ttf'),
+    Path('C:/Windows/Fonts/arialbd.ttf'),
+)
+def resolve_ocr_font(image_font, size=72, candidates=OCR_FONT_CANDIDATES):
+    """Choose a readable TrueType font, with Pillow's scalable built-in fallback."""
+    for candidate in candidates:
+        if candidate.is_file():
+            return image_font.truetype(str(candidate), size)
+    return image_font.load_default(size=size)
 def load_cases(path=MANIFEST):
     data=json.loads(Path(path).read_text()); seen=set()
     for case in data['cases']:
@@ -25,6 +37,13 @@ def load_cases(path=MANIFEST):
             except re.error as exc: raise AssertionError(f'invalid required_list_markdown_patterns regex: {exc}')
         ancestors=case.get('required_element_ancestor_types',{})
         assert isinstance(ancestors,dict) and all(isinstance(key,str) and isinstance(value,list) and value and all(isinstance(ancestor,str) and ancestor for ancestor in value) for key,value in ancestors.items())
+        ocr=case.get('required_ocr',{})
+        assert isinstance(ocr,dict) and set(ocr) <= {'content_patterns','element_types','locator_fields','min_accepted_tables','min_rejected_tables','candidate_reason_codes'}
+        assert all(isinstance(ocr.get(key,[]),list) and all(isinstance(value,str) and value for value in ocr.get(key,[])) for key in ('content_patterns','element_types','locator_fields','candidate_reason_codes'))
+        for pattern in ocr.get('content_patterns',[]):
+            try: re.compile(pattern)
+            except re.error as exc: raise AssertionError(f'invalid required_ocr.content_patterns regex: {exc}')
+        assert all(isinstance(ocr.get(key,0),int) and ocr.get(key,0) >= 0 for key in ('min_accepted_tables','min_rejected_tables'))
     return data['cases']
 def generate(name, directory):
     directory.mkdir(parents=True,exist_ok=True)
@@ -65,6 +84,23 @@ def generate(name, directory):
     if name=='pdf_digital':
         from reportlab.pdfgen import canvas
         p=directory/'digital.pdf';c=canvas.Canvas(str(p));c.drawString(100,700,'Digital PDF Test 123');c.save();return p
+    if name.startswith('pdf_ocr_'):
+        from PIL import Image, ImageDraw, ImageFont
+        font=resolve_ocr_font(ImageFont, 72)
+        image=Image.new('RGB',(1800,1100),'white'); draw=ImageDraw.Draw(image)
+        if name=='pdf_ocr_text':
+            draw.text((130,180),'OCR SAMPLE 12345',font=font,fill='black')
+            draw.text((130,300),'SCANNED DOCUMENT',font=font,fill='black')
+        elif name=='pdf_ocr_table_accepted':
+            rows=[('ITEM','QUANTITY'),('MOTOR','TWO'),('PUMP','FOUR'),('VALVE','TWELVE')]
+            x0,y0,w,h=120,100,1550,220
+            for row,(left,right) in enumerate(rows):
+                y=y0+row*h; draw.rectangle((x0,y,x0+w,y+h),outline='black',width=5); draw.line((x0+900,y,x0+900,y+h),fill='black',width=5)
+                draw.text((x0+35,y+62),left,font=font,fill='black'); draw.text((x0+980,y+62),right,font=font,fill='black')
+        else:
+            draw.text((130,180),'MODEL ABC-100',font=font,fill='black')
+            draw.text((130,330),'VOLTAGE 480 V',font=font,fill='black')
+        p=directory/(name+'.pdf'); image.save(p,'PDF',resolution=144.0); return p
     if name=='csv_big5':
         p=directory/'big5.csv';p.write_bytes('名稱,數量\n鋼管,10\n'.encode('big5'));return p
     if name=='json_unicode':
@@ -99,6 +135,22 @@ def assert_contract(case,bundle,router_rc):
     from validate_bundle import validate_bundle
     if validate_bundle(str(bundle)).get('status') != case['expected_bundle_validation']: errors.append('INDEPENDENT_BUNDLE_VALIDATION_FAILED')
     if case.get('expected_engine') and case['expected_engine'] not in str(report.get('engine','')): errors.append('ENGINE_MISMATCH')
+    ocr=case.get('required_ocr',{})
+    if ocr:
+        details=report.get('details',{})
+        candidates=details.get('ocr_table_candidates',[])
+        assessment=details.get('ocr_table_assessment',{})
+        if not details.get('ocr_used') or not candidates: errors.append('OCR_EVIDENCE_MISSING')
+        text='\n'.join(str(element.get('content','')) for element in doc.get('elements',[]))
+        if any(not re.search(pattern,text) for pattern in ocr.get('content_patterns',[])): errors.append('OCR_CONTENT_MISSING')
+        types={e.get('type') for e in doc.get('elements',[])}
+        if not set(ocr.get('element_types',[])) <= types: errors.append('OCR_EVIDENCE_MISSING')
+        ocr_elements=[e for e in doc.get('elements',[]) if 'ocr' in str(e.get('engine','')).lower() or 'tesseract' in str(e.get('engine','')).lower()]
+        if not ocr_elements or any(not all(field in e.get('source_locator',{}) for field in ocr.get('locator_fields',[])) for e in ocr_elements): errors.append('OCR_EVIDENCE_MISSING')
+        if assessment.get('accepted_count',0) < ocr.get('min_accepted_tables',0): errors.append('OCR_TABLE_ACCEPTANCE_MISSING')
+        if assessment.get('rejected_count',0) < ocr.get('min_rejected_tables',0): errors.append('OCR_TABLE_REJECTION_MISSING')
+        candidate_codes={code for candidate in candidates for code in candidate.get('reason_codes',[])}
+        if not set(ocr.get('candidate_reason_codes',[])) <= candidate_codes: errors.append('OCR_TABLE_REJECTION_MISSING')
     codes=warning_codes(report); required=set(case['required_warning_codes']); allowed=required|set(case['allowed_warning_codes'])
     if not required <= codes: errors.append('REQUIRED_WARNING_MISSING')
     if codes-allowed: errors.append('UNEXPECTED_WARNING')
@@ -143,6 +195,11 @@ def assert_contract(case,bundle,router_rc):
     for chunk in chunks:
         if any(value not in idset for value in chunk.get('element_ids',[])) or any(value not in table_ids for value in chunk.get('table_ids',[])): errors.append('REFERENCE_ERROR')
     if any(len(c.get('content',''))>case['max_chunk_chars'] for c in chunks): errors.append('CHUNK_LIMIT')
+    if ocr:
+        accepted_ids={candidate.get('candidate_id') for candidate in report.get('details',{}).get('ocr_table_candidates',[]) if candidate.get('decision')=='accepted'}
+        canonical_ocr=[json.loads(path.read_text()) for path in tables if (json.loads(path.read_text()).get('properties') or {}).get('origin')=='ocr_table_candidate']
+        if any((table.get('properties') or {}).get('candidate_id') not in accepted_ids for table in canonical_ocr): errors.append('OCR_TABLE_CONTAINMENT_FAILED')
+        if ocr.get('min_accepted_tables',0) and len(canonical_ocr) < ocr['min_accepted_tables']: errors.append('OCR_TABLE_CONTAINMENT_FAILED')
     return errors, report
 def run_case(case, root, reruns, keep):
     if case['profile']=='optional-pandoc' and not shutil.which('pandoc'): return {'case_id':case['case_id'],'format':case['format'],'status':'skipped','skip_reason':'pandoc binary unavailable'}
