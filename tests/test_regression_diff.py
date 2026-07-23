@@ -20,3 +20,8 @@ def test_table_dimension_and_merge_changes_are_classified():
 def test_added_and_removed_entities_are_classified():
     categories={item['category'] for item in diff_models({'document':{'elements':[{'id':'old'}]},'tables':[{'id':'old-table'}]},{'document':{'elements':[{'id':'new'}]},'tables':[{'id':'new-table'}]})}
     assert {'element_added','element_removed','table_added','table_removed'} <= categories
+def test_multi_table_specific_diff_does_not_hide_cell_diff():
+    before={'tables':[{'id':'a','dimensions':{'rows':1,'columns':1},'cells':[]},{'id':'b','dimensions':{'rows':1,'columns':1},'cells':[{'row':0,'column':0,'value':'old'}]}]}
+    after={'tables':[{'id':'a','dimensions':{'rows':2,'columns':1},'cells':[]},{'id':'b','dimensions':{'rows':1,'columns':1},'cells':[{'row':0,'column':0,'value':'new'}]}]}
+    categories={item['category'] for item in diff_models(before,after)}
+    assert {'table_dimensions_changed','table_cell_changed'} <= categories

@@ -90,8 +90,8 @@ def diff_models(before, after, excerpt_limit=240):
     old_tables={item.get('id'):item for item in before.get('tables',[]) if item.get('id')}; new_tables={item.get('id'):item for item in after.get('tables',[]) if item.get('id')}
     for ident in sorted(new_tables.keys()-old_tables.keys()): add('table_added','tables.'+ident,None,new_tables[ident])
     for ident in sorted(old_tables.keys()-new_tables.keys()): add('table_removed','tables.'+ident,old_tables[ident],None)
-    table_specific=False
     for ident in sorted(old_tables.keys()&new_tables.keys()):
+        table_specific=False
         old,new=old_tables[ident],new_tables[ident]
         if old.get('dimensions') != new.get('dimensions'):
             add('table_dimensions_changed','tables.'+ident+'.dimensions',old.get('dimensions'),new.get('dimensions')); table_specific=True
