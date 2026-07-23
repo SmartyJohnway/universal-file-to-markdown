@@ -725,5 +725,29 @@
         "normalized_reruns_must_match": true
       }
     }
+  ],
+  "workflow_cases": [
+    {
+      "case_id": "phase5-readable-projection-host-review",
+      "profile": "core",
+      "fixture": "html_complex",
+      "workflow": "readable_projection_host_review",
+      "expected_status": "passed",
+      "expected_request_status": "generated",
+      "expected_ai_review_status": "not_provided",
+      "expected_readable_projection_status": "deterministic_only",
+      "required_projection_patterns": [
+        "# Trading",
+        "## Rates",
+        "| Kind | Rates | Rates |",
+        "| Stock | 1 | Two<br>- detail |"
+      ],
+      "required_reason_codes": [
+        "HTML_MERGED_TABLE_COMPLEX"
+      ],
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    }
   ]
 }
