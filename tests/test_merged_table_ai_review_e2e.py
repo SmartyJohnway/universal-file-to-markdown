@@ -12,27 +12,43 @@ from run_merged_table_ai_review_regression import run
 def test_merged_table_ai_review_trigger_e2e(tmp_path):
     summary = run(tmp_path / "merged-trigger-e2e")
 
-    assert summary["case_count"] == 8
-    assert summary["positive_case_count"] == 4
-    assert summary["negative_case_count"] == 4
+    assert summary["case_count"] == 16
     assert summary["failed"] == 0, summary["results"]
     assert summary["validation_status"] == "passed"
 
-    positives = {result["format"]: result for result in summary["results"] if result["merged"]}
-    negatives = {result["format"]: result for result in summary["results"] if not result["merged"]}
-    assert set(positives) == {"docx", "xlsx", "pptx", "html"}
-    assert set(negatives) == {"docx", "xlsx", "pptx", "html"}
+    results_by_key = {(r["format"], r["merged"], r["mode"]): r for r in summary["results"]}
 
-    for result in positives.values():
-        assert result["status"] == "passed"
-        assert "MERGED_TABLE_GEOMETRY_PRESENT" in result["assessment_reason_codes"]
-        assert "MERGED_TABLE_GEOMETRY_PRESENT" in result["request_reason_codes"]
-        assert result["canonical_table_ids"]
-        assert set(result["request_target_ids"]) & set(result["canonical_table_ids"])
-        assert result["canonical_hashes_preserved"] is True
+    for fmt in ("docx", "xlsx", "pptx", "html"):
+        # 1. Merged Automatic (Positive)
+        r_m_auto = results_by_key[(fmt, True, "automatic")]
+        assert r_m_auto["status"] == "passed"
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" in r_m_auto["assessment_reason_codes"]
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" in r_m_auto["request_reason_codes"]
+        assert r_m_auto["canonical_hashes_preserved"] is True
 
-    for result in negatives.values():
-        assert result["status"] == "passed"
-        assert "MERGED_TABLE_GEOMETRY_PRESENT" not in result["assessment_reason_codes"]
-        assert "MERGED_TABLE_GEOMETRY_PRESENT" not in result["request_reason_codes"]
-        assert result["canonical_hashes_preserved"] is True
+        # 2. Plain Automatic (Negative control)
+        r_p_auto = results_by_key[(fmt, False, "automatic")]
+        assert r_p_auto["status"] == "passed"
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" not in r_p_auto["assessment_reason_codes"]
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" not in r_p_auto["request_reason_codes"]
+        assert "HTML_MERGED_TABLE_COMPLEX" not in r_p_auto["request_reason_codes"]
+        assert r_p_auto["canonical_hashes_preserved"] is True
+
+        # 3. Plain Explicit (Negative for false merged geometry reasons)
+        r_p_exp = results_by_key[(fmt, False, "explicit")]
+        assert r_p_exp["status"] == "passed"
+        assert "EXPLICIT_USER_REQUEST" in r_p_exp["request_reason_codes"]
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" not in r_p_exp["request_reason_codes"]
+        assert "HTML_MERGED_TABLE_COMPLEX" not in r_p_exp["request_reason_codes"]
+        assert r_p_exp["canonical_hashes_preserved"] is True
+
+        # 4. Merged Explicit (Positive for both explicit and merged reasons)
+        r_m_exp = results_by_key[(fmt, True, "explicit")]
+        assert r_m_exp["status"] == "passed"
+        assert "EXPLICIT_USER_REQUEST" in r_m_exp["request_reason_codes"]
+        assert "MERGED_TABLE_GEOMETRY_PRESENT" in r_m_exp["request_reason_codes"]
+        if fmt == "html":
+            assert "HTML_MERGED_TABLE_COMPLEX" in r_m_exp["request_reason_codes"]
+        else:
+            assert "HTML_MERGED_TABLE_COMPLEX" not in r_m_exp["request_reason_codes"]
+        assert r_m_exp["canonical_hashes_preserved"] is True

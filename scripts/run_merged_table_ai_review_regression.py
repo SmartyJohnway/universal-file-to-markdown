@@ -3,10 +3,10 @@
 
 This focused source-repository regression generates merged and plain tables for
 DOCX, XLSX, PPTX, and HTML, routes them through the production converter, then
-invokes prepare_ai_review.py. Positive cases must generate a table-targeted AI
-Review request with MERGED_TABLE_GEOMETRY_PRESENT. Plain-table controls must not
-report that reason. Canonical bundle files must remain byte-identical before and
-after request preparation.
+invokes prepare_ai_review.py in both automatic and explicit target-table modes.
+Positive cases must generate table-targeted AI Review requests with correct
+truthful reason codes. Plain-table controls must not report geometry reasons.
+Canonical bundle files must remain byte-identical before and after request preparation.
 """
 
 from __future__ import annotations
@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 CANONICAL_NAMES = ("document.json", "chunks.jsonl", "manifest.json")
 MERGED_REASON = "MERGED_TABLE_GEOMETRY_PRESENT"
+HTML_COMPLEX_REASON = "HTML_MERGED_TABLE_COMPLEX"
+EXPLICIT_REASON = "EXPLICIT_USER_REQUEST"
 
 
 def _sha256(path: Path) -> str:
@@ -71,7 +73,8 @@ def _write_docx(path: Path, merged: bool) -> None:
     table.cell(1, 0).text = "Value A"
     table.cell(1, 1).text = "Value B"
     if merged:
-        table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged Header"
+        table.cell(0, 0).merge(table.cell(0, 1))
+        table.cell(0, 0).text = "Merged Header"
     document.save(path)
 
 
@@ -132,9 +135,9 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
 
 
-def _case(format_name: str, merged: bool, root: Path) -> dict[str, Any]:
+def _case(format_name: str, merged: bool, mode: str, root: Path) -> dict[str, Any]:
     suffix, writer = WRITERS[format_name]
-    case_id = f"{format_name}-{'merged' if merged else 'plain'}-ai-review-trigger"
+    case_id = f"{format_name}-{'merged' if merged else 'plain'}-{mode}-ai-review-trigger"
     source_dir = root / "sources" / case_id
     bundle = root / "bundles" / case_id
     source_dir.mkdir(parents=True, exist_ok=True)
@@ -157,13 +160,31 @@ def _case(format_name: str, merged: bool, root: Path) -> dict[str, Any]:
             "case_id": case_id,
             "format": format_name,
             "merged": merged,
+            "mode": mode,
             "status": "failed",
             "reason_codes": errors,
             "router_stderr": router.stderr,
         }
 
+    canonical_table_ids = _table_ids(bundle)
     before = _canonical_hashes(bundle)
-    prepare = _run([sys.executable, str(SCRIPTS / "prepare_ai_review.py"), str(bundle)])
+
+    prepare_cmd = [sys.executable, str(SCRIPTS / "prepare_ai_review.py"), str(bundle)]
+    if mode == "explicit":
+        if not canonical_table_ids:
+            errors.append("CANONICAL_TABLE_MISSING_FOR_EXPLICIT_TEST")
+            return {
+                "case_id": case_id,
+                "format": format_name,
+                "merged": merged,
+                "mode": mode,
+                "status": "failed",
+                "reason_codes": errors,
+            }
+        target_id = sorted(canonical_table_ids)[0]
+        prepare_cmd.extend(["--force-user-request", "--target-table", target_id])
+
+    prepare = _run(prepare_cmd)
     after = _canonical_hashes(bundle)
     if prepare.returncode != 0:
         errors.append("PREPARE_AI_REVIEW_FAILED")
@@ -177,37 +198,74 @@ def _case(format_name: str, merged: bool, root: Path) -> dict[str, Any]:
     request = _load_json(request_path) if request_path.is_file() else None
     request_reasons = set(request.get("reason_codes") or []) if request else set()
     targets = request.get("targets") or [] if request else []
-    canonical_table_ids = _table_ids(bundle)
 
-    if merged:
-        if not report.get("ai_review_recommended"):
-            errors.append("AI_REVIEW_NOT_RECOMMENDED")
-        if MERGED_REASON not in assessment_reasons:
-            errors.append("ASSESSMENT_REASON_MISSING")
-        if request is None:
-            errors.append("AI_REVIEW_REQUEST_MISSING")
+    # Verification invariants
+    if mode == "automatic":
+        if merged:
+            if not report.get("ai_review_recommended"):
+                errors.append("AI_REVIEW_NOT_RECOMMENDED")
+            if MERGED_REASON not in assessment_reasons:
+                errors.append("ASSESSMENT_REASON_MISSING")
+            if request is None:
+                errors.append("AI_REVIEW_REQUEST_MISSING")
+            else:
+                if MERGED_REASON not in request_reasons:
+                    errors.append("REQUEST_REASON_MISSING")
+                matching_targets = [
+                    t
+                    for t in targets
+                    if t.get("target_type") == "table" and t.get("target_id") in canonical_table_ids
+                ]
+                if not matching_targets:
+                    errors.append("CANONICAL_TABLE_TARGET_MISSING")
+                if any(MERGED_REASON not in set(t.get("reason_codes") or []) for t in matching_targets):
+                    errors.append("TARGET_MERGED_REASON_MISSING")
         else:
-            if MERGED_REASON not in request_reasons:
-                errors.append("REQUEST_REASON_MISSING")
+            if MERGED_REASON in assessment_reasons:
+                errors.append("PLAIN_TABLE_FALSE_POSITIVE_ASSESSMENT")
+            if MERGED_REASON in request_reasons:
+                errors.append("PLAIN_TABLE_FALSE_POSITIVE_REQUEST")
+            if any(MERGED_REASON in set(t.get("reason_codes") or []) for t in targets):
+                errors.append("PLAIN_TABLE_FALSE_POSITIVE_TARGET")
+            if HTML_COMPLEX_REASON in assessment_reasons or HTML_COMPLEX_REASON in request_reasons:
+                errors.append("PLAIN_TABLE_FALSE_HTML_COMPLEX_REASON")
+
+    elif mode == "explicit":
+        if request is None:
+            errors.append("EXPLICIT_REQUEST_NOT_GENERATED")
+        else:
+            if EXPLICIT_REASON not in request_reasons:
+                errors.append("EXPLICIT_REASON_MISSING_FROM_REQUEST")
             matching_targets = [
-                target
-                for target in targets
-                if target.get("target_type") == "table" and target.get("target_id") in canonical_table_ids
+                t
+                for t in targets
+                if t.get("target_type") == "table" and t.get("target_id") in canonical_table_ids
             ]
             if not matching_targets:
-                errors.append("CANONICAL_TABLE_TARGET_MISSING")
-    else:
-        if MERGED_REASON in assessment_reasons:
-            errors.append("PLAIN_TABLE_FALSE_POSITIVE_ASSESSMENT")
-        if MERGED_REASON in request_reasons:
-            errors.append("PLAIN_TABLE_FALSE_POSITIVE_REQUEST")
-        if any(MERGED_REASON in set(target.get("reason_codes") or []) for target in targets):
-            errors.append("PLAIN_TABLE_FALSE_POSITIVE_TARGET")
+                errors.append("EXPLICIT_TARGET_MISSING")
+            else:
+                for target in matching_targets:
+                    t_reasons = set(target.get("reason_codes") or [])
+                    if EXPLICIT_REASON not in t_reasons:
+                        errors.append("EXPLICIT_REASON_MISSING_FROM_TARGET")
+                    if merged:
+                        if MERGED_REASON not in t_reasons:
+                            errors.append("MERGED_REASON_MISSING_FROM_EXPLICIT_TARGET")
+                        if format_name == "html" and HTML_COMPLEX_REASON not in t_reasons:
+                            errors.append("HTML_COMPLEX_REASON_MISSING_FROM_EXPLICIT_TARGET")
+                        if format_name != "html" and HTML_COMPLEX_REASON in t_reasons:
+                            errors.append("HTML_COMPLEX_REASON_FALSE_POSITIVE_IN_EXPLICIT_TARGET")
+                    else:
+                        if MERGED_REASON in t_reasons:
+                            errors.append("PLAIN_EXPLICIT_TARGET_FALSE_MERGED_REASON")
+                        if HTML_COMPLEX_REASON in t_reasons:
+                            errors.append("PLAIN_EXPLICIT_TARGET_FALSE_HTML_COMPLEX_REASON")
 
     return {
         "case_id": case_id,
         "format": format_name,
         "merged": merged,
+        "mode": mode,
         "status": "passed" if not errors else "failed",
         "reason_codes": sorted(set(errors)),
         "router_returncode": router.returncode,
@@ -226,13 +284,18 @@ def _case(format_name: str, merged: bool, root: Path) -> dict[str, Any]:
 
 def run(output: Path) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
-    results = [_case(format_name, merged, output) for format_name in WRITERS for merged in (True, False)]
+    results = [
+        _case(format_name, merged, mode, output)
+        for format_name in WRITERS
+        for merged in (True, False)
+        for mode in ("automatic", "explicit")
+    ]
     failed = [result for result in results if result["status"] != "passed"]
     summary = {
         "suite": "merged-table-ai-review-trigger-e2e",
         "case_count": len(results),
-        "positive_case_count": sum(1 for result in results if result["merged"]),
-        "negative_case_count": sum(1 for result in results if not result["merged"]),
+        "positive_case_count": sum(1 for result in results if result["merged"] or result["mode"] == "explicit"),
+        "negative_case_count": sum(1 for result in results if not result["merged"] and result["mode"] == "automatic"),
         "passed": len(results) - len(failed),
         "failed": len(failed),
         "validation_status": "passed" if not failed else "failed",

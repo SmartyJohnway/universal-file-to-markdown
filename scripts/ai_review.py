@@ -101,6 +101,19 @@ def table_has_merged_geometry(table: dict) -> bool:
             return True
     return False
 
+def derive_table_geometry_reason_codes(table: dict) -> list[str]:
+    """Derive truthful geometry-based reason codes for a table."""
+    reasons = []
+    if table_has_merged_geometry(table):
+        reasons.append("MERGED_TABLE_GEOMETRY_PRESENT")
+        source_format = (
+            table.get("source_locator", {}).get("format")
+            or table.get("source_format")
+        )
+        if table.get("merged_cells") or source_format == "html":
+            reasons.append("HTML_MERGED_TABLE_COMPLEX")
+    return list(dict.fromkeys(reasons))
+
 def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     if report.get("status") == "failed" or not bundle_valid:
         return {"recommended": False, "priority": "none", "reason_codes": [], "targets": [], "policy_status": "prohibited"}
@@ -110,10 +123,9 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     targets = []
 
     for t in tables:
-        if table_has_merged_geometry(t):
-            reasons.append("MERGED_TABLE_GEOMETRY_PRESENT")
-            if t.get("merged_cells") or t.get("source_locator", {}).get("format") == "html":
-                reasons.append("HTML_MERGED_TABLE_COMPLEX")
+        geom_reasons = derive_table_geometry_reason_codes(t)
+        if geom_reasons:
+            reasons.extend(geom_reasons)
             targets.append({"target_type": "table", "target_id": t["id"], "source_locator": t.get("source_locator", {})})
         elif any(w in ws for w in ("TABLE_STRUCTURE_UNVERIFIED", "OCR_TABLE_GEOMETRY_UNAVAILABLE", "LOW_OCR_CONFIDENCE_PAGES")):
             # Advisory target for unverified OCR table structures
@@ -150,14 +162,11 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
         "policy_status": "recommended" if rec else ("optional" if reasons else "not_needed"),
     }
 
-def _target(t):
-    rcs = []
-    if table_has_merged_geometry(t):
-        rcs.append("MERGED_TABLE_GEOMETRY_PRESENT")
-    if t.get("merged_cells") or t.get("source_locator", {}).get("format") == "html":
-        rcs.append("HTML_MERGED_TABLE_COMPLEX")
-    if not rcs:
-        rcs.append("MERGED_TABLE_GEOMETRY_PRESENT")
+def _target(t, is_explicit_user_request=False):
+    rcs = derive_table_geometry_reason_codes(t)
+    if is_explicit_user_request:
+        if "EXPLICIT_USER_REQUEST" not in rcs:
+            rcs.insert(0, "EXPLICIT_USER_REQUEST")
     return {
         "target_type": "table",
         "target_id": t["id"],
@@ -236,6 +245,7 @@ def prepare_request(bundle, force_user_request=False, target_table=None, target_
                 raise ValueError(f"target table ID '{target_table}' not found in canonical bundle")
             e["targets"] = [{"target_type": "table", "target_id": target_table, "source_locator": matching[0].get("source_locator", {})}]
             trigger_meta = {"type": "explicit_user_request", "requested_target_type": "table", "requested_target_id": target_table}
+            e["reason_codes"] = list(dict.fromkeys(["EXPLICIT_USER_REQUEST"] + derive_table_geometry_reason_codes(matching[0])))
         elif target_element:
             doc = load(b / "document.json")
             matching_els = [x for x in doc.get("elements", []) if x.get("id") == target_element or f"ocr-element-{x.get('id')}" == target_element]
@@ -264,10 +274,11 @@ def prepare_request(bundle, force_user_request=False, target_table=None, target_
     ts = []
     target_map = {x["target_id"]: x for x in e["targets"]}
     ids = set(target_map.keys())
+    is_explicit = force_user_request or "EXPLICIT_USER_REQUEST" in e.get("reason_codes", [])
 
     for t in tables:
         if t["id"] in ids:
-            x = _target(t)
+            x = _target(t, is_explicit_user_request=is_explicit)
             _bound(x, tr)
             ts.append(x)
         elif f"advisory-{t['id']}" in ids:
