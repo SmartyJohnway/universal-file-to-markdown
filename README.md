@@ -166,6 +166,8 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 
 ```bash
 python scripts/capability_probe.py --json
+python scripts/build_skill_package.py --output dist --verify
+python scripts/validate_skill_package.py dist/universal-file-to-markdown-1.7.0-rc1.zip
 python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
