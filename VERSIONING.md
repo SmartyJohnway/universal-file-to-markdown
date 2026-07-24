@@ -1,7 +1,6 @@
 # Versioning
 
-`VERSION` is the canonical current skill-version source. The current value,
-`1.7.0`, is the published stable release.
+`VERSION` is the canonical current skill-version source. `1.7.1` is the current stable skill version, and `1.7.0` remains a previously published stable release.
 
 Skill, document, table, chunk, bundle, and report schema versions are
 independent contracts. A skill release alone does not require a schema version

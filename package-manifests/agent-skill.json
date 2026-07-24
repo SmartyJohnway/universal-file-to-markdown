@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "package_profile": "agent-skill",
+  "skill_name": "universal-file-to-markdown",
+  "version_source": "VERSION",
+  "top_level_dir_format": "universal-file-to-markdown",
+  "required_paths": [
+    "SKILL.md",
+    "VERSION",
+    "requirements.txt",
+    "scripts/",
+    "schemas/",
+    "references/"
+  ],
+  "optional_paths": [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "excluded_patterns": [
+    "README.md",
+    "README.zh-TW.md",
+    "CHANGELOG.md",
+    "CHANGELOG.zh-TW.md",
+    "VERSIONING.md",
+    "package-manifest.json",
+    "package-manifests/**",
+    "docs/**",
+    "PROJECT_STATUS.md",
+    "RELEASING.md",
+    "RELEASE_CHECKLIST.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    ".git/**",
+    ".github/**",
+    ".venv/**",
+    ".qualification/**",
+    ".pytest_cache/**",
+    "__pycache__/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.pyo",
+    "**/*.log",
+    "**/*.tmp",
+    "**/*.bak",
+    "**/*.swp",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "dist/**",
+    "build/**",
+    "tests/**"
+  ],
+  "sidecar_required": false,
+  "evidence_manifest_required": false,
+  "entrypoints": [
+    "scripts/router.py",
+    "scripts/capability_probe.py",
+    "scripts/validate_bundle.py"
+  ]
+}

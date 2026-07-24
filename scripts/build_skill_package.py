@@ -3,7 +3,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, os, subprocess, sys, tempfile, zipfile
 from pathlib import Path
-from skill_package_common import ROOT, allowed_files, load_allowlist, read_version
+from skill_package_common import ROOT, allowed_files, load_allowlist, read_version, load_profile_manifest
 
 TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 MODE = 0o100644 << 16
@@ -17,15 +17,20 @@ def source_git_sha(root: Path) -> str | None:
     except (OSError, subprocess.CalledProcessError):
         return None
 
-def artifact_paths(output: Path, version: str) -> tuple[Path, Path, Path]:
-    stem = f"universal-file-to-markdown-{version}"
+def artifact_paths(output: Path, version: str, profile: str = "release") -> tuple[Path, Path, Path | None]:
+    if profile == "agent-skill":
+        stem = f"universal-file-to-markdown-{version}-skill"
+        return output / f"{stem}.zip", output / f"{stem}.sha256", None
+    stem = f"universal-file-to-markdown-{version}-release"
     return output / f"{stem}.zip", output / f"{stem}.sha256", output / f"{stem}.manifest.json"
 
-def build(output: Path, root: Path = ROOT, verify: bool = False) -> dict:
-    version, allowlist = read_version(root), load_allowlist(root)
-    archive, sidecar, evidence = artifact_paths(output, version)
+def build(output: Path, root: Path = ROOT, profile: str = "release", verify: bool = False) -> dict:
+    version = read_version(root)
+    allowlist = load_profile_manifest(profile=profile, root=root)
+    archive, sidecar, evidence = artifact_paths(output, version, profile)
     files = allowed_files(root, allowlist)
-    prefix = f"universal-file-to-markdown-{version}"
+    top_level_format = allowlist.get("top_level_dir_format", f"universal-file-to-markdown-{{version}}")
+    prefix = top_level_format.format(version=version)
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output) as temporary:
         temp_archive = Path(temporary) / archive.name
@@ -42,22 +47,43 @@ def build(output: Path, root: Path = ROOT, verify: bool = False) -> dict:
         with zipfile.ZipFile(temp_archive) as zipped:
             entries = [{"path": info.filename, "sha256": hashlib.sha256(zipped.read(info)).hexdigest(), "size_bytes": info.file_size} for info in zipped.infolist()]
             compressed_size = sum(info.compress_size for info in zipped.infolist())
-        evidence_data = {"schema_version":"1.0", "skill_name":allowlist["skill_name"], "skill_version":version, "source_git_sha":source_git_sha(root), "archive_name":archive.name, "archive_sha256":archive_sha, "file_count":len(entries), "uncompressed_size_bytes":sum(item["size_bytes"] for item in entries), "compressed_size_bytes":compressed_size, "entries":entries}
-        temp_sidecar, temp_evidence = Path(temporary) / sidecar.name, Path(temporary) / evidence.name
+        evidence_data = {
+            "schema_version": "1.0",
+            "package_profile": profile,
+            "skill_name": allowlist.get("skill_name", "universal-file-to-markdown"),
+            "skill_version": version,
+            "source_git_sha": source_git_sha(root) if profile == "release" else None,
+            "archive_name": archive.name,
+            "archive_sha256": archive_sha,
+            "file_count": len(entries),
+            "uncompressed_size_bytes": sum(item["size_bytes"] for item in entries),
+            "compressed_size_bytes": compressed_size,
+            "entries": entries
+        }
+        temp_sidecar = Path(temporary) / sidecar.name
         temp_sidecar.write_text(f"{archive_sha}  {archive.name}\n", encoding="utf-8")
-        temp_evidence.write_text(json.dumps(evidence_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        os.replace(temp_archive, archive); os.replace(temp_sidecar, sidecar); os.replace(temp_evidence, evidence)
+        os.replace(temp_archive, archive)
+        os.replace(temp_sidecar, sidecar)
+        if evidence is not None:
+            temp_evidence = Path(temporary) / evidence.name
+            temp_evidence.write_text(json.dumps(evidence_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            os.replace(temp_evidence, evidence)
     if verify:
         from validate_skill_package import validate
-        validate(archive, root / "package-manifest.json")
+        validate(archive, profile=profile, source_manifest=root / "package-manifests" / f"{profile}.json")
     return evidence_data
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--output", type=Path, required=True); parser.add_argument("--verify", action="store_true")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--profile", choices=["release", "agent-skill"], default="release", help="package profile to build")
+    parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
     try:
-        result = build(args.output, verify=args.verify)
+        result = build(args.output, profile=args.profile, verify=args.verify)
     except Exception as exc:
-        print(f"package build failed: {exc}", file=sys.stderr); return 1
-    print(json.dumps(result, ensure_ascii=False, indent=2)); return 0
+        print(f"package build failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
 if __name__ == "__main__": raise SystemExit(main())

@@ -1,11 +1,18 @@
 ---
 name: universal-file-to-markdown
-version: 1.7.0
+version: 1.7.1
 release_status: stable
-description: Evidence-first, fidelity-oriented document extraction skill for AI agents. Extract, preserve, validate, report uncertainty, and prepare supported documents for AI handoff with traceable source locators.
+description: >
+  Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
+  EML, and supported markup into traceable Markdown and validated
+  canonical bundles. Use this skill when users ask to extract,
+  convert, inspect, preserve, validate, translate, audit, or prepare
+  document content for AI review, RAG, or downstream automation.
+license: Apache-2.0
+compatibility: Requires Python 3.10–3.12; Python 3.11 recommended.
 ---
 
-# Universal File to Markdown v1.7.0
+# Universal File to Markdown v1.7.1
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -93,8 +100,8 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.7.0 (stable)
-published_stable_version: 1.7.0
+skill_version: 1.7.1 (stable)
+published_stable_version: 1.7.1
 document/table/chunk schema_version: 1.0
 ```
 
@@ -115,6 +122,8 @@ splitting. Large Markdown tables repeat their header in subsequent chunks.
 
 JSON Schemas are in `schemas/`. Read `references/capability_matrix.md` when
 deciding whether a format's canonical granularity is sufficient for the task.
+For AI Review request generation, validation, and projection rendering, see
+[ai_review_workflow.md](references/ai_review_workflow.md).
 
 ## Quality interpretation
 

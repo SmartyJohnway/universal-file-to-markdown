@@ -143,7 +143,8 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 ## Canonical contracts
 
-已發布 stable release：`1.7.0`
+目前 stable release：`1.7.1`
+前發布 stable release：`1.7.0`
 
 `VERSION` 是目前技能版本的 canonical source。技能版本、schema 版本、bundle schema 版本與 report schema 版本是各自獨立的合約；技能發布不會自動要求每個 schema 版本都與技能版本相同。目前 document/table/chunk schema 版本為 `1.0`；請參閱 [VERSIONING.md](VERSIONING.md)。
 
@@ -164,11 +165,15 @@ JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `
 
 ```bash
 python scripts/capability_probe.py --json
-python scripts/build_skill_package.py --output dist --verify
-python scripts/validate_skill_package.py dist/universal-file-to-markdown-1.7.0.zip
+python scripts/build_skill_package.py --profile release --output dist --verify
+python scripts/build_skill_package.py --profile agent-skill --output dist --verify
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.1-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.1-skill.zip
 python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
+
+完整的迴歸測試套件維持於原始程式碼儲存庫（source repository）中，不包含在 runtime release package 或 Agent Skill 上傳 ZIP 內。
 
 GitHub Actions 目前依 repository CI execution policy 採 **manual-only**；請在本機執行上述檢查或手動觸發已記錄的 workflow。發布專用檢查請參考 `RELEASING.md` 與 `RELEASE_CHECKLIST.md`。
 
