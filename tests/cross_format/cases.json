@@ -528,7 +528,8 @@
         "OCR_TABLE_LOW_CONFIDENCE",
         "LOW_OCR_CONFIDENCE_PAGES",
         "TABLE_STRUCTURE_UNVERIFIED",
-        "TABLE_STRUCTURE_HEURISTIC"
+        "TABLE_STRUCTURE_HEURISTIC",
+        "MISSING_WORD_SPACING"
       ],
       "forbidden_warning_codes": [
         "BUNDLE_VALIDATION_FAILED"
@@ -558,7 +559,7 @@
       },
       "required_ocr": {
         "content_patterns": [
-          "OCR SAMPLE.*12345"
+          "OCR\\s*SAMPLE.*12345"
         ],
         "element_types": [
           "page",

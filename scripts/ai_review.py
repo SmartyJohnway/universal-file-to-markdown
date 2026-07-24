@@ -112,6 +112,8 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     for t in tables:
         if table_has_merged_geometry(t):
             reasons.append("MERGED_TABLE_GEOMETRY_PRESENT")
+            if t.get("merged_cells") or t.get("source_locator", {}).get("format") == "html":
+                reasons.append("HTML_MERGED_TABLE_COMPLEX")
             targets.append({"target_type": "table", "target_id": t["id"], "source_locator": t.get("source_locator", {})})
         elif any(w in ws for w in ("TABLE_STRUCTURE_UNVERIFIED", "OCR_TABLE_GEOMETRY_UNAVAILABLE", "LOW_OCR_CONFIDENCE_PAGES")):
             # Advisory target for unverified OCR table structures
@@ -149,10 +151,17 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     }
 
 def _target(t):
+    rcs = []
+    if table_has_merged_geometry(t):
+        rcs.append("MERGED_TABLE_GEOMETRY_PRESENT")
+    if t.get("merged_cells") or t.get("source_locator", {}).get("format") == "html":
+        rcs.append("HTML_MERGED_TABLE_COMPLEX")
+    if not rcs:
+        rcs.append("MERGED_TABLE_GEOMETRY_PRESENT")
     return {
         "target_type": "table",
         "target_id": t["id"],
-        "reason_codes": ["MERGED_TABLE_GEOMETRY_PRESENT" if table_has_merged_geometry(t) else "HTML_MERGED_TABLE_COMPLEX"],
+        "reason_codes": list(dict.fromkeys(rcs)),
         "source_locator": t.get("source_locator", {}),
         "canonical": {
             "dimensions": t.get("dimensions", {}),
