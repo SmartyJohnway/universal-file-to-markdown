@@ -163,3 +163,44 @@ def test_bundle_validation_failure_propagates(tmp_path, monkeypatch):
     monkeypatch.setattr(qualifier, 'run', failing_run)
     with pytest.raises(RuntimeError, match='bundle validation failed'):
         qualifier.qualify_conversions(tmp_path, Path('/python'), tmp_path, {})
+
+def test_extracted_release_package_can_rebuild_both_profiles(tmp_path):
+    res = build(tmp_path / 'dist', profile='release')
+    archive = tmp_path / 'dist' / res['archive_name']
+    extract_dir = tmp_path / 'extracted'
+    safe_extract(archive, extract_dir)
+    pkg_root = extract_dir / f"universal-file-to-markdown-{res['skill_version']}"
+    assert (pkg_root / 'package-manifests' / 'release.json').is_file()
+    assert (pkg_root / 'package-manifests' / 'agent-skill.json').is_file()
+
+    # Rebuild release profile from extracted release package
+    rebuilt_rel = build(tmp_path / 'rebuilt_rel', profile='release', root=pkg_root)
+    assert rebuilt_rel['archive_name'].endswith('-release.zip')
+    assert validate(tmp_path / 'rebuilt_rel' / rebuilt_rel['archive_name'], profile='release', root=pkg_root)['status'] == 'passed'
+
+    # Rebuild agent-skill profile from extracted release package
+    rebuilt_skill = build(tmp_path / 'rebuilt_skill', profile='agent-skill', root=pkg_root)
+    assert rebuilt_skill['archive_name'].endswith('-skill.zip')
+    assert validate(tmp_path / 'rebuilt_skill' / rebuilt_skill['archive_name'], profile='agent-skill', root=pkg_root)['status'] == 'passed'
+
+def test_missing_or_mismatched_profile_manifest_fails_explicitly(tmp_path):
+    (tmp_path / 'VERSION').write_text('1.7.1', encoding='utf-8')
+    (tmp_path / 'package-manifest.json').write_text(json.dumps({'package_profile': 'release'}), encoding='utf-8')
+    with pytest.raises(ValueError, match='unavailable'):
+        build(tmp_path / 'out', profile='agent-skill', root=tmp_path)
+
+def test_agent_skill_standalone_validation_in_isolated_dir(tmp_path):
+    res = build(tmp_path / 'dist', profile='agent-skill')
+    archive = tmp_path / 'dist' / res['archive_name']
+    extract_dir = tmp_path / 'isolated'
+    safe_extract(archive, extract_dir)
+    pkg_root = extract_dir / 'universal-file-to-markdown'
+    assert not (pkg_root / 'package-manifests').exists()
+    assert not (pkg_root / 'package-manifest.json').exists()
+    assert not (pkg_root / 'tests').exists()
+    assert not (pkg_root / 'docs').exists()
+
+    # Validate agent-skill archive in isolated directory without repo manifests
+    res_val = validate(archive, profile='agent-skill', root=pkg_root)
+    assert res_val['status'] == 'passed'
+

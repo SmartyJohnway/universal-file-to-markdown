@@ -8,10 +8,16 @@ ROOT = Path(__file__).resolve().parents[1]
 def load_profile_manifest(profile: str = "release", root: Path = ROOT) -> dict:
     profile_manifest = root / "package-manifests" / f"{profile}.json"
     if profile_manifest.is_file():
-        return json.loads(profile_manifest.read_text(encoding="utf-8"))
+        data = json.loads(profile_manifest.read_text(encoding="utf-8"))
+        if data.get("package_profile") != profile:
+            raise ValueError(f"Manifest at {profile_manifest} profile {data.get('package_profile')!r} does not match requested profile {profile!r}")
+        return data
     fallback = root / "package-manifest.json"
     if fallback.is_file():
-        return json.loads(fallback.read_text(encoding="utf-8"))
+        data = json.loads(fallback.read_text(encoding="utf-8"))
+        if data.get("package_profile") != profile:
+            raise ValueError(f"Requested profile {profile!r} is unavailable and fallback manifest profile is {data.get('package_profile')!r}")
+        return data
     raise FileNotFoundError(f"Manifest for profile {profile!r} not found at {profile_manifest} or {fallback}")
 
 def load_allowlist(root: Path = ROOT, profile: str = "release") -> dict:

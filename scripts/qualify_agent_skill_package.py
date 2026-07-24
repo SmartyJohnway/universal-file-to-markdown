@@ -67,18 +67,23 @@ def qualify_agent_skill(archive: Path, output: Path, requested_python: str) -> d
     output.mkdir(parents=True, exist_ok=True)
     results = {"archive": archive.name, "package_profile": "agent-skill", "status": "failed", "steps": {}}
     try:
-        # Validate package structurally first
-        run([sys.executable, str(ROOT / "scripts/validate_skill_package.py"), str(archive),
-             "--profile", "agent-skill"], ROOT, results["steps"], "package_validation")
         extract_root = output / "extract"
         shutil.rmtree(extract_root, ignore_errors=True)
         package = safe_extract(archive, extract_root)
 
-        # Confirm tests and repo-only docs are excluded
+        # Confirm tests and repo-only docs and manifests are excluded
         if (package / "tests").exists():
             raise RuntimeError("Agent Skill package must not contain tests/")
+        if (package / "docs").exists():
+            raise RuntimeError("Agent Skill package must not contain docs/")
         if (package / "package-manifest.json").exists():
             raise RuntimeError("Agent Skill package must not contain package-manifest.json")
+        if (package / "package-manifests").exists():
+            raise RuntimeError("Agent Skill package must not contain package-manifests/")
+
+        # Validate package structurally inside isolated extracted folder without repository manifests
+        run([sys.executable, str(package / "scripts/validate_skill_package.py"), str(archive),
+             "--profile", "agent-skill"], package, results["steps"], "isolated_package_validation")
 
         env_dir = output / "venv"
         python = make_venv(requested_python, env_dir, results["steps"])

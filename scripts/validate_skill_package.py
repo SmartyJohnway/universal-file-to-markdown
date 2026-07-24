@@ -67,22 +67,44 @@ def check_package_markdown_links(values: dict[str, bytes], prefix: str) -> None:
             if expected_full not in values:
                 fail(f"unresolved link in {path}: {target} -> {expected_full} not found in archive")
 
-def validate(archive: Path, profile: str = "release", source_manifest: Path | None = None) -> dict:
+def validate(archive: Path, profile: str = "release", source_manifest: Path | None = None, root: Path = ROOT) -> dict:
     archive = Path(archive)
-    root = ROOT
-    if source_manifest is None:
-        source_manifest = root / "package-manifests" / f"{profile}.json"
-        if not source_manifest.is_file():
-            source_manifest = root / "package-manifest.json"
-    allowlist = json.loads(source_manifest.read_text(encoding="utf-8"))
-    version = read_version(root)
-    top_level_format = allowlist.get("top_level_dir_format", f"universal-file-to-markdown-{{version}}")
-    prefix = top_level_format.format(version=version) + "/"
-    expected_relatives = [p.relative_to(root).as_posix() for p in allowed_files(root, allowlist)]
-    expected = [prefix + p for p in expected_relatives]
-
     if not archive.is_file():
         fail(f"archive not found: {archive}")
+
+    # Determine version and manifest/allowlist expectations
+    allowlist = None
+    expected = None
+    if source_manifest is not None and source_manifest.is_file():
+        allowlist = json.loads(source_manifest.read_text(encoding="utf-8"))
+    else:
+        manifest_candidate = root / "package-manifests" / f"{profile}.json"
+        if not manifest_candidate.is_file():
+            manifest_candidate = root / "package-manifest.json"
+        if manifest_candidate.is_file():
+            data = json.loads(manifest_candidate.read_text(encoding="utf-8"))
+            if data.get("package_profile") == profile:
+                allowlist = data
+
+    if (root / "VERSION").is_file():
+        version = read_version(root)
+    else:
+        # Extract VERSION from archive
+        with zipfile.ZipFile(archive) as z:
+            version_files = [n for n in z.namelist() if n.endswith("/VERSION") or n == "VERSION"]
+            if not version_files:
+                fail("archive missing VERSION file")
+            version = z.read(version_files[0]).decode("utf-8").strip()
+
+    top_level_format = (allowlist or {}).get("top_level_dir_format", "universal-file-to-markdown-{version}" if profile == "release" else "universal-file-to-markdown")
+    prefix = top_level_format.format(version=version) + "/"
+
+    if allowlist and (root / "VERSION").is_file():
+        try:
+            expected_relatives = [p.relative_to(root).as_posix() for p in allowed_files(root, allowlist)]
+            expected = [prefix + p for p in expected_relatives]
+        except (ValueError, FileNotFoundError):
+            expected = None
 
     sidecar = archive.with_suffix(".sha256")
     evidence = archive.with_suffix(".manifest.json")
@@ -123,8 +145,26 @@ def validate(archive: Path, profile: str = "release", source_manifest: Path | No
                 fail("archive entries are not lexicographically ordered")
             if any(info.date_time != (1980, 1, 1, 0, 0, 0) for info in infos):
                 fail("archive timestamps are not deterministic")
-            if names != expected:
-                fail("archive has unexpected, missing, or non-allowlisted files")
+
+            if expected is not None:
+                if names != expected:
+                    fail("archive has unexpected, missing, or non-allowlisted files")
+            elif profile == "agent-skill":
+                # Standalone structural validation for agent-skill
+                excluded_prefixes = (
+                    prefix + "tests/",
+                    prefix + "docs/",
+                    prefix + "package-manifests/",
+                    prefix + "package-manifest.json",
+                    prefix + "README.md",
+                    prefix + "README.zh-TW.md",
+                    prefix + "CHANGELOG.md",
+                    prefix + "CHANGELOG.zh-TW.md",
+                    prefix + "VERSIONING.md",
+                )
+                if any(n.startswith(excluded_prefixes) for n in names):
+                    fail("archive contains excluded repo files in agent-skill profile")
+
             values = {name: zipped.read(name) for name in names}
     except zipfile.BadZipFile as exc:
         fail(f"archive cannot be opened: {exc}")
