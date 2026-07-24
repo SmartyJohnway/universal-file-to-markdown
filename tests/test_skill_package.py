@@ -29,3 +29,34 @@ def test_validator_rejects_unsafe_duplicate_or_wrong_version(tmp_path):
 def test_validator_rejects_hash_mismatch(tmp_path):
     result=build(tmp_path); archive=tmp_path/result['archive_name']; archive.with_suffix('.sha256').write_text('0'*64+'  x\n')
     with pytest.raises(ValueError, match='SHA-256'): validate(archive)
+
+from qualify_release_package import safe_extract, make_venv
+
+def test_safe_extract_rejects_traversal_before_writing(tmp_path):
+    archive = tmp_path / 'unsafe.zip'
+    with zipfile.ZipFile(archive, 'w') as zipped:
+        zipped.writestr('../escaped.txt', b'bad')
+    destination = tmp_path / 'extract'
+    with pytest.raises(ValueError, match='unsafe extraction path'):
+        safe_extract(archive, destination)
+    assert not (tmp_path / 'escaped.txt').exists()
+
+def test_make_venv_uses_requested_interpreter_and_records_version(tmp_path, monkeypatch):
+    calls = []
+    class Result:
+        returncode = 0; stdout = 'Python 3.11.9\n'; stderr = ''
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        if command[1:3] == ['-m', 'venv']:
+            target = Path(command[-1]); (target / 'bin').mkdir(parents=True); (target / 'bin' / 'python').touch()
+        return Result()
+    monkeypatch.setattr('qualify_release_package.subprocess.run', fake_run)
+    results = {}
+    python = make_venv('/requested/python', tmp_path / 'venv', results)
+    assert calls[0] == ['/requested/python', '-m', 'venv', '--clear', str(tmp_path / 'venv')]
+    assert python.name == 'python'
+    assert results['effective_python']['version'] == 'Python 3.11.9'
+
+def test_make_venv_fails_for_unavailable_requested_interpreter(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        make_venv(str(tmp_path / 'missing-python'), tmp_path / 'venv', {})
