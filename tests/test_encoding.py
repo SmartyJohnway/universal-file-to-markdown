@@ -41,6 +41,39 @@ def test_encoding_ambiguity_warning_reported():
 
         res = convert_text_native(str(f))
         assert res["report"]["encoding_used"] in ("big5", "cp950", "gb18030")
-        if res["report"]["encoding_ambiguous"]:
-            assert res["report"]["status"] == "passed_with_warnings"
-            assert any(w["code"] == "ENCODING_AMBIGUOUS" for w in res["report"]["warnings"])
+        assert res["report"]["encoding_ambiguous"] is True
+        assert res["report"]["status"] == "passed_with_warnings"
+        assert any(w["code"] == "ENCODING_AMBIGUOUS" for w in res["report"]["warnings"])
+
+
+def test_gb18030_simplified_chinese_ambiguity_containment_and_recovery():
+    """Reproduces the external Claude issue with GB18030 Simplified Chinese content.
+
+    Verifies that un-annotated GB18030 text triggers ENCODING_AMBIGUOUS warning,
+    marks explicit_encoding_recommended, and recovers exact text when --encoding
+    gb18030 is supplied.
+    """
+    raw_content = "张伟\n北京市\nGB18030"
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        f = Path(tmp_dir) / "gb18030_sample.txt"
+        f.write_bytes(raw_content.encode("gb18030"))
+
+        # 1. Automatic decode without encoding hint must detect ambiguity
+        text_auto, encoding_used, ambiguous, candidates = read_text_smart(str(f))
+        assert ambiguous is True, "Un-annotated CJK GB18030 text must be flagged as ambiguous"
+        assert len(candidates) >= 2, "Must report multiple candidate CJK encodings"
+
+        # 2. Native text converter report must emit warning and recommendation
+        res = convert_text_native(str(f))
+        assert res["report"]["encoding_ambiguous"] is True
+        assert res["report"]["status"] == "passed_with_warnings"
+        assert any(w["code"] == "ENCODING_AMBIGUOUS" for w in res["report"]["warnings"])
+        assert res["report"]["explicit_encoding_recommended"] is True
+
+        # 3. Explicit encoding override recovers exact original text cleanly
+        text_recovered, enc_used, ambig, candidates_exp = read_text_smart(str(f), encoding_hint="gb18030")
+        assert text_recovered == raw_content
+        assert enc_used == "gb18030"
+        assert ambig is False
+        assert candidates_exp[0]["user_selected"] is True
+

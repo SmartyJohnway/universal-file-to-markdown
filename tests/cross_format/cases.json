@@ -726,6 +726,257 @@
       "determinism": {
         "normalized_reruns_must_match": true
       }
+    },
+    {
+      "case_id": "txt-native-route",
+      "format": "txt",
+      "profile": "core",
+      "fixture": "txt_native",
+      "fixture_kind": "programmatic",
+      "expected_engine": "text_native",
+      "expected_status": [
+        "passed"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "paragraph"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 0,
+        "min": 0
+      },
+      "asset_count": {
+        "max": 0,
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "md-native-route",
+      "format": "md",
+      "profile": "core",
+      "fixture": "md_native",
+      "fixture_kind": "programmatic",
+      "expected_engine": "markdown_native",
+      "expected_status": [
+        "passed"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "markdown_block"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 0,
+        "min": 0
+      },
+      "asset_count": {
+        "max": 0,
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "csv-gb18030-ambiguity",
+      "format": "csv",
+      "profile": "core",
+      "fixture": "csv_gb18030",
+      "fixture_kind": "programmatic",
+      "expected_engine": "csv_native",
+      "expected_status": [
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [
+        "ENCODING_AMBIGUOUS"
+      ],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 1,
+        "min": 1
+      },
+      "asset_count": {
+        "max": 0,
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "docx-merged-table-trigger",
+      "format": "docx",
+      "profile": "core",
+      "fixture": "docx_horizontal_merge",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-docx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "paragraph",
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 1,
+        "min": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "xlsx-merged-table-trigger",
+      "format": "xlsx",
+      "profile": "core",
+      "fixture": "xlsx_merged",
+      "fixture_kind": "programmatic",
+      "expected_engine": "openpyxl",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 1,
+        "min": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "pptx-merged-table-trigger",
+      "format": "pptx",
+      "profile": "core",
+      "fixture": "pptx_table",
+      "fixture_kind": "programmatic",
+      "expected_engine": "python-pptx",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "max": 1,
+        "min": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "html-merged-table-trigger",
+      "format": "html",
+      "profile": "core",
+      "fixture": "html_complex",
+      "fixture_kind": "checked_in",
+      "expected_engine": "beautifulsoup4",
+      "expected_status": [
+        "passed",
+        "passed_with_warnings"
+      ],
+      "expected_bundle_validation": "passed",
+      "required_element_types": [
+        "heading",
+        "table"
+      ],
+      "required_warning_codes": [],
+      "allowed_warning_codes": [
+        "MAIN_CONTENT_NOT_IDENTIFIED",
+        "BOILERPLATE_MAY_BE_INCLUDED"
+      ],
+      "forbidden_warning_codes": [
+        "BUNDLE_VALIDATION_FAILED"
+      ],
+      "table_count": {
+        "min": 1
+      },
+      "asset_count": {
+        "min": 0
+      },
+      "required_locator_fields": [
+        "format"
+      ],
+      "max_chunk_chars": 2000,
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
     }
   ],
   "workflow_cases": [
@@ -746,6 +997,25 @@
       ],
       "required_reason_codes": [
         "HTML_MERGED_TABLE_COMPLEX"
+      ],
+      "determinism": {
+        "normalized_reruns_must_match": true
+      }
+    },
+    {
+      "case_id": "explicit-user-request-workflow",
+      "profile": "core",
+      "fixture": "html_complex",
+      "workflow": "explicit_user_request_review",
+      "expected_status": "passed",
+      "expected_request_status": "generated",
+      "expected_ai_review_status": "not_provided",
+      "expected_readable_projection_status": "deterministic_only",
+      "required_projection_patterns": [
+        "# Trading"
+      ],
+      "required_reason_codes": [
+        "EXPLICIT_USER_REQUEST"
       ],
       "determinism": {
         "normalized_reruns_must_match": true
