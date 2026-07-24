@@ -1,11 +1,11 @@
 ---
 name: universal-file-to-markdown
-version: 1.7.0-rc1
-release_status: release_candidate
+version: 1.7.0
+release_status: stable
 description: Evidence-first, fidelity-oriented document extraction skill for AI agents. Extract, preserve, validate, report uncertainty, and prepare supported documents for AI handoff with traceable source locators.
 ---
 
-# Universal File to Markdown v1.7.0-rc1
+# Universal File to Markdown v1.7.0
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -93,9 +93,8 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.7.0-rc1 (release candidate)
-published_stable_version: 1.6.0
-target_stable_release: 1.7.0
+skill_version: 1.7.0 (stable)
+published_stable_version: 1.7.0
 document/table/chunk schema_version: 1.0
 ```
 
