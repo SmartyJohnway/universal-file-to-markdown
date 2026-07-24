@@ -6,6 +6,30 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.7.1] - 2026-07-24
+
+### Fixed
+
+* Release-state metadata consistency across VERSION, SKILL, README, VERSIONING, PROJECT_STATUS, changelogs, and mirrored schema constraints.
+* Broken or package-invalid Markdown links.
+* Repository-only test commands being presented as runtime-package commands.
+* Incomplete artifact expectations for release-package validation.
+
+### Added
+
+* Dual package profiles: `release` and `agent-skill`.
+* Agent Skills-compatible upload ZIP.
+* Standalone Agent Skill validator profile.
+* AI review workflow documentation in `references/ai_review_workflow.md`.
+* Package-profile-specific qualification helpers and tests.
+* Extracted-package Markdown link validation.
+
+### Changed
+
+* Release package and Agent Skill package now have separate content boundaries and validation contracts.
+* Agent Skill ZIP contains one top-level skill directory (`universal-file-to-markdown/`) with `SKILL.md` at its root.
+* Full regression tests are documented as source-repository qualification, not runtime package contents.
+
 ## [1.7.0-rc1] - 2026-07-23
 
 This is a release candidate, not a published stable release. The published stable release remains `1.6.0`; `1.7.0` is the target stable release.

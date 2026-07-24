@@ -6,6 +6,30 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.7.1] - 2026-07-24
+
+### 修復 (Fixed)
+
+* 修正 VERSION, SKILL, README, VERSIONING, PROJECT_STATUS, CHANGELOG 及鏡像 schema 約束間的 release-state 元資料一致性。
+* 修復損壞或於 Package 中無法解析的 Markdown 連結。
+* 修正將僅存在於 Repository 的測試指令誤列為 Runtime Package 指令的問題。
+* 補充 Release Package 驗證中不完整的產物預期。
+
+### 新增 (Added)
+
+* 支援雙重 Package Profiles：`release` 與 `agent-skill`。
+* 支援相容於 Agent Skills 標準的上傳 ZIP。
+* 新增獨立的 Agent Skill Package 驗證模式（Validator profile）。
+* 於 `references/ai_review_workflow.md` 新增完整 AI Review 工作流文件。
+* 新增 Package Profile 專屬之 Qualification Helper 與單元測試。
+* 新增解壓後 Package 之 Markdown 連結驗證機制。
+
+### 變更 (Changed)
+
+* Release Package 與 Agent Skill Package 現採用獨立的內容邊界與驗證合約。
+* Agent Skill ZIP 僅包含單一頂層 Skill 目錄（`universal-file-to-markdown/`），且 `SKILL.md` 位於其根目錄。
+* 完整迴歸測試明確標示為 Source Repository 驗證資產，不包含於 Runtime Package 中。
+
 ## [1.7.0-rc1] - 2026-07-23
 
 此版本為 release candidate，並非已發布的 stable release。已發布的 stable release 仍為 `1.6.0`，`1.7.0` 是目標 stable release。

@@ -1,18 +1,20 @@
 # Project Status
 
-Current skill release candidate: `v1.7.0-rc1` (`release_candidate`)
+Current stable skill release: `v1.7.1`
 
-Published stable release: `v1.6.0`
+Previous published stable release: `v1.7.0`
 
-Target stable release: `v1.7.0`
+Release status: `stable`
 
-Phase 6 implementation blockers: none. Final integrated review blockers: none.
+Final-head unified 18-case qualification: `passed`
 
-RC-head full pytest qualification: 197 passed.
+Windows clean-install qualification: `passed`
 
-RC-head unified 18-case corpus qualification: pending. The 18/18 result is
-historical Phase 6 evidence from the pre-RC main head and is not RC-head
-qualification.
+Release package qualification: `passed`
+
+Agent Skill package qualification: `passed`
+
+Remaining release blockers: `none`
 
 Data schema version: `1.0` (independent from the skill version)
 
