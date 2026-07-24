@@ -143,9 +143,7 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current release candidate: `1.7.0-rc1`<br>
-Published stable release: `1.6.0`<br>
-Target stable release: `1.7.0`
+Published stable release: `1.7.0`
 
 `VERSION` is the canonical current skill-version source. Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version. The current document/table/chunk schema version is `1.0`; see [VERSIONING.md](VERSIONING.md).
 
@@ -167,7 +165,7 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 ```bash
 python scripts/capability_probe.py --json
 python scripts/build_skill_package.py --output dist --verify
-python scripts/validate_skill_package.py dist/universal-file-to-markdown-1.7.0-rc1.zip
+python scripts/validate_skill_package.py dist/universal-file-to-markdown-1.7.0.zip
 python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```
