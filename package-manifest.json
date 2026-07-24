@@ -1,8 +1,9 @@
 {
   "schema_version": "1.0",
-  "package_type": "ai_skill",
+  "package_profile": "release",
   "skill_name": "universal-file-to-markdown",
   "version_source": "VERSION",
+  "top_level_dir_format": "universal-file-to-markdown-{version}",
   "required_paths": [
     "SKILL.md", "VERSION", "VERSIONING.md", "README.md", "README.zh-TW.md",
     "CHANGELOG.md", "CHANGELOG.zh-TW.md", "requirements.txt", "package-manifest.json",
@@ -10,17 +11,23 @@
   ],
   "optional_paths": [
     "docs/DEPENDENCY_POLICY.md", "docs/PROJECT_STATUS.md", "docs/RUNTIME_COMPATIBILITY.md",
-    "docs/SECURITY_MODEL.md", "docs/SOURCE_LOCATOR_CONTRACT.md", "LICENSE", "THIRD_PARTY_NOTICES.md"
+    "docs/SECURITY_MODEL.md", "docs/SOURCE_LOCATOR_CONTRACT.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md", "SECURITY.md", "SUPPORT.md", "GOVERNANCE.md", "RELEASING.md", "RELEASE_CHECKLIST.md", "docs/LICENSING.md"
   ],
   "excluded_patterns": [
     ".git/**", ".github/**", ".venv/**", ".qualification/**", ".pytest_cache/**",
     "__pycache__/**", "**/__pycache__/**", "**/*.pyc", "**/*.pyo", "**/*.log",
     "**/*.tmp", "**/*.bak", "**/*.swp", "**/.DS_Store", "**/Thumbs.db", "dist/**", "build/**", "tests/**"
   ],
+  "sidecar_required": true,
+  "evidence_manifest_required": true,
   "entrypoints": ["scripts/router.py", "scripts/capability_probe.py", "scripts/validate_bundle.py"],
   "qualification_commands": [
-    "python scripts/build_skill_package.py --output dist --verify",
-    "python scripts/validate_skill_package.py dist/universal-file-to-markdown-<VERSION>.zip",
-    "python scripts/qualify_release_package.py --archive dist/universal-file-to-markdown-<VERSION>.zip"
+    "python scripts/build_skill_package.py --profile release --output dist --verify",
+    "python scripts/build_skill_package.py --profile agent-skill --output dist --verify",
+    "python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-<VERSION>-release.zip",
+    "python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-<VERSION>-skill.zip",
+    "python scripts/qualify_release_package.py --archive dist/universal-file-to-markdown-<VERSION>-release.zip",
+    "python scripts/qualify_agent_skill_package.py --archive dist/universal-file-to-markdown-<VERSION>-skill.zip"
   ]
 }

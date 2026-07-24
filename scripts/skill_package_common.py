@@ -5,8 +5,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def load_allowlist(root: Path = ROOT) -> dict:
-    return json.loads((root / "package-manifest.json").read_text(encoding="utf-8"))
+def load_profile_manifest(profile: str = "release", root: Path = ROOT) -> dict:
+    profile_manifest = root / "package-manifests" / f"{profile}.json"
+    if profile_manifest.is_file():
+        return json.loads(profile_manifest.read_text(encoding="utf-8"))
+    fallback = root / "package-manifest.json"
+    if fallback.is_file():
+        return json.loads(fallback.read_text(encoding="utf-8"))
+    raise FileNotFoundError(f"Manifest for profile {profile!r} not found at {profile_manifest} or {fallback}")
+
+def load_allowlist(root: Path = ROOT, profile: str = "release") -> dict:
+    return load_profile_manifest(profile=profile, root=root)
 
 def read_version(root: Path = ROOT) -> str:
     version = (root / "VERSION").read_text(encoding="utf-8").strip()
