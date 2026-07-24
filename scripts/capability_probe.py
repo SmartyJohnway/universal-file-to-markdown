@@ -29,6 +29,24 @@ SYSTEM_CAPABILITIES = {
     "pandoc": False,
 }
 
+OPTIONAL_DEPENDENCY_METADATA = {
+    "markitdown": {
+        "severity": "optional_route_unavailable",
+        "required_for": ["generic fallback routes"],
+        "affected_formats": ["unknown or fallback-supported formats"],
+    },
+    "pandoc": {
+        "severity": "optional_route_unavailable",
+        "required_for": ["Pandoc markup routes"],
+        "affected_formats": ["epub", "rst", "org", "tex", "latex"],
+    },
+    "tesseract": {
+        "severity": "optional_fallback_unavailable",
+        "required_for": ["Tesseract OCR fallback"],
+        "affected_formats": ["scanned PDF fallback", "image OCR fallback"],
+    },
+}
+
 
 def probe() -> dict:
     python_modules = {
@@ -43,21 +61,62 @@ def probe() -> dict:
     rapidocr = probe_rapidocr()
     python_modules["fitz"].update(pymupdf)
     python_modules["rapidocr_onnxruntime"].update(rapidocr)
-    # Native child probes are authoritative for these modules. This keeps the
-    # public availability flag coherent if a future caller selects another
-    # Python executable for qualification.
+
     python_modules["fitz"]["available"] = pymupdf.get("module_discovered", python_modules["fitz"]["available"])
     python_modules["rapidocr_onnxruntime"]["available"] = rapidocr.get("module_discovered", python_modules["rapidocr_onnxruntime"]["available"])
-    missing_required = [
+
+    for dep, meta in OPTIONAL_DEPENDENCY_METADATA.items():
+        if dep in python_modules:
+            python_modules[dep].update(meta)
+        elif dep in system_binaries:
+            system_binaries[dep].update(meta)
+
+    missing_core = [
         name for name, item in python_modules.items()
         if item["required"] and not item["available"]
     ] + ([] if pymupdf["status"] == "passed" else ["pymupdf"]) + ([] if rapidocr["status"] == "passed" else ["rapidocr-onnxruntime"]) + [
         name for name, item in system_binaries.items()
         if item["required"] and not item["available"]
     ]
+
+    missing_optional = [
+        name for name, item in python_modules.items()
+        if not item["required"] and not item["available"]
+    ] + [
+        name for name, item in system_binaries.items()
+        if not item["required"] and not item["available"]
+    ]
+
+    core_required = [
+        name for name, item in python_modules.items() if item["required"] and item["available"]
+    ] + [
+        name for name, item in system_binaries.items() if item["required"] and item["available"]
+    ]
+
+    optional_route_deps = {
+        name: item for name, item in {**python_modules, **system_binaries}.items() if not item["required"]
+    }
+
+    affected_routes = {}
+    for dep in missing_optional:
+        if dep in OPTIONAL_DEPENDENCY_METADATA:
+            affected_routes[dep] = OPTIONAL_DEPENDENCY_METADATA[dep]["affected_formats"]
+
+    if missing_core:
+        status = "failed"
+    elif missing_optional:
+        status = "passed_with_caveats"
+    else:
+        status = "passed"
+
     return {
-        "status": "passed" if not missing_required else "failed",
-        "missing_required": missing_required,
+        "status": status,
+        "missing_required": missing_core,
+        "missing_core_dependencies": missing_core,
+        "missing_optional_dependencies": missing_optional,
+        "core_required_dependencies": core_required,
+        "optional_route_dependencies": optional_route_deps,
+        "affected_routes": affected_routes,
         "python_modules": python_modules,
         "system_binaries": system_binaries,
         "environment": {
@@ -79,6 +138,8 @@ if __name__ == "__main__":
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
         print(f"capability preflight: {result['status']}")
-        if result["missing_required"]:
-            print("required dependency missing: " + ", ".join(result["missing_required"]))
-    sys.exit(0 if result["status"] == "passed" else 1)
+        if result["missing_core_dependencies"]:
+            print("required dependency missing: " + ", ".join(result["missing_core_dependencies"]))
+        if result["missing_optional_dependencies"]:
+            print("optional dependency missing: " + ", ".join(result["missing_optional_dependencies"]))
+    sys.exit(0 if result["status"] in ("passed", "passed_with_caveats") else 1)

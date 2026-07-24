@@ -287,6 +287,14 @@ def run_case(case, root, reruns, keep):
     if status!='passed' or keep: result['bundles']=[str(p) for p in bundles]
     return result
 def main(args):
+    if not (ROOT / "tests").is_dir() or not MANIFEST.is_file():
+        print(
+            "This regression runner requires the complete source repository "
+            "and cannot run from the Release Package or Agent Skill archive.",
+            file=sys.stderr,
+        )
+        return 2
+
     if args.update_baseline and not args.confirm_baseline_update: raise SystemExit('--update-baseline requires --confirm-baseline-update')
     all_format_cases=load_cases(); all_workflow_cases=load_workflow_cases()
     duplicate_case_ids={c['case_id'] for c in all_format_cases} & {c['case_id'] for c in all_workflow_cases}

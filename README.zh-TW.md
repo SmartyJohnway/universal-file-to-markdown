@@ -143,8 +143,9 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 ## Canonical contracts
 
-目前 stable release：`1.7.1`
-前發布 stable release：`1.7.0`
+目前開發與公開發行目標：`1.7.2`
+最新已發布 stable release：`1.7.0`
+未發布整合里程碑：`1.7.1`
 
 `VERSION` 是目前技能版本的 canonical source。技能版本、schema 版本、bundle schema 版本與 report schema 版本是各自獨立的合約；技能發布不會自動要求每個 schema 版本都與技能版本相同。目前 document/table/chunk schema 版本為 `1.0`；請參閱 [VERSIONING.md](VERSIONING.md)。
 
@@ -167,8 +168,8 @@ JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `
 python scripts/capability_probe.py --json
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.1-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.1-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.2-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.2-skill.zip
 python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```

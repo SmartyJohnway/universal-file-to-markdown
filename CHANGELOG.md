@@ -6,7 +6,35 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.7.2] - 2026-07-24
+
+### Added
+
+* Native TXT converter (`convert_text.py`) for `.txt`, `.text`, `.log` files.
+* Native Markdown converter (`convert_markdown.py`) for `.md`, `.markdown` files.
+* Explicit user-requested AI Review CLI (`--force-user-request` and `--target-table` in `prepare_ai_review.py`).
+* OCR advisory-only review targets (`target_type: "advisory"`).
+* Route-aware optional dependency reporting in `capability_probe.py`.
+* Cross-format merged-table AI Review triggers (`table_has_merged_geometry`).
+
+### Fixed
+
+* OOXML merged tables (DOCX, XLSX, PPTX) not triggering AI Review eligibility.
+* MarkItDown absence not disclosed by capability probe.
+* Incorrect AI Review schema filename in documentation.
+* Incorrect readable projection CLI render command example.
+* Packaged regression runners failing with unhelpful tracebacks when `tests/` directory is missing.
+* Ambiguous Big5/CP950/GB18030 CJK decoding presented with high confidence.
+
+### Changed
+
+* Encoding ambiguity now explicitly reports unresolved status and warns user.
+* Agent Skill package excludes source-only regression runners.
+* `.txt` and `.md` formats no longer depend on generic MarkItDown fallback.
+
 ## [1.7.1] - 2026-07-24
+
+*Unpublished integration milestone. No v1.7.1 tag or GitHub Release was published. Superseded by v1.7.2.*
 
 ### Fixed
 

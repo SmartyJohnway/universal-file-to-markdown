@@ -143,8 +143,11 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current stable release: `1.7.1`
-Previous stable release: `1.7.0`
+## Canonical contracts
+
+Current development/public release target: `1.7.2`
+Latest published stable release: `1.7.0`
+Unpublished integration milestone: `1.7.1`
 
 `VERSION` is the canonical current skill-version source. Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version. The current document/table/chunk schema version is `1.0`; see [VERSIONING.md](VERSIONING.md).
 
@@ -167,8 +170,8 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 python scripts/capability_probe.py --json
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.1-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.1-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.2-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.2-skill.zip
 python -m pytest tests/ -q
 python -m py_compile scripts/*.py tests/*.py
 ```

@@ -24,6 +24,8 @@
     "VERSIONING.md",
     "package-manifest.json",
     "package-manifests/**",
+    "scripts/run_*.py",
+    "scripts/qualify_*.py",
     "docs/**",
     "PROJECT_STATUS.md",
     "RELEASING.md",

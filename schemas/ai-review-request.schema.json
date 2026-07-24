@@ -29,7 +29,7 @@
       "pattern": "^[0-9a-f]{64}$"
     },
     "skill_version": {
-      "const": "1.7.1"
+      "const": "1.7.2"
     },
     "canonical_bundle_fingerprint": {
       "type": "string",
@@ -37,6 +37,9 @@
     },
     "review_scope": {
       "const": "readable_projection_only"
+    },
+    "trigger": {
+      "type": "object"
     },
     "instructions": {
       "type": "object"
@@ -53,16 +56,14 @@
         "required": [
           "target_type",
           "target_id",
-          "reason_codes",
-          "source_locator",
-          "canonical",
-          "faithful_markdown"
+          "reason_codes"
         ],
         "properties": {
           "target_type": {
             "enum": [
               "table",
-              "element_range"
+              "element_range",
+              "advisory"
             ]
           },
           "target_id": {
@@ -84,8 +85,16 @@
             "type": "object"
           },
           "faithful_markdown": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
+          },
+          "allowed_outcomes": {
+            "type": "array"
+          },
+          "projection_write_allowed": {
+            "type": "boolean"
+          },
+          "canonical_mutation_allowed": {
+            "type": "boolean"
           }
         }
       }

@@ -6,7 +6,35 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.7.2] - 2026-07-24
+
+### 新增 (Added)
+
+* 原生 TXT 轉換器（`convert_text.py`），支援 `.txt`、`.text`、`.log`。
+* 原生 Markdown 轉換器（`convert_markdown.py`），支援 `.md`、`.markdown`。
+* 使用者主動指定 AI Review 之 CLI 參數（`prepare_ai_review.py` 新增 `--force-user-request` 與 `--target-table`）。
+* OCR 諮詢性審查目標（`target_type: "advisory"`）。
+* 具備 Route 感知能力的選用套件依賴回報機制（`capability_probe.py`）。
+* 跨格式合併表格 AI Review 觸發條件（`table_has_merged_geometry`）。
+
+### 修復 (Fixed)
+
+* 修復 OOXML 合併表格（DOCX、XLSX、PPTX）未觸發 AI Review 資格的問題。
+* 修復 capability probe 未揭露 MarkItDown 缺失的問題。
+* 修正文件中錯誤的 AI Review Schema 檔名。
+* 修正可讀性投影 CLI 渲染範例指令。
+* 修復 Package 內執行迴歸 runner 缺少 `tests/` 目錄時產生未處理 Traceback 的問題。
+* 修復 Big5 / CP950 / GB18030 歧義字元解碼被過度自信呈現的問題。
+
+### 變更 (Changed)
+
+* 編碼歧義情況現會明確回報未解析狀態並提醒使用者。
+* Agent Skill Package 正式排除僅存於原始碼庫之迴歸 runner。
+* `.txt` 與 `.md` 格式不再依賴 MarkItDown 通用 fallback route。
+
 ## [1.7.1] - 2026-07-24
+
+*未發布的整合里程碑（Unpublished integration milestone）。未建立 v1.7.1 tag 或 GitHub Release。已由 v1.7.2 取代。*
 
 ### 修復 (Fixed)
 

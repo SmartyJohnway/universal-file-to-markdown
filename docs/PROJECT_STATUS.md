@@ -1,20 +1,14 @@
 # Project Status
 
-Current stable skill release: `v1.7.1`
+Current development target: `v1.7.2`
 
-Previous published stable release: `v1.7.0`
+Latest published stable release: `v1.7.0`
 
-Release status: `stable`
+Unpublished integration milestone: `v1.7.1`
 
-Final-head unified 18-case qualification: `passed`
+Next planned public release: `v1.7.2`
 
-Windows clean-install qualification: `passed`
-
-Release package qualification: `passed`
-
-Agent Skill package qualification: `passed`
-
-Remaining release blockers: `none`
+Release readiness: pending final qualification
 
 Data schema version: `1.0` (independent from the skill version)
 

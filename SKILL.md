@@ -1,6 +1,6 @@
 ---
 name: universal-file-to-markdown
-version: 1.7.1
+version: 1.7.2
 release_status: stable
 description: >
   Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
@@ -12,7 +12,7 @@ license: Apache-2.0
 compatibility: Requires Python 3.10–3.12; Python 3.11 recommended.
 ---
 
-# Universal File to Markdown v1.7.1
+# Universal File to Markdown v1.7.2
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -100,8 +100,8 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.7.1 (stable)
-published_stable_version: 1.7.1
+skill_version: 1.7.2 (stable)
+published_stable_version: 1.7.2
 document/table/chunk schema_version: 1.0
 ```
 
