@@ -103,7 +103,8 @@ def _write_pptx(path: Path, merged: bool) -> None:
     table.cell(1, 0).text = "Value A"
     table.cell(1, 1).text = "Value B"
     if merged:
-        table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged Header"
+        table.cell(0, 0).merge(table.cell(0, 1))
+        table.cell(0, 0).text = "Merged Header"
     presentation.save(path)
 
 
