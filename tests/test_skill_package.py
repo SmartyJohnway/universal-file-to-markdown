@@ -60,3 +60,31 @@ def test_make_venv_uses_requested_interpreter_and_records_version(tmp_path, monk
 def test_make_venv_fails_for_unavailable_requested_interpreter(tmp_path):
     with pytest.raises(FileNotFoundError):
         make_venv(str(tmp_path / 'missing-python'), tmp_path / 'venv', {})
+
+def test_qualification_requires_all_conversion_and_bundle_steps(tmp_path, monkeypatch):
+    import qualify_release_package as qualifier
+    calls = []
+    monkeypatch.setattr(qualifier, 'make_fixtures', lambda directory, python: None)
+    def successful_run(command, cwd, results, name):
+        calls.append(name); results[name] = {'status': 'passed'}
+    monkeypatch.setattr(qualifier, 'run', successful_run)
+    qualifier.qualify_conversions(tmp_path, Path('/python'), tmp_path, {})
+    assert calls == [item for ext in ('docx','xlsx','pptx','pdf','png','csv','json','html') for item in (f'convert_{ext}', f'bundle_{ext}')]
+
+def test_conversion_failure_prevents_remaining_bundle_validation(tmp_path, monkeypatch):
+    import qualify_release_package as qualifier
+    monkeypatch.setattr(qualifier, 'make_fixtures', lambda directory, python: None)
+    def failing_run(command, cwd, results, name):
+        if name == 'convert_docx': raise RuntimeError('conversion failed')
+    monkeypatch.setattr(qualifier, 'run', failing_run)
+    with pytest.raises(RuntimeError, match='conversion failed'):
+        qualifier.qualify_conversions(tmp_path, Path('/python'), tmp_path, {})
+
+def test_bundle_validation_failure_propagates(tmp_path, monkeypatch):
+    import qualify_release_package as qualifier
+    monkeypatch.setattr(qualifier, 'make_fixtures', lambda directory, python: None)
+    def failing_run(command, cwd, results, name):
+        if name == 'bundle_docx': raise RuntimeError('bundle validation failed')
+    monkeypatch.setattr(qualifier, 'run', failing_run)
+    with pytest.raises(RuntimeError, match='bundle validation failed'):
+        qualifier.qualify_conversions(tmp_path, Path('/python'), tmp_path, {})

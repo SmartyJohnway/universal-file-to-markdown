@@ -49,6 +49,35 @@ def make_venv(interpreter: str, env_dir: Path, results: dict) -> Path:
     return python
 
 
+def make_fixtures(directory: Path, python: Path) -> None:
+    script = '''from pathlib import Path
+from docx import Document
+from openpyxl import Workbook
+from pptx import Presentation
+from reportlab.pdfgen.canvas import Canvas
+from PIL import Image, ImageDraw
+p=Path(".")
+d=Document(); d.add_paragraph("Package DOCX"); d.save(p/"sample.docx")
+w=Workbook(); w.active["A1"]="Package XLSX"; w.save(p/"sample.xlsx")
+r=Presentation(); r.slides.add_slide(r.slide_layouts[1]).shapes.title.text="Package PPTX"; r.save(p/"sample.pptx")
+c=Canvas(str(p/"sample.pdf")); c.drawString(72,720,"Package PDF"); c.save()
+(p/"sample.csv").write_bytes("name,city\\n中文,台北\\n".encode("big5"))
+(p/"sample.json").write_text('{"message":"你好，package"}', encoding="utf-8")
+(p/"sample.html").write_text("<h1>Package HTML</h1><p>ready</p>", encoding="utf-8")
+image=Image.new("RGB",(300,100),"white"); ImageDraw.Draw(image).text((20,30),"PACKAGE OCR",fill="black"); image.save(p/"sample.png")
+'''
+    subprocess.run([str(python), "-c", script], cwd=directory, check=True)
+
+
+def qualify_conversions(package: Path, python: Path, output: Path, results: dict) -> None:
+    fixtures = output / "fixtures"
+    fixtures.mkdir(parents=True, exist_ok=True)
+    make_fixtures(fixtures, python)
+    for extension in ("docx", "xlsx", "pptx", "pdf", "png", "csv", "json", "html"):
+        bundle = output / "bundles" / extension
+        run([str(python), str(package / "scripts/router.py"), str(fixtures / f"sample.{extension}"), "--output", str(bundle)], package, results, f"convert_{extension}")
+        run([str(python), str(package / "scripts/validate_bundle.py"), str(bundle)], package, results, f"bundle_{extension}")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--archive", type=Path, required=True)
@@ -73,6 +102,7 @@ def main():
         run([str(python), "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"], package, results["steps"], "pip_bootstrap")
         run([str(python), "-m", "pip", "install", "-r", "requirements.txt"], package, results["steps"], "requirements_install")
         run([str(python), "scripts/capability_probe.py", "--json"], package, results["steps"], "capability_probe")
+        qualify_conversions(package, python, output, results["steps"])
         results["status"] = "passed"
     except Exception as exc:
         results["error"] = str(exc)
