@@ -111,3 +111,14 @@ def test_capability_report_contains_package_version(monkeypatch):
     monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed", "version": "1.26.4"})
     monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
     assert capability_probe.probe()["python_modules"]["fitz"]["version"] == "1.26.4"
+
+
+def test_capability_probe_optional_dependency_disclosure(monkeypatch):
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed", "version": "1.26.4"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
+    result = capability_probe.probe()
+    assert "markitdown" in result["python_modules"]
+    assert result["python_modules"]["markitdown"]["required"] is False
+    assert "affected_routes" in result
+    assert "missing_optional_dependencies" in result
+

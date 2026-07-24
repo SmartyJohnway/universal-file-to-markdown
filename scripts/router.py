@@ -249,6 +249,22 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
                 "properties": {"original_filename": att["original_filename"]},
             })
 
+    elif file_type == "text":
+        from convert_text import convert_text_native
+        res = convert_text_native(input_path, encoding_hint)
+        markdown = res["markdown"]
+        report = res["report"]
+        elements = res["elements"]
+        tables = res["tables"]
+
+    elif file_type == "markdown":
+        from convert_markdown import convert_markdown_native
+        res = convert_markdown_native(input_path, encoding_hint)
+        markdown = res["markdown"]
+        report = res["report"]
+        elements = res["elements"]
+        tables = res["tables"]
+
     elif file_type == "pandoc":
         import subprocess
         out_md = os.path.join(output_dir, "_pandoc_tmp.md")

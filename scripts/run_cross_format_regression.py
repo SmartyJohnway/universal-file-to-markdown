@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from cross_format_regression import normalize_bundle, fingerprint, write_diff, semantically_equal
 from regression_environment import environment_manifest
 
-ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","pdf_ocr_text","pdf_ocr_table_accepted","pdf_ocr_table_rejected","csv_big5","json_unicode","html_complex"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html"}
+ROOT=Path(__file__).resolve().parents[1]; MANIFEST=ROOT/'tests/cross_format/cases.json'; KNOWN={"docx_basic","docx_horizontal_merge","docx_vertical_merge","xlsx_merged","xlsx_two_blocks","xlsx_formula","pptx_text","pptx_table","pptx_picture","pptx_grouped","pdf_digital","pdf_ocr_text","pdf_ocr_table_accepted","pdf_ocr_table_rejected","csv_big5","json_unicode","html_complex","txt_native","md_native","csv_gb18030"}; FORMATS={"docx","xlsx","pptx","pdf","csv","json","html","txt","md"}
 SKILL_VERSION=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
 OCR_FONT_CANDIDATES=(
     ROOT/'tests'/'fixtures'/'fonts'/'DejaVuSans-Bold.ttf',
@@ -50,7 +50,7 @@ def load_workflow_cases(path=MANIFEST):
     data=json.loads(Path(path).read_text(encoding='utf-8')); seen=set()
     for case in data.get('workflow_cases',[]):
         assert case['case_id'] not in seen, 'duplicate workflow case_id'; seen.add(case['case_id'])
-        assert case['profile'] in {'core','optional-pandoc'} and case['workflow'] == 'readable_projection_host_review'
+        assert case['profile'] in {'core','optional-pandoc'} and case['workflow'] in {'readable_projection_host_review', 'explicit_user_request_review', 'ocr_advisory_target_review'}
         assert case['fixture'] in KNOWN and case['expected_status'] == 'passed'
         assert case['expected_request_status'] == 'generated' and case['expected_ai_review_status'] == 'not_provided'
         assert case['expected_readable_projection_status'] == 'deterministic_only'
@@ -115,8 +115,14 @@ def generate(name, directory):
         p=directory/(name+'.pdf'); image.save(p,'PDF',resolution=144.0); return p
     if name=='csv_big5':
         p=directory/'big5.csv';p.write_bytes('名稱,數量\n鋼管,10\n'.encode('big5'));return p
+    if name=='csv_gb18030':
+        p=directory/'gb18030.csv';p.write_bytes('张伟,北京市,GB18030\n李娜,上海市,100\n'.encode('gb18030'));return p
     if name=='json_unicode':
         p=directory/'unicode.json';p.write_text(json.dumps({'名稱':'繁體中文','items':['α','資料']},ensure_ascii=False),encoding='utf-8');return p
+    if name=='txt_native':
+        p=directory/'sample.txt';p.write_text('Title: Native Text Route\nLine 1: Plain text content\nLine 2: System log entry\n',encoding='utf-8');return p
+    if name=='md_native':
+        p=directory/'sample.md';p.write_text('# Native Markdown Route\n\n- Item 1\n- Item 2\n\nParagraph text here.\n',encoding='utf-8');return p
 def warning_codes(report): return {w.get('code') for w in report.get('warnings',[]) if w.get('code')}
 def _safe_table_asset(tables_dir, value):
     """Resolve canonical table assets without permitting bundle traversal."""
@@ -260,7 +266,10 @@ def run_workflow_case(case, root, reruns, keep):
     for run in range(reruns):
         bundle=root/'work'/case['case_id']/str(run); bundle.mkdir(parents=True,exist_ok=True)
         router=subprocess.run([sys.executable,str(ROOT/'scripts/router.py'),str(source),'--output',str(bundle),'--source-url','https://example.test/page/index.html'],text=True,capture_output=True)
-        review=subprocess.run([sys.executable,str(ROOT/'scripts/ai_review.py'),str(bundle)],text=True,capture_output=True)
+        if case.get('workflow') == 'explicit_user_request_review':
+            review=subprocess.run([sys.executable,str(ROOT/'scripts/prepare_ai_review.py'),str(bundle),'--force-user-request','--all-eligible-targets'],text=True,capture_output=True)
+        else:
+            review=subprocess.run([sys.executable,str(ROOT/'scripts/ai_review.py'),str(bundle)],text=True,capture_output=True)
         projection=subprocess.run([sys.executable,str(ROOT/'scripts/render_readable_projection.py'),str(bundle)],text=True,capture_output=True)
         run_errors=_workflow_errors(case,bundle,router.returncode,review.returncode,projection.returncode)
         errors.extend(run_errors)
@@ -287,6 +296,14 @@ def run_case(case, root, reruns, keep):
     if status!='passed' or keep: result['bundles']=[str(p) for p in bundles]
     return result
 def main(args):
+    if not (ROOT / "tests").is_dir() or not MANIFEST.is_file():
+        print(
+            "This regression runner requires the complete source repository "
+            "and cannot run from the Release Package or Agent Skill archive.",
+            file=sys.stderr,
+        )
+        return 2
+
     if args.update_baseline and not args.confirm_baseline_update: raise SystemExit('--update-baseline requires --confirm-baseline-update')
     all_format_cases=load_cases(); all_workflow_cases=load_workflow_cases()
     duplicate_case_ids={c['case_id'] for c in all_format_cases} & {c['case_id'] for c in all_workflow_cases}

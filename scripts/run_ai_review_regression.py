@@ -20,6 +20,15 @@ assert len(CASES) == EXPECTED_CASES, 'update expected regression case count'
 
 def passed_count(passed, category): return len(passed & category)
 def main(output):
+    root = Path(__file__).resolve().parents[1]
+    if not (root / "tests").is_dir():
+        print(
+            "This regression runner requires the complete source repository "
+            "and cannot run from the Release Package or Agent Skill archive.",
+            file=sys.stderr,
+        )
+        return 2
+
     output.mkdir(parents=True, exist_ok=True); results=[]
     for case in CASES:
         result=subprocess.run([sys.executable,'-m','pytest',f'tests/test_ai_review.py::{case}','-q'],text=True,capture_output=True)
