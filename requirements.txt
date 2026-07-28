@@ -20,7 +20,7 @@ markitdown[pptx]>=0.1,<0.2
 # Test suite
 pytest>=8.0,<10
 jsonschema>=4.22,<5
-packaging>=24,<27        # direct dependency: regression environment SpecifierSet evaluation
+packaging>=26.2,<27        # direct dependency: regression environment SpecifierSet evaluation
 reportlab>=4.2,<5          # programmatic PDF fixtures used by tests/conftest.py
 
 # Pandoc is a system binary, not a pip package - install via apt/conda,
