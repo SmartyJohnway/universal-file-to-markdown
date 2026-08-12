@@ -26,3 +26,8 @@ PDF and PPTX elements may also expose the additive layout/association contract
 documented in [layout_association_contract.md](layout_association_contract.md).
 Chunks may expose validated ID-only context and a bounded retrieval projection
 as documented in [chunk_consumer_contract.md](chunk_consumer_contract.md).
+
+PDF and raster-image bundles can optionally include a Docling candidate
+sidecar. The core route remains authoritative and the actual engine/model is
+not production-qualified in v1.9.0; see
+[tier2_adapter_contract.md](tier2_adapter_contract.md).

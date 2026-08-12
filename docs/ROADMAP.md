@@ -12,19 +12,27 @@ Reading order and structural association without breaking document/table/chunk s
 - strong-evidence caption/table/figure and speaker-note/slide relationships;
 - validation of reading-order and association references.
 
-## Current development line: 1.8.1
+## Implemented foundation: 1.8.1
 
 - chunk metadata carries validated layout/association references;
 - related/ancestor element IDs are emitted without copying target content;
 - source-first context budget accounting retains the 2,000-character limit;
 - a machine-readable multi-bundle scorecard supports RAG/agent qualification.
 
-## v1.9.x: optional Tier-2 document understanding
+## Current development line: 1.9.0
 
-- isolated, optional adapters for difficult PDF/image cases;
-- quality-gated escalation rather than a heavyweight default engine;
-- validated candidate bundles, deterministic arbitration, and failure containment;
-- real hard-document qualification with pinned engine/model provenance.
+- isolated, opt-in Docling candidate worker for difficult PDF/image cases;
+- allowlisted quality-gated escalation rather than a heavyweight default;
+- exact offline model manifests, dual timeouts, artifact validation, and failure containment;
+- native evidence is always retained; automatic arbitration is deliberately deferred.
+
+## v1.9.1: Tier-2 qualification and v2 readiness
+
+- pin and qualify the actual Docling/runtime/model combination;
+- 10–20 public or redistributable hard documents with ground truth;
+- Windows/Linux and Python 3.10–3.12 matrix where supported upstream;
+- cold/warm time, memory, model/package hash, and offline execution evidence;
+- candidate comparison and explicit promotion policy only if accuracy evidence supports it.
 
 ## v2.0 readiness
 

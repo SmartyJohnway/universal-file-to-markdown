@@ -15,6 +15,9 @@ The project currently:
 - clears known stale bundle artifacts before a rerun;
 - validates canonical schemas and cross-file references;
 - reports unsupported or uncertain content explicitly.
+- keeps optional Tier-2 output candidate-only, runs it in a child process with
+  offline flags and timeouts, disables Docling remote services/plugins, and
+  verifies local model plus candidate artifact hashes.
 
 ## External controls still required
 
@@ -35,6 +38,7 @@ The project is not:
 - an antivirus product;
 - a content-disarm-and-reconstruction system;
 - a sandbox by itself;
+- a guarantee that offline environment flags equal operating-system network isolation;
 - a guarantee that successfully parsed content is trustworthy;
 - a substitute for data-classification or privacy controls.
 

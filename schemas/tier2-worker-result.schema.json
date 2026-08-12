@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tier2-worker-result.schema.json",
+  "title": "Tier-2 isolated worker result",
+  "type": "object",
+  "required": [
+    "protocol_version", "status", "adapter", "source_sha256",
+    "model", "security", "artifacts"
+  ],
+  "properties": {
+    "protocol_version": {"const": "1.0"},
+    "status": {"const": "succeeded"},
+    "adapter": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "docling"},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "conversion_status": {"type": "string"},
+    "model": {
+      "type": "object",
+      "required": ["model_id", "model_version", "manifest_sha256"],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "model_version": {"type": "string", "minLength": 1},
+        "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "security": {
+      "type": "object",
+      "required": ["remote_services_enabled", "external_plugins_enabled", "offline_environment_enforced"],
+      "properties": {
+        "remote_services_enabled": {"const": false},
+        "external_plugins_enabled": {"const": false},
+        "offline_environment_enforced": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["docling_document", "markdown"],
+      "properties": {
+        "docling_document": {"$ref": "#/$defs/artifact"},
+        "markdown": {"$ref": "#/$defs/artifact"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "required": ["path", "sha256", "size_bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "size_bytes": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

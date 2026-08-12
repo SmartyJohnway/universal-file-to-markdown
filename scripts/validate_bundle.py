@@ -2,6 +2,7 @@
 """Validate a v1.6 output bundle and its cross-file references."""
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -212,12 +213,99 @@ def validate_bundle(bundle_dir: str) -> dict:
     report = _load_json(os.path.join(bundle_dir, "conversion-report.json"))
     _validate_html_metrics(report, html_tables, errors)
     _validate_ocr_table_metrics(report, table_ids, bundle_dir, errors)
+    _validate_tier2_sidecar(bundle_dir, report, manifest, errors)
 
     if not re.fullmatch(r"[0-9a-f]{64}", manifest.get("source_sha256", "")):
         errors.append("manifest source_sha256 is not a SHA-256 hex digest")
     return {"status": "passed" if not errors else "failed", "errors": errors,
             "warnings": warnings, "counts": {"elements": len(elements),
             "chunks": len(chunks), "tables": len(table_ids)}}
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _tier2_safe_path(root: Path, relative, errors, code) -> Path | None:
+    if not isinstance(relative, str) or not relative:
+        errors.append(code)
+        return None
+    target = (root / relative).resolve(strict=False)
+    try:
+        target.relative_to(root)
+    except ValueError:
+        errors.append(code)
+        return None
+    if target.is_symlink() or not target.is_file():
+        errors.append(code)
+        return None
+    return target
+
+
+def _validate_tier2_sidecar(bundle_dir, report, manifest, errors):
+    tier2_root = Path(bundle_dir, "tier2")
+    if not tier2_root.exists():
+        if report.get("tier2") is not None:
+            errors.append("TIER2_INDEX_MISSING")
+        return
+    index_path = tier2_root / "index.json"
+    if not index_path.is_file():
+        errors.append("TIER2_INDEX_MISSING")
+        return
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        errors.append("TIER2_INDEX_MALFORMED")
+        return
+    _schema_validate(index, "tier2-index.schema.json", errors)
+    if index.get("source_sha256") != manifest.get("source_sha256"):
+        errors.append("TIER2_SOURCE_HASH_MISMATCH")
+    if index.get("canonical_mutated") is not False:
+        errors.append("TIER2_CANONICAL_MUTATION_DECLARED")
+    try:
+        from ai_review import fingerprint
+        current = fingerprint(bundle_dir)
+    except Exception:
+        errors.append("TIER2_NATIVE_FINGERPRINT_UNAVAILABLE")
+        current = None
+    for field in ("native_bundle_fingerprint_before", "native_bundle_fingerprint_after"):
+        if current is not None and index.get(field) != current:
+            errors.append(f"TIER2_NATIVE_FINGERPRINT_MISMATCH: {field}")
+    report_tier2 = report.get("tier2")
+    if isinstance(report_tier2, dict) and report_tier2.get("status") != index.get("status"):
+        errors.append("TIER2_REPORT_INDEX_STATUS_MISMATCH")
+    if index.get("status") != "candidate_available":
+        return
+    result_path = _tier2_safe_path(
+        Path(bundle_dir), index.get("candidate_result_path"), errors,
+        "TIER2_CANDIDATE_RESULT_MISSING",
+    )
+    if result_path is None:
+        return
+    try:
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        errors.append("TIER2_CANDIDATE_RESULT_MALFORMED")
+        return
+    _schema_validate(result, "tier2-worker-result.schema.json", errors)
+    if result.get("source_sha256") != manifest.get("source_sha256"):
+        errors.append("TIER2_CANDIDATE_SOURCE_HASH_MISMATCH")
+    if result.get("model", {}).get("manifest_sha256") != index.get("model_manifest_sha256"):
+        errors.append("TIER2_MODEL_MANIFEST_HASH_MISMATCH")
+    candidate_root = result_path.parent.resolve()
+    for name, artifact in (result.get("artifacts") or {}).items():
+        path = _tier2_safe_path(candidate_root, artifact.get("path") if isinstance(artifact, dict) else None,
+                                errors, f"TIER2_CANDIDATE_ARTIFACT_MISSING: {name}")
+        if path is None:
+            continue
+        if path.stat().st_size != artifact.get("size_bytes"):
+            errors.append(f"TIER2_CANDIDATE_ARTIFACT_SIZE_MISMATCH: {name}")
+        if _file_sha256(path) != artifact.get("sha256"):
+            errors.append(f"TIER2_CANDIDATE_ARTIFACT_HASH_MISMATCH: {name}")
 
 
 def _validate_provenance(record: dict, errors: list, subject: str) -> None:
