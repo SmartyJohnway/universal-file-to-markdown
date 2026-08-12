@@ -1,0 +1,398 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "## Sheet: Sheet\n\n| Header | Value |  |\n| --- | --- | --- |\n| A | 1 |  |\n|  |  | =A2+B2 <!-- formula result unavailable --> |\n",
+  "document": {
+    "content_element_count": 2,
+    "element_count": 3,
+    "elements": [
+      {
+        "child_ids": [
+          "sheet-001"
+        ],
+        "children": [
+          "sheet-001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "openpyxl_custom",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "xlsx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "xlsx_formula.xlsx",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "element-table-s001-b001"
+        ],
+        "children": [
+          "element-table-s001-b001"
+        ],
+        "confidence": null,
+        "content": "## Sheet: Sheet",
+        "content_format": "markdown",
+        "engine": "markdown_pipe_table",
+        "heading_path": [],
+        "id": "sheet-001",
+        "locator_precision": "unknown",
+        "merged_ranges": 0,
+        "ordinal": 1,
+        "parent_id": "document-root",
+        "properties": {},
+        "sheet_name": "Sheet",
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "xlsx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": "Sheet",
+          "sheet_name": "Sheet",
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "sheet",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "| Header | Value |  |\n| --- | --- | --- |\n| A | 1 |  |\n|  |  | =A2+B2 <!-- formula result unavailable --> |",
+        "content_format": "markdown",
+        "engine": "markdown_pipe_table",
+        "heading_path": [],
+        "id": "element-table-s001-b001",
+        "locator_precision": "exact",
+        "ordinal": 2,
+        "parent_id": "sheet-001",
+        "properties": {
+          "block_index": 1,
+          "merged_ranges": 0
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": "A1:C3",
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "xlsx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": "Sheet",
+          "sheet_name": "Sheet",
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "table_id": "table-s001-b001",
+        "type": "table",
+        "warnings": []
+      }
+    ],
+    "file_type": "xlsx",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "xlsx_formula.xlsx",
+    "source_sha256": "74240d24339881f0751998284f30331aa0ce0f252a5217b0ff5582004bea462b"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [
+        "sheet-001"
+      ],
+      "char_count": 107,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 59,
+      "context_element_ids": [
+        "sheet-001"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Sheet: Sheet]\n[unit_element_id: sheet-001]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "element-table-s001-b001"
+      ],
+      "embedding_char_count": 166,
+      "embedding_text": "[heading_path: Sheet: Sheet]\n[unit_element_id: sheet-001]\n\n| Header | Value |  |\n| --- | --- | --- |\n| A | 1 |  |\n|  |  | =A2+B2 <!-- formula result unavailable --> |",
+      "heading_path": [
+        "Sheet: Sheet"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "exact",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": "Sheet",
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "xlsx_formula.xlsx",
+      "source_locator": {
+        "cell_range": "A1:C3",
+        "format": "xlsx",
+        "sheet": "Sheet",
+        "sheet_name": "Sheet",
+        "source_file": "xlsx_formula.xlsx"
+      },
+      "source_sha256": "74240d24339881f0751998284f30331aa0ce0f252a5217b0ff5582004bea462b",
+      "table_ids": [
+        "table-s001-b001"
+      ],
+      "text": "| Header | Value |  |\n| --- | --- | --- |\n| A | 1 |  |\n|  |  | =A2+B2 <!-- formula result unavailable --> |",
+      "unit_element_id": "sheet-001"
+    }
+  ],
+  "tables": [
+    {
+      "cell_blocks": [],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "Header"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "Value"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": ""
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "A"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "1"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": ""
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": ""
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": ""
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "=A2+B2 <!-- formula result unavailable -->"
+        }
+      ],
+      "confidence": null,
+      "dimensions": {
+        "columns": 3,
+        "rows": 3
+      },
+      "engine": "openpyxl_custom",
+      "grid": [
+        [
+          "Header",
+          "Value",
+          ""
+        ],
+        [
+          "A",
+          "1",
+          ""
+        ],
+        [
+          "",
+          "",
+          "=A2+B2 <!-- formula result unavailable -->"
+        ]
+      ],
+      "id": "table-s001-b001",
+      "merged_cells": [],
+      "merged_cells_flattened_in_csv": false,
+      "merged_cells_present": false,
+      "properties": {},
+      "schema_version": "1.0",
+      "source_dimensions": null,
+      "source_format": "xlsx",
+      "source_locator": {
+        "cell_range": "A1:C3",
+        "context": "sheet:Sheet",
+        "sheet": "Sheet"
+      }
+    }
+  ],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed_with_warnings",
+    "file_type": "xlsx",
+    "source_sha256": "74240d24339881f0751998284f30331aa0ce0f252a5217b0ff5582004bea462b"
+  },
+  "report_contract": {
+    "status": "passed_with_warnings",
+    "engine": "openpyxl_custom",
+    "warnings": [
+      {
+        "cells": [
+          "Sheet!C3"
+        ],
+        "code": "FORMULA_RESULT_UNAVAILABLE",
+        "count": 1,
+        "message": "1 formula cell(s) have no cached value stored in the file (the workbook was saved without being recalculated by Excel/LibreOffice, or was written by a tool that doesn't compute formulas). The formula text itself is preserved in the output instead of a blank cell, but no computed result is available - open the file in a spreadsheet app and re-save to populate it if the value is needed."
+      }
+    ],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 3,
+        "tables": 1
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {},
+  "readable_projection": null
+}

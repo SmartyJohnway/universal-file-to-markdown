@@ -141,6 +141,7 @@ def validate_bundle(bundle_dir: str) -> dict:
                 if element_id not in by_id:
                     errors.append(f"CHUNK_ELEMENT_REFERENCE_MISSING: missing element {element_id}")
             _validate_provenance(chunk, errors, "CHUNK")
+            _validate_chunk_consumer_contract(chunk, by_id, errors)
 
     chunk_ids = [chunk.get("chunk_id") for chunk in chunks]
     if len(chunk_ids) != len(set(chunk_ids)):
@@ -307,6 +308,152 @@ def _validate_element_layout_and_associations(elements, by_id, errors):
                 errors.append(
                     f"ASSOCIATION_RECIPROCAL_MISSING: {element_id} {relation} {target_id}"
                 )
+
+
+def _ordered_unique(values):
+    return list(dict.fromkeys(value for value in values if value is not None))
+
+
+def _chunk_ancestor_ids(element, by_id):
+    ancestors, visited = [], set()
+    parent_id = element.get("parent_id")
+    while parent_id and parent_id in by_id and parent_id not in visited:
+        visited.add(parent_id)
+        parent = by_id[parent_id]
+        if parent.get("type") != "document":
+            ancestors.append(parent_id)
+        parent_id = parent.get("parent_id")
+    return list(reversed(ancestors))
+
+
+def _chunk_nearest_context_id(element, by_id, element_types):
+    if element.get("type") in element_types:
+        return element.get("id")
+    visited = set()
+    parent_id = element.get("parent_id")
+    while parent_id and parent_id in by_id and parent_id not in visited:
+        visited.add(parent_id)
+        parent = by_id[parent_id]
+        if parent.get("type") in element_types:
+            return parent_id
+        parent_id = parent.get("parent_id")
+    return None
+
+
+def _expected_chunk_context(chunk, by_id):
+    elements = [by_id[element_id] for element_id in chunk.get("element_ids", [])
+                if element_id in by_id]
+    ancestor_ids = _ordered_unique(
+        ancestor_id for element in elements
+        for ancestor_id in _chunk_ancestor_ids(element, by_id)
+    )
+    section_ids = _ordered_unique(
+        _chunk_nearest_context_id(element, by_id, {"heading"})
+        for element in elements
+    )
+    unit_ids = _ordered_unique(
+        _chunk_nearest_context_id(element, by_id, {"page", "slide", "sheet"})
+        for element in elements
+    )
+    relationships = []
+    for element in elements:
+        for edge in (element.get("properties") or {}).get("associations") or []:
+            relationships.append({
+                "source_element_id": element.get("id"),
+                "relation": edge.get("relation"),
+                "target_element_id": edge.get("target_id"),
+                "confidence": edge.get("confidence"),
+                "evidence": list(edge.get("evidence") or []),
+                "method": edge.get("method"),
+            })
+    related_ids = _ordered_unique(
+        relationship.get("target_element_id") for relationship in relationships
+    )
+    layouts = [(element.get("properties") or {}).get("layout") or {}
+               for element in elements]
+    return {
+        "ancestor_element_ids": ancestor_ids,
+        "section_element_id": section_ids[0] if len(section_ids) == 1 else None,
+        "unit_element_id": unit_ids[0] if len(unit_ids) == 1 else None,
+        "related_element_ids": related_ids,
+        "relation_types": _ordered_unique(
+            relationship.get("relation") for relationship in relationships
+        ),
+        "relationships": relationships,
+        "layout_region_ids": _ordered_unique(layout.get("region_id") for layout in layouts),
+        "layout_zones": _ordered_unique(layout.get("layout_zone") for layout in layouts),
+        "layout_order_methods": _ordered_unique(
+            layout.get("order_method") for layout in layouts
+        ),
+        "column_indexes": _ordered_unique(layout.get("column_index") for layout in layouts),
+        "context_element_ids": _ordered_unique([*ancestor_ids, *related_ids]),
+    }
+
+
+def _expected_context_prefix(chunk, expected):
+    lines = []
+    if chunk.get("heading_path"):
+        lines.append("[heading_path: " + " > ".join(chunk["heading_path"]) + "]")
+    if expected["section_element_id"]:
+        lines.append(f"[section_element_id: {expected['section_element_id']}]")
+    if expected["unit_element_id"]:
+        lines.append(f"[unit_element_id: {expected['unit_element_id']}]")
+    if expected["relation_types"]:
+        lines.append("[relation_types: " + ", ".join(expected["relation_types"]) + "]")
+    if expected["related_element_ids"]:
+        lines.append("[related_element_ids: " + ", ".join(expected["related_element_ids"]) + "]")
+    if expected["layout_region_ids"]:
+        lines.append("[layout_region_ids: " + ", ".join(expected["layout_region_ids"]) + "]")
+    selected = []
+    for line in lines:
+        candidate = "\n".join([*selected, line]) + "\n\n"
+        if len(candidate) + len(chunk.get("text", "")) <= HARD_MAX_CHUNK_CHARS:
+            selected.append(line)
+    return (("\n".join(selected) + "\n\n") if selected else "",
+            len(selected) != len(lines))
+
+
+def _validate_chunk_consumer_contract(chunk, by_id, errors):
+    """Validate the optional additive v1.8.1 consumer projection contract."""
+    if chunk.get("consumer_contract_version") is None:
+        return
+    chunk_id = chunk.get("chunk_id")
+    if chunk.get("consumer_contract_version") != "1.0":
+        errors.append(f"CHUNK_CONTEXT_VERSION_UNSUPPORTED: {chunk_id}")
+        return
+    expected = _expected_chunk_context(chunk, by_id)
+    for field, expected_value in expected.items():
+        if chunk.get(field) != expected_value:
+            errors.append(f"CHUNK_CONTEXT_DERIVATION_MISMATCH: {chunk_id} {field}")
+    for field in ("ancestor_element_ids", "related_element_ids", "context_element_ids"):
+        for element_id in chunk.get(field) or []:
+            if element_id not in by_id:
+                errors.append(f"CHUNK_CONTEXT_REFERENCE_MISSING: {chunk_id} {element_id}")
+    section_id = chunk.get("section_element_id")
+    if section_id is not None and (section_id not in by_id
+                                   or by_id[section_id].get("type") != "heading"):
+        errors.append(f"CHUNK_CONTEXT_SECTION_INVALID: {chunk_id} {section_id}")
+    unit_id = chunk.get("unit_element_id")
+    if unit_id is not None and (unit_id not in by_id
+                                or by_id[unit_id].get("type") not in {"page", "slide", "sheet"}):
+        errors.append(f"CHUNK_CONTEXT_UNIT_INVALID: {chunk_id} {unit_id}")
+
+    expected_prefix, expected_truncated = _expected_context_prefix(chunk, expected)
+    text = chunk.get("text", "")
+    prefix = chunk.get("context_prefix", "")
+    embedding_text = chunk.get("embedding_text", "")
+    if chunk.get("context_policy") != "source_text_priority_v1":
+        errors.append(f"CHUNK_CONTEXT_POLICY_INVALID: {chunk_id}")
+    if prefix != expected_prefix or chunk.get("context_truncated") != expected_truncated:
+        errors.append(f"CHUNK_CONTEXT_PREFIX_MISMATCH: {chunk_id}")
+    if chunk.get("context_char_count") != len(prefix):
+        errors.append(f"CHUNK_CONTEXT_CHAR_COUNT_MISMATCH: {chunk_id}")
+    if embedding_text != prefix + text:
+        errors.append(f"CHUNK_EMBEDDING_TEXT_MISMATCH: {chunk_id}")
+    if chunk.get("embedding_char_count") != len(embedding_text):
+        errors.append(f"CHUNK_EMBEDDING_CHAR_COUNT_MISMATCH: {chunk_id}")
+    if len(embedding_text) > HARD_MAX_CHUNK_CHARS:
+        errors.append(f"CHUNK_EMBEDDING_EXCEEDS_HARD_LIMIT: {chunk_id}")
 
 
 def _validate_source_locator(locator: dict, errors: list) -> None:

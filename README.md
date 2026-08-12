@@ -16,6 +16,7 @@ The project is designed for environments where conversion must remain transparen
 - [Versioning](VERSIONING.md)
 - [Format capability matrix](references/capability_matrix.md)
 - [Engine notes and escalation guidance](references/engine_notes.md)
+- [Chunk consumer contract](references/chunk_consumer_contract.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Support policy](SUPPORT.md)
@@ -34,7 +35,7 @@ The project is designed for environments where conversion must remain transparen
 - Produces canonical hierarchical elements with page, sheet, slide, shape, table, and bounding-box locators where available.
 - Applies deterministic column/role-aware PDF and PPTX reading plans and records additive layout hints on canonical elements.
 - Links captions and speaker notes only when prefix, geometry, or OOXML relationships provide strong evidence.
-- Emits RAG chunks with a hard maximum of 2,000 characters.
+- Emits RAG chunks plus a validated ID-only consumer context projection; both source and embedding views have a hard maximum of 2,000 characters.
 - Detects unsupported or uncertain content instead of silently reporting success.
 - Validates schemas, hierarchy, chunk references, table dimensions, assets, and bundle consistency.
 
@@ -121,6 +122,12 @@ Validate an existing bundle independently:
 python scripts/validate_bundle.py OUTPUT_DIRECTORY
 ```
 
+Score downstream chunk context across one or more bundles:
+
+```bash
+python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
+```
+
 The router exits non-zero when the final conversion status is `failed`.
 
 ## Reading the result
@@ -145,7 +152,7 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current development target: `1.8.0`
+Current development target: `1.8.1`
 Latest published stable release: `1.7.2`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
@@ -158,6 +165,12 @@ PDF/PPTX elements may include additive `properties.layout` and
 `properties.associations` metadata. The exact fields, evidence thresholds, and
 consumer rules are documented in
 [`references/layout_association_contract.md`](references/layout_association_contract.md).
+
+Chunks may include the additive `consumer_contract_version: "1.0"` projection:
+validated ancestor/section/unit/relationship/layout IDs, context budget
+accounting, and `embedding_text`. Canonical source `text` is never shortened to
+make room for context. See
+[`references/chunk_consumer_contract.md`](references/chunk_consumer_contract.md).
 
 JSON Schemas are stored in `schemas/`. Format-specific granularity is documented in `references/capability_matrix.md`.
 
@@ -178,8 +191,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.0-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.0-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.1-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.1-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

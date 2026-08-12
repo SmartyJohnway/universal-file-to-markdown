@@ -16,6 +16,7 @@
 - [版本說明](VERSIONING.md)
 - [格式能力矩陣](references/capability_matrix.md)
 - [引擎說明與升級指引](references/engine_notes.md)
+- [Chunk consumer contract](references/chunk_consumer_contract.md)
 - [貢獻指南](CONTRIBUTING.md)
 - [安全政策](SECURITY.md)
 - [支援政策](SUPPORT.md)
@@ -34,7 +35,7 @@
 - 產出 canonical 階層元素，並在可取得時保留頁碼、工作表、投影片、shape、表格與 bbox 定位。
 - 對 PDF 與 PPTX 套用 deterministic column/role-aware 閱讀計畫，並在 canonical element 記錄 additive layout hints。
 - 只有 caption 前綴、幾何或 OOXML relationship 提供強證據時才建立關聯。
-- RAG chunks 具有 2,000 字元硬上限。
+- RAG chunks 另提供經驗證、只含 ID 的 consumer context projection；來源與 embedding view 都具有 2,000 字元硬上限。
 - 對不支援或低信心內容明確警告，不以 silent success 掩蓋資訊遺失。
 - 驗證 schema、階層、chunk 參照、表格尺寸、資產與整體 bundle 一致性。
 
@@ -121,6 +122,12 @@ python scripts/router.py input.csv --output output --encoding gb18030
 python scripts/validate_bundle.py OUTPUT_DIRECTORY
 ```
 
+可對一個或多個 bundle 量測 downstream chunk context：
+
+```bash
+python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
+```
+
 最終轉換狀態為 `failed` 時，router 會以非零狀態碼結束。
 
 ## 如何判讀結果
@@ -145,7 +152,7 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 ## Canonical contracts
 
-目前開發目標：`1.8.0`
+目前開發目標：`1.8.1`
 最新已發布 stable release：`1.7.2`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
@@ -157,6 +164,11 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 PDF/PPTX element 可包含 additive `properties.layout` 與
 `properties.associations` metadata；確切欄位、證據門檻與 consumer 規則請見
 [`references/layout_association_contract.md`](references/layout_association_contract.md)。
+
+Chunk 可包含 additive `consumer_contract_version: "1.0"` projection，包括
+經驗證的 ancestor／section／unit／relationship／layout ID、context budget
+帳務與 `embedding_text`。Canonical source `text` 不會為了加入 context 而被截短；
+詳見 [`references/chunk_consumer_contract.md`](references/chunk_consumer_contract.md)。
 
 JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `references/capability_matrix.md`。
 
@@ -177,8 +189,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.0-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.0-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.1-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.1-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

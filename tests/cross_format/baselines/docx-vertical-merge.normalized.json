@@ -1,0 +1,382 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "**bold*** italic*\n\n<table>\n<tr>\n<td rowspan=\"2\">A</td>\n<td></td>\n</tr>\n<tr>\n<td>B</td>\n</tr>\n</table>",
+  "document": {
+    "content_element_count": 2,
+    "element_count": 3,
+    "elements": [
+      {
+        "child_ids": [
+          "p0001",
+          "p0002"
+        ],
+        "children": [
+          "p0001",
+          "p0002"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "python-docx_custom",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "range",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": 0,
+          "element_id": null,
+          "element_index": null,
+          "element_start": 0,
+          "filename": null,
+          "format": "docx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": 0,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "docx_vertical_merge.docx",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "**bold*** italic*",
+        "content_format": "markdown",
+        "engine": "python-docx_custom",
+        "heading_path": [],
+        "id": "p0001",
+        "level": null,
+        "locator_precision": "range",
+        "ordinal": 1,
+        "parent_id": "document-root",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": 1,
+          "element_id": null,
+          "element_index": null,
+          "element_start": 1,
+          "filename": null,
+          "format": "docx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": 0,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "paragraph",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "<table>\n<tr>\n<td rowspan=\"2\">A</td>\n<td></td>\n</tr>\n<tr>\n<td>B</td>\n</tr>\n</table>",
+        "content_format": "markdown",
+        "engine": "python-docx_custom",
+        "heading_path": [],
+        "id": "p0002",
+        "locator_precision": "range",
+        "merged_cells": 2,
+        "ordinal": 2,
+        "parent_id": "document-root",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": 2,
+          "element_id": null,
+          "element_index": null,
+          "element_start": 2,
+          "filename": null,
+          "format": "docx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": 0,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": 1
+        },
+        "table_id": "table-0001",
+        "type": "table",
+        "warnings": []
+      }
+    ],
+    "file_type": "docx",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "docx_vertical_merge.docx",
+    "source_sha256": "966affa2d92e6c1e5fbfcf6e13fd909d76a4f71ca90fd347c13d078352eca955"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [],
+      "char_count": 101,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 0,
+      "context_element_ids": [],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "",
+      "context_truncated": false,
+      "element_ids": [
+        "p0001",
+        "p0002"
+      ],
+      "embedding_char_count": 101,
+      "embedding_text": "**bold*** italic*\n\n<table>\n<tr>\n<td rowspan=\"2\">A</td>\n<td></td>\n</tr>\n<tr>\n<td>B</td>\n</tr>\n</table>",
+      "heading_path": [],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "range",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": null,
+      "source_locator": {
+        "element_end": 2,
+        "element_start": 1,
+        "format": "docx",
+        "section_index": 0
+      },
+      "source_sha256": "966affa2d92e6c1e5fbfcf6e13fd909d76a4f71ca90fd347c13d078352eca955",
+      "table_ids": [
+        "table-0001"
+      ],
+      "text": "**bold*** italic*\n\n<table>\n<tr>\n<td rowspan=\"2\">A</td>\n<td></td>\n</tr>\n<tr>\n<td>B</td>\n</tr>\n</table>",
+      "unit_element_id": null
+    }
+  ],
+  "tables": [
+    {
+      "cell_blocks": [],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 2,
+          "source_locator": null,
+          "value": "A"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": ""
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "B"
+        }
+      ],
+      "confidence": null,
+      "dimensions": {
+        "columns": 2,
+        "rows": 2
+      },
+      "engine": "python-docx_custom",
+      "grid": [
+        [
+          "A",
+          ""
+        ],
+        [
+          "",
+          "B"
+        ]
+      ],
+      "id": "table-0001",
+      "merged_cells": [],
+      "merged_cells_flattened_in_csv": true,
+      "merged_cells_present": true,
+      "properties": {},
+      "schema_version": "1.0",
+      "source_dimensions": null,
+      "source_format": "docx",
+      "source_locator": {
+        "context": "docx_table",
+        "table_index": 1
+      }
+    }
+  ],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed",
+    "file_type": "docx",
+    "source_sha256": "966affa2d92e6c1e5fbfcf6e13fd909d76a4f71ca90fd347c13d078352eca955"
+  },
+  "report_contract": {
+    "status": "passed",
+    "engine": "python-docx_custom",
+    "warnings": [],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 3,
+        "tables": 1
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {
+    "ai-review-request.json": {
+      "allowed_operations": [
+        "add_non-factual_section_spacing",
+        "annotate_uncertain_structure",
+        "improve_heading_readability",
+        "reduce_duplicate_visual_labels",
+        "render_table_cell_links",
+        "render_table_cell_lists"
+      ],
+      "canonical_bundle_fingerprint": "a93f5e60a05f4a2594b091cecbbe5ac9198324af80687275324fa3e747daec76",
+      "instructions": {
+        "do_not_modify_canonical": true,
+        "preserve_facts": true,
+        "preserve_numbers": true,
+        "preserve_source_order": true,
+        "preserve_table_ids": true,
+        "preserve_urls": true
+      },
+      "prohibited_operations": [
+        "invent_content",
+        "remove_source_content",
+        "change_numbers",
+        "change_dates",
+        "change_urls",
+        "change table geometry",
+        "merge unrelated source sections",
+        "rewrite canonical JSON",
+        "change provenance"
+      ],
+      "reason_codes": [
+        "MERGED_TABLE_GEOMETRY_PRESENT"
+      ],
+      "request_id": "ai-review-request-966affa2d92e6c1e",
+      "review_scope": "readable_projection_only",
+      "schema_version": "1.0",
+      "skill_version": "1.8.1",
+      "source_sha256": "966affa2d92e6c1e5fbfcf6e13fd909d76a4f71ca90fd347c13d078352eca955",
+      "targets": [
+        {
+          "canonical": {
+            "cell_blocks": [],
+            "dimensions": {
+              "columns": 2,
+              "rows": 2
+            },
+            "grid": [
+              [
+                "A",
+                ""
+              ],
+              [
+                "",
+                "B"
+              ]
+            ],
+            "merged_cells": []
+          },
+          "faithful_markdown": "| A |  |\n| --- | --- |\n|  | B |",
+          "reason_codes": [
+            "MERGED_TABLE_GEOMETRY_PRESENT"
+          ],
+          "source_locator": {
+            "context": "docx_table",
+            "table_index": 1
+          },
+          "target_id": "table-0001",
+          "target_type": "table"
+        }
+      ],
+      "truncation": []
+    }
+  },
+  "readable_projection": null
+}

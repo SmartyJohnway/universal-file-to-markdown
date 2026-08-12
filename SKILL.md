@@ -1,6 +1,6 @@
 ---
 name: universal-file-to-markdown
-version: 1.8.0
+version: 1.8.1
 release_status: development
 description: >
   Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
@@ -12,7 +12,7 @@ license: Apache-2.0
 compatibility: Requires Python 3.10–3.12; Python 3.11 recommended.
 ---
 
-# Universal File to Markdown v1.8.0
+# Universal File to Markdown v1.8.1
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -100,7 +100,7 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.8.0 (development)
+skill_version: 1.8.1 (development)
 published_stable_version: 1.7.2
 document/table/chunk schema_version: 1.0
 ```
@@ -126,6 +126,10 @@ Chunks use leaf elements, inherit source locators, and include source file,
 page/sheet/slide bounds, element IDs, character count, and split-part indexes.
 Oversized content is split at paragraphs/rows/lines before word-safe hard
 splitting. Large Markdown tables repeat their header in subsequent chunks.
+Current chunks also expose a validated, ID-only consumer context contract and
+an optional `embedding_text` projection. Source `text` always has priority and
+both views retain the 2,000-character hard maximum. See
+`references/chunk_consumer_contract.md`.
 
 JSON Schemas are in `schemas/`. Read `references/capability_matrix.md` when
 deciding whether a format's canonical granularity is sufficient for the task.

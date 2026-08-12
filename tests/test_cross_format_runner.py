@@ -2,9 +2,23 @@ import sys
 import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from run_cross_format_regression import load_cases, main, assert_contract, _table_index_errors, resolve_ocr_font
+from run_cross_format_regression import load_cases, main, assert_contract, _table_index_errors, resolve_ocr_font, generate, FIXED_ARCHIVE_TIME
 def test_summary_manifest_has_at_least_twelve_core_cases(): assert len([c for c in load_cases() if c['profile']=='core']) >= 12
 def test_optional_missing_tool_is_declared(): assert any(c['profile']=='optional-pandoc' for c in load_cases())
+
+
+def test_generated_binary_fixture_bytes_are_reproducible(tmp_path):
+    import hashlib
+    import zipfile
+    fixture_names = ('docx_basic', 'xlsx_merged', 'pptx_table',
+                     'pdf_digital', 'pdf_ocr_text')
+    for fixture in fixture_names:
+        first = generate(fixture, tmp_path / 'a' / fixture)
+        second = generate(fixture, tmp_path / 'b' / fixture)
+        assert hashlib.sha256(first.read_bytes()).digest() == hashlib.sha256(second.read_bytes()).digest()
+        if first.suffix in {'.docx', '.xlsx', '.pptx'}:
+            with zipfile.ZipFile(first) as archive:
+                assert {entry.date_time for entry in archive.infolist()} == {FIXED_ARCHIVE_TIME}
 
 def _passing_case(case_id='json-unicode'):
     return {'case_id':case_id,'format':'json','status':'passed','reason_codes':[],'fingerprints':[{'bundle_fingerprint':'new'}],'normalized_snapshot':{}}

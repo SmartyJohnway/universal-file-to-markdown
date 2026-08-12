@@ -6,6 +6,24 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.8.1] - Unreleased
+
+### Added
+
+* An additive chunk consumer contract with validated ancestor, section, unit, relationship, and layout references.
+* A source-first `embedding_text` projection with explicit context budget accounting and the existing 2,000-character hard maximum.
+* A multi-bundle chunk scorecard for contract, context, locator, duplicate-text, and length metrics.
+* Ten boundary-length consumer fixtures plus positive, legacy-compatibility, and tamper-rejection coverage.
+
+### Changed
+
+* Chunk schema remains `1.0`; all v1.8.1 consumer fields are optional for backward compatibility.
+* Related content is represented by canonical element IDs and relationship evidence instead of copied text.
+
+### Fixed
+
+* Bundle validation now rejects stale or fabricated chunk context, inconsistent embedding projections, missing context references, and context that exceeds the hard limit.
+
 ## [1.8.0] - Unreleased
 
 ### Added
