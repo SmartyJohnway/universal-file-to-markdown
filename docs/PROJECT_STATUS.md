@@ -1,6 +1,6 @@
 # Project Status
 
-Current development target: `v1.7.3`
+Current development target: `v1.8.0`
 
 Latest published stable release: `v1.7.2`
 

@@ -122,13 +122,14 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
         for i in page_indices:
             page = pdf.pages[i]
             page_id = f"page-{i + 1:04d}"
-            page_md = [f"<!-- page: {i + 1} -->\n"]
+            page_md = [f"<!-- page: {i + 1} -->"]
             tables = page.find_tables()
             table_bboxes = [t.bbox for t in tables]
             text_blocks = _extract_digital_text_blocks(doc[i], table_bboxes)
-            layout = _analyze_digital_layout(text_blocks, float(doc[i].rect.width))
+            page_width = float(doc[i].rect.width)
+            page_height = float(doc[i].rect.height)
+            layout = _analyze_digital_layout(text_blocks, page_width)
             layout["page"] = i + 1
-            page_layout_analysis.append(layout)
             if layout["multi_column_detected"]:
                 evidence = {
                     "page": i + 1,
@@ -145,7 +146,7 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
                 warnings.append({
                     "code": "READING_ORDER_UNCERTAIN",
                     **evidence,
-                    "message": "The v1.7.3 readable projection still uses the PDF engine's native text order; verify this multi-column page manually.",
+                    "message": "A deterministic column-major order was applied; verify layouts whose intended flow depends on visual semantics.",
                 })
                 if table_bboxes:
                     warnings.append({
@@ -155,48 +156,93 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
                         "message": "Tables and multiple text columns share this page; the intended prose-to-table association is not inferred.",
                     })
 
-            text = page.extract_text() or ""
-            if not tables:
-                page_md.append(text)
-                _append_digital_text_elements(elements, page_id, text_blocks, text, i + 1)
-            else:
-                text_no_tables = _strip_table_text(page, text, table_bboxes)
-                page_md.append(text_no_tables)
-                _append_digital_text_elements(elements, page_id, text_blocks,
-                                              text_no_tables, i + 1)
-                for t in tables:
-                    table_count += 1
-                    rows = t.extract()
-                    if not rows:
-                        continue
-                    row_lengths = {len(r) for r in rows}
-                    if len(row_lengths) > 1:
-                        table_row_consistency = "warning"
-                    page_md.append(_rows_to_markdown(rows))
-                    table_id = f"table-p{i + 1:04d}-{table_count:04d}"
-                    table_md = _rows_to_markdown(rows)
-                    tables_out.append({"id": table_id, "rows": rows,
-                                        "context": f"pdf_page_{i + 1}",
-                                        "source_locator": {"page": i + 1, "bbox": list(t.bbox)},
-                                        "engine": "pdfplumber"})
-                    elements.append({
-                        "id": f"{page_id}-table-{table_count:03d}",
-                        "parent_id": page_id, "type": "table", "content": table_md,
-                        "engine": "pdfplumber", "confidence": None,
-                        "source_locator": {"page": i + 1, "bbox": list(t.bbox)},
-                        "table_id": table_id,
-                    })
+            table_records = []
+            for t in tables:
+                rows = t.extract()
+                if not rows:
+                    continue
+                table_count += 1
+                row_lengths = {len(r) for r in rows}
+                if len(row_lengths) > 1:
+                    table_row_consistency = "warning"
+                table_id = f"table-p{i + 1:04d}-{table_count:04d}"
+                table_md = _rows_to_markdown(rows)
+                table_record = {
+                    "id": table_id,
+                    "element_id": f"{page_id}-table-{table_count:03d}",
+                    "rows": rows,
+                    "markdown": table_md,
+                    "bbox": tuple(t.bbox),
+                }
+                table_records.append(table_record)
+                tables_out.append({"id": table_id, "rows": rows,
+                                   "context": f"pdf_page_{i + 1}",
+                                   "source_locator": {"page": i + 1, "bbox": list(t.bbox)},
+                                   "engine": "pdfplumber"})
 
-            page_text = "\n".join(page_md)
-            per_page_md.append(page_text)
-            elements.insert(len(elements) - sum(1 for e in elements if e.get("parent_id") == page_id), {
+            fallback_text = page.extract_text() or ""
+            if table_records:
+                fallback_text = _strip_table_text(page, fallback_text, table_bboxes)
+            plan = _plan_pdf_page_items(
+                text_blocks, table_records, layout, page_width, page_height,
+                page_id, fallback_text,
+            )
+            layout["ordering_applied"] = bool(plan)
+            layout["reading_order_method"] = (
+                plan[0]["layout"]["order_method"] if plan else "no_content"
+            )
+            layout["region_count"] = len({item["layout"]["region_id"] for item in plan})
+            page_layout_analysis.append(layout)
+
+            page_element = {
                 "id": page_id, "type": "page", "page": i + 1,
                 "content": f"<!-- page: {i + 1} -->", "engine": "pdfplumber",
                 "confidence": None, "source_locator": {"page": i + 1},
-            })
+                "properties": {"layout": {
+                    "order_method": layout["reading_order_method"],
+                    "multi_column_detected": layout["multi_column_detected"],
+                    "column_count": layout["column_count"],
+                    "region_count": layout["region_count"],
+                }},
+            }
+            elements.append(page_element)
+            page_children = []
+            for item in plan:
+                page_md.append(item["content"])
+                if item["kind"] == "table":
+                    record = item["record"]
+                    child = {
+                        "id": record["element_id"], "parent_id": page_id,
+                        "type": "table", "content": record["markdown"],
+                        "engine": "pdfplumber", "confidence": None,
+                        "source_locator": {"page": i + 1, "bbox": list(record["bbox"])},
+                        "table_id": record["id"],
+                        "properties": {"layout": item["layout"]},
+                    }
+                else:
+                    lines = [line.strip() for line in item["content"].splitlines()
+                             if line.strip()]
+                    element_type = (
+                        "heading" if len(lines) == 1 and len(item["content"]) <= 120
+                        else "paragraph"
+                    )
+                    child = {
+                        "id": item["element_id"], "parent_id": page_id,
+                        "type": element_type, "content": item["content"],
+                        "engine": "pymupdf+pdfplumber", "confidence": None,
+                        "source_locator": {"page": i + 1,
+                                           "bbox": list(item["bbox"]) if item["bbox"] else None},
+                        "properties": {"layout": item["layout"]},
+                    }
+                page_children.append(child)
+            _associate_pdf_page_captions(page_children, page_height)
+            elements.extend(page_children)
+
+            page_text = "\n".join(page_md)
+            per_page_md.append(page_text)
 
     report = {
-        "status": "passed",
+        "status": "passed_with_warnings" if warnings else "passed",
         "engine": "pdfplumber",
         "page_count": len(doc),
         "table_count": table_count,
@@ -232,17 +278,65 @@ def _strip_table_text(page, full_text, table_bboxes):
 
 
 def _extract_digital_text_blocks(fitz_page, table_bboxes):
-    blocks = []
-    for raw in fitz_page.get_text("blocks"):
-        if len(raw) < 5:
+    """Extract spatial text regions without trusting PyMuPDF block grouping.
+
+    PyMuPDF can place same-row lines from independent columns into one block.
+    Line bboxes retain the separation, so we rebuild conservative paragraph
+    groups only when consecutive lines overlap horizontally and have a normal
+    line gap. This preserves columns while avoiding one canonical element per
+    wrapped prose line.
+    """
+    lines = []
+    page_dict = fitz_page.get_text("dict") or {}
+    for raw_block in page_dict.get("blocks", []):
+        if raw_block.get("type", 0) != 0:
             continue
-        bbox = tuple(raw[:4])
-        content = (raw[4] or "").strip()
-        if not content or any(_bbox_overlap_ratio(bbox, table_bbox) >= 0.5
-                              for table_bbox in table_bboxes):
+        for raw_line in raw_block.get("lines", []):
+            bbox = tuple(raw_line.get("bbox") or ())
+            if len(bbox) != 4:
+                continue
+            content = "".join(
+                str(span.get("text") or "") for span in raw_line.get("spans", [])
+            ).strip()
+            if not content or any(_bbox_overlap_ratio(bbox, table_bbox) >= 0.5
+                                  for table_bbox in table_bboxes):
+                continue
+            lines.append((bbox, content))
+    if not lines:
+        return []
+
+    groups = []
+    for bbox, content in sorted(lines, key=lambda item: (item[0][1], item[0][0])):
+        best = None
+        for group in groups:
+            previous = group["last_bbox"]
+            vertical_gap = bbox[1] - previous[3]
+            line_height = max(1.0, min(previous[3] - previous[1], bbox[3] - bbox[1]))
+            horizontal_overlap = max(0.0, min(previous[2], bbox[2]) - max(previous[0], bbox[0]))
+            alignment = horizontal_overlap / max(
+                1.0, min(previous[2] - previous[0], bbox[2] - bbox[0])
+            )
+            if -2.0 <= vertical_gap <= line_height * 1.8 and alignment >= 0.5:
+                score = (abs(vertical_gap), -alignment, group["index"])
+                if best is None or score < best[0]:
+                    best = (score, group)
+        if best is None:
+            groups.append({
+                "index": len(groups), "bbox": list(bbox), "last_bbox": bbox,
+                "lines": [content],
+            })
             continue
-        blocks.append((bbox, content))
-    return blocks
+        group = best[1]
+        group["bbox"] = [
+            min(group["bbox"][0], bbox[0]), min(group["bbox"][1], bbox[1]),
+            max(group["bbox"][2], bbox[2]), max(group["bbox"][3], bbox[3]),
+        ]
+        group["last_bbox"] = bbox
+        group["lines"].append(content)
+    return [
+        (tuple(group["bbox"]), "\n".join(group["lines"]))
+        for group in groups
+    ]
 
 
 def _append_digital_text_elements(elements, page_id, blocks,
@@ -261,20 +355,190 @@ def _append_digital_text_elements(elements, page_id, blocks,
         })
 
 
-def _analyze_digital_layout(blocks, page_width: float) -> dict:
-    """Detect strong two-column geometry without changing reading order.
+def _plan_pdf_page_items(blocks, table_records, layout, page_width, page_height,
+                         page_id, fallback_text="") -> list:
+    """Return one deterministic page plan shared by Markdown and canonical data.
 
-    This is intentionally a warning-only v1.7.3 detector. Full-width blocks
-    (titles, headers, and footers) are excluded before looking for a stable
-    center split. v1.8 owns the actual ordering plan.
+    Strong two-column geometry is ordered column-major. Full-width blocks split
+    the page into vertical bands, so titles, section dividers, and footers keep
+    their visual position. Tables participate in the same bbox plan instead of
+    being appended after all prose.
     """
+    raw_items = []
+    for index, (bbox, content) in enumerate(blocks, start=1):
+        raw_items.append({
+            "kind": "text", "bbox": tuple(bbox) if bbox else None,
+            "content": content.strip(), "source_index": index,
+            "element_id": f"{page_id}-text-{index:03d}",
+        })
+    if not raw_items and fallback_text.strip():
+        raw_items.append({
+            "kind": "text", "bbox": None, "content": fallback_text.strip(),
+            "source_index": 1, "element_id": f"{page_id}-text-001",
+        })
+    for index, record in enumerate(table_records, start=1):
+        raw_items.append({
+            "kind": "table", "bbox": record["bbox"],
+            "content": record["markdown"], "record": record,
+            "source_index": len(blocks) + index,
+            "element_id": record["element_id"],
+        })
+    raw_items = [item for item in raw_items if item["content"]]
+    if not raw_items:
+        return []
+
+    split_x = layout.get("column_split_x")
+    multi_column = bool(layout.get("multi_column_detected") and split_x is not None)
+    for item in raw_items:
+        bbox = item["bbox"]
+        if bbox is None:
+            item["column_index"] = 0
+            item["region_type"] = "unlocated"
+            continue
+        width = max(0.0, bbox[2] - bbox[0])
+        crosses_split = split_x is not None and bbox[0] < split_x < bbox[2]
+        header_or_footer = bbox[1] <= page_height * 0.1 or bbox[1] >= page_height * 0.85
+        spanning = header_or_footer or width >= page_width * 0.72 or (
+            crosses_split and width >= page_width * 0.45
+        )
+        if not multi_column or spanning:
+            item["column_index"] = 0
+            item["region_type"] = "full_width" if spanning else "body"
+        else:
+            item["column_index"] = 1 if (bbox[0] + bbox[2]) / 2 < split_x else 2
+            item["region_type"] = "column"
+
+    def geometry_key(item):
+        bbox = item["bbox"]
+        if bbox is None:
+            return (float("inf"), float("inf"), item["source_index"])
+        return (bbox[1], bbox[0], item["source_index"])
+
+    if not multi_column:
+        ordered = sorted(raw_items, key=geometry_key)
+        method = "deterministic_geometry_v1"
+        confidence = 0.95
+    else:
+        spanning = sorted(
+            [item for item in raw_items if item["column_index"] == 0],
+            key=geometry_key,
+        )
+        column_items = [item for item in raw_items if item["column_index"] in (1, 2)]
+        ordered = []
+        emitted = set()
+        for full_item in spanning:
+            top = full_item["bbox"][1] if full_item["bbox"] else float("inf")
+            before = [item for item in column_items
+                      if id(item) not in emitted and item["bbox"] is not None
+                      and (item["bbox"][1] + item["bbox"][3]) / 2 < top]
+            for column in (1, 2):
+                for item in sorted((x for x in before if x["column_index"] == column),
+                                   key=geometry_key):
+                    ordered.append(item)
+                    emitted.add(id(item))
+            ordered.append(full_item)
+        remaining = [item for item in column_items if id(item) not in emitted]
+        for column in (1, 2):
+            ordered.extend(sorted((x for x in remaining if x["column_index"] == column),
+                                  key=geometry_key))
+        # Unlocated fallback content is intentionally last because no source
+        # geometry exists to justify inserting it between located evidence.
+        ordered.extend(item for item in raw_items
+                       if item["bbox"] is None and item not in ordered)
+        method = "deterministic_xycut_v1"
+        confidence = 0.9 if not layout.get("overlapping_block_pair_count") else 0.65
+
+    region_keys = []
+    for reading_order, item in enumerate(ordered, start=1):
+        key = (item["region_type"], item["column_index"])
+        if key not in region_keys:
+            region_keys.append(key)
+        region_number = region_keys.index(key) + 1
+        item["layout"] = {
+            "reading_order": reading_order,
+            "region_id": f"{page_id}-region-{region_number:02d}",
+            "region_type": item["region_type"],
+            "column_index": item["column_index"],
+            "layout_zone": (
+                "body_left" if item["column_index"] == 1 else
+                "body_right" if item["column_index"] == 2 else
+                item["region_type"]
+            ),
+            "order_confidence": confidence,
+            "order_method": method,
+        }
+    return ordered
+
+
+_CAPTION_PREFIX = re.compile(
+    r"^\s*(?P<kind>table|figure|fig\.?|表|圖)\s*(?:[0-9IVXivx一二三四五六七八九十]+|[:：])",
+    re.IGNORECASE,
+)
+
+
+def _associate_pdf_page_captions(elements, page_height) -> None:
+    """Add only strong caption-to-table edges supported by geometry and text."""
+    tables = [element for element in elements if element.get("type") == "table"]
+    if not tables:
+        return
+    max_gap = max(float(page_height or 0) * 0.08, 24.0)
+    for caption in elements:
+        match = _CAPTION_PREFIX.match((caption.get("content") or "").lstrip("# "))
+        if not match or match.group("kind").lower() not in {"table", "表"}:
+            continue
+        caption_bbox = (caption.get("source_locator") or {}).get("bbox")
+        if not isinstance(caption_bbox, list) or len(caption_bbox) != 4:
+            continue
+        candidates = []
+        for table in tables:
+            table_bbox = (table.get("source_locator") or {}).get("bbox")
+            if not isinstance(table_bbox, list) or len(table_bbox) != 4:
+                continue
+            gap = min(abs(table_bbox[1] - caption_bbox[3]),
+                      abs(caption_bbox[1] - table_bbox[3]))
+            horizontal_overlap = max(
+                0.0, min(caption_bbox[2], table_bbox[2]) - max(caption_bbox[0], table_bbox[0])
+            )
+            alignment = horizontal_overlap / max(
+                1.0, min(caption_bbox[2] - caption_bbox[0], table_bbox[2] - table_bbox[0])
+            )
+            if gap <= max_gap and alignment >= 0.5:
+                candidates.append((gap, -alignment, table))
+        if not candidates:
+            continue
+        _, _, target = min(candidates, key=lambda value: (value[0], value[1], value[2]["id"]))
+        caption["type"] = "caption"
+        _add_association(caption, "caption_of", target["id"], 0.95,
+                         ["caption_prefix", "vertical_proximity", "horizontal_alignment"])
+        _add_association(target, "captioned_by", caption["id"], 0.95,
+                         ["caption_prefix", "vertical_proximity", "horizontal_alignment"])
+
+
+def _add_association(element, relation, target_id, confidence, evidence) -> None:
+    properties = element.setdefault("properties", {})
+    associations = properties.setdefault("associations", [])
+    edge = {
+        "relation": relation,
+        "target_id": target_id,
+        "confidence": confidence,
+        "evidence": evidence,
+        "method": "deterministic_rule_v1",
+    }
+    if edge not in associations:
+        associations.append(edge)
+
+
+def _analyze_digital_layout(blocks, page_width: float) -> dict:
+    """Detect strong two-column geometry for the deterministic v1.8 plan."""
     result = {
         "multi_column_detected": False,
         "column_count": 1,
         "block_count": len(blocks),
         "vertical_overlap_ratio": 0.0,
         "center_gap_ratio": 0.0,
-        "method": "deterministic_column_risk_v1",
+        "column_split_x": None,
+        "overlapping_block_pair_count": 0,
+        "method": "deterministic_xycut_v1",
     }
     if page_width <= 0:
         return result
@@ -311,7 +575,14 @@ def _analyze_digital_layout(blocks, page_width: float) -> dict:
         "horizontal_separation_ratio": round(horizontal_separation, 3),
         "left_block_count": len(left),
         "right_block_count": len(right),
+        "column_split_x": round((left_edge + right_edge) / 2, 3),
     })
+    overlap_pairs = 0
+    for index, (first, _) in enumerate(candidates):
+        for second, _ in candidates[index + 1:]:
+            if _bbox_overlap_ratio(first, second) >= 0.2:
+                overlap_pairs += 1
+    result["overlapping_block_pair_count"] = overlap_pairs
     if center_gap_ratio >= 0.18 and horizontal_separation >= 0.02 and vertical_overlap_ratio >= 0.4:
         result["multi_column_detected"] = True
         result["column_count"] = 2

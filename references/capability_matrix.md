@@ -8,8 +8,8 @@ route, not a promise of perfect visual reconstruction.
 |---|---|---|---|---|---|---|
 | DOCX | OOXML structural extraction | supported | python-docx + OOXML | hierarchical elements, tables, assets | tracked changes, nested tables, exact image anchoring | regression-covered |
 | XLSX/XLSM | workbook extraction | supported | openpyxl | sheets, table blocks, references | chart series and dashboard semantics | regression-covered |
-| PPTX | OOXML slide extraction | supported | python-pptx + OOXML | slide/group elements, tables, assets | SmartArt/OLE; overlapping or side-by-side flows emit `VISUAL_FLOW_AMBIGUOUS` | regression-covered |
-| Digital PDF | text/table extraction | supported | PyMuPDF + pdfplumber | page blocks and tables | multi-column geometry emits `MULTI_COLUMN_LAYOUT_DETECTED` and `READING_ORDER_UNCERTAIN`; v1.7.3 does not reorder it | regression-covered |
+| PPTX | OOXML slide extraction | supported | python-pptx + OOXML | role/zone/column ordered slide/group elements, tables, assets | deterministic order cannot prove author intent; ambiguous flows emit `VISUAL_FLOW_AMBIGUOUS` | regression-covered |
+| Digital PDF | text/table extraction | supported | PyMuPDF + pdfplumber | line-rebuilt page regions and bbox-positioned tables | strong two-column layouts use deterministic column-major order and still emit `READING_ORDER_UNCERTAIN`; irregular visual semantics remain limited | regression-covered |
 | Scanned PDF | OCR route | partial | RapidOCR; Tesseract fallback | OCR regions and heuristic tables | complex, borderless, or merged tables | regression-covered containment cases |
 | Raster images | OCR route | partial | RapidOCR; Tesseract fallback | OCR regions and heuristic tables | complex layout reconstruction | regression-covered containment cases |
 | CSV/TSV | native parsing | supported | Python stdlib | canonical table | short samples can have ambiguous encodings | regression-covered |
@@ -21,3 +21,6 @@ route, not a promise of perfect visual reconstruction.
 All successful routes produce schema-validated `document.json` and
 `chunks.jsonl`. Table-producing routes also write canonical table JSON, CSV,
 merge-aware HTML, and `tables/index.json`.
+
+PDF and PPTX elements may also expose the additive layout/association contract
+documented in [layout_association_contract.md](layout_association_contract.md).

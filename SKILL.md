@@ -1,6 +1,6 @@
 ---
 name: universal-file-to-markdown
-version: 1.7.3
+version: 1.8.0
 release_status: development
 description: >
   Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
@@ -12,7 +12,7 @@ license: Apache-2.0
 compatibility: Requires Python 3.10–3.12; Python 3.11 recommended.
 ---
 
-# Universal File to Markdown v1.7.3
+# Universal File to Markdown v1.8.0
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -83,8 +83,8 @@ diagnosis.
 |---|---|---|---|
 | `.docx` | python-docx + OOXML | heading/paragraph/list item/table | bold/italic, links, notes, headers/footers, merged cells |
 | `.xlsx`, `.xlsm` | openpyxl | sheet + blank-separated table blocks + chart/image references | formulas, large tables, comments, merged cells, hidden-state metadata |
-| `.pptx` | python-pptx + OOXML | slide/group/title/paragraph/list/table/chart/image/note | bullet inheritance, exact picture relationship, stable asset names |
-| digital PDF pages | PyMuPDF + pdfplumber | page + located text blocks/tables | table text de-duplication, bbox locators |
+| `.pptx` | python-pptx + OOXML | slide/group/title/paragraph/list/table/chart/image/note | role/column order, bullet inheritance, exact picture relationship |
+| digital PDF pages | PyMuPDF + pdfplumber | page + located text blocks/tables | line-aware XY-cut order, bbox table insertion, de-duplication |
 | scanned PDF pages | RapidOCR; Tesseract fallback | page + OCR region/table | per-page OCR confidence and table likelihood |
 | PNG/JPEG/TIFF/BMP/WebP | RapidOCR; Tesseract fallback | OCR region/table | direct offline image OCR |
 | CSV/TSV | stdlib CSV | canonical table | UTF-8 first, then Traditional-Chinese-aware encoding scoring |
@@ -100,7 +100,7 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.7.3 (development)
+skill_version: 1.8.0 (development)
 published_stable_version: 1.7.2
 document/table/chunk schema_version: 1.0
 ```
@@ -109,6 +109,13 @@ Every canonical element has fixed keys including `parent_id`, `children`,
 `content_format`, `heading_path`, `engine`, `confidence`, normalized
 `source_locator`, `properties`, and `warnings`. Format-specific values may
 remain as additional fields for backward compatibility.
+
+Located PDF and PPTX elements may carry additive `properties.layout` hints
+(`reading_order`, region, column, layout zone, confidence, and method).
+Strong-evidence caption/table/figure and speaker-note/slide edges use
+`properties.associations`. These hints do not change schema 1.0 or claim that
+the author's semantic intent is known. See
+`references/layout_association_contract.md`.
 
 Every canonical table contains `dimensions`, merge-anchor `cells`, a
 rectangular `grid`, source locator, confidence, and engine. HTML is rendered
@@ -144,8 +151,9 @@ not extracted, and Excel charts represented only as references.
 - SmartArt and embedded OLE content are detected and located but not expanded.
 - Excel chart objects are detected as canonical references; plotted series are
   not rendered in this release.
-- PPTX visual reading order is top/left geometry and can be wrong for unusual
-  overlapping or multi-flow layouts.
+- Digital PDF and PPTX use deterministic geometry/role-aware ordering. Strong
+  columns are ordered column-major; ambiguous visual semantics still emit
+  `READING_ORDER_UNCERTAIN` or `VISUAL_FLOW_AMBIGUOUS` and require inspection.
 - DOCX tracked-change semantics, nested tables, and exact relationship-based
   inline image anchoring remain limited; inspect the original when material.
 - Legacy binary Office and round-trip conversion back to Office are out of
