@@ -66,7 +66,7 @@ scanned PDFs**. In that case:
    reported `status` honest about which engine actually produced the
    final table.
 
-## v1.9.0 optional candidate adapter
+## v1.9.0 optional candidate adapter and v1.9.1 qualification hardening
 
 The repository now implements the escalation path as an explicit, disabled-by-
 default subprocess contract for PDF and raster images. `--tier2 auto` is gated
@@ -83,6 +83,21 @@ all candidate hashes. v1.9.0's automated tests use a protocol-compatible
 synthetic worker to prove containment; they do not qualify a particular
 Docling/model version or claim hard-document accuracy. See
 `tier2_adapter_contract.md`.
+
+The v1.9.1 Windows qualification run pinned Python 3.11.15, Docling 2.119.0,
+Torch 2.13.0+cpu, and an exact 54-file, 0.71-GiB layout/TableFormer/RapidOCR
+model manifest. The isolated environment itself contained about 28,458 files
+and 1.00 GiB before model artifacts. A synthetic scanned-table smoke produced
+two hash-identical candidates with a 28.3-second median, but this is only a
+single-environment smoke and not an accuracy qualification.
+
+That run also exposed two Windows-specific defects that synthetic workers did
+not: CP950 decoding of UTF-8 model/config output and the default Transformers
+layout path requiring a C++ compiler through `torch.compile`. The worker now
+starts in UTF-8 mode and selects Docling's official Heron ONNX Runtime engine
+override. Page-count and file-size limits are passed to Docling in addition to
+the existing wall/document timeouts. `tier2_qualification.md` defines the
+remaining corpus, platform, resource, and consumer evidence gates.
 
 ## v1.7.3 truthfulness hardening
 

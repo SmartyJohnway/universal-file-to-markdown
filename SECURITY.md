@@ -43,8 +43,9 @@ The project does not execute Office macros, expand embedded OLE objects, or inte
 
 Optional Tier-2 processing is disabled by default. Its worker disables Docling
 remote services and external plugins, requires manifested local model files,
-and runs with timeouts, but it is not an OS sandbox. Production deployments
-must still deny worker network access and enforce process/resource isolation.
+runs with timeouts, and passes page/file-size limits, but it is not an OS
+sandbox. Production deployments must still deny worker network access and
+enforce process/resource isolation, including limits for the native route.
 
 ## Disclosure process
 

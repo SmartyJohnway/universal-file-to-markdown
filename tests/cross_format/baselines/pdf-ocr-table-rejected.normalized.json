@@ -314,7 +314,7 @@
       "request_id": "ai-review-request-f3857fa8771a7827",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.9.0",
+      "skill_version": "1.9.1",
       "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7",
       "targets": [
         {

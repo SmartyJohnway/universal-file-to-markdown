@@ -29,5 +29,6 @@ as documented in [chunk_consumer_contract.md](chunk_consumer_contract.md).
 
 PDF and raster-image bundles can optionally include a Docling candidate
 sidecar. The core route remains authoritative and the actual engine/model is
-not production-qualified in v1.9.0; see
-[tier2_adapter_contract.md](tier2_adapter_contract.md).
+not production-qualified in v1.9.1; see
+[tier2_adapter_contract.md](tier2_adapter_contract.md) and
+[tier2_qualification.md](tier2_qualification.md).

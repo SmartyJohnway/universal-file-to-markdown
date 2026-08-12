@@ -17,7 +17,9 @@ The project currently:
 - reports unsupported or uncertain content explicitly.
 - keeps optional Tier-2 output candidate-only, runs it in a child process with
   offline flags and timeouts, disables Docling remote services/plugins, and
-  verifies local model plus candidate artifact hashes.
+  verifies local model plus candidate artifact hashes;
+- passes explicit page-count and input-file-size limits to the optional
+  Docling worker while keeping deployment-level controls mandatory.
 
 ## External controls still required
 

@@ -1,6 +1,6 @@
 # Versioning
 
-`VERSION` is the canonical current skill-version source. `1.9.0` is the current development version and `1.7.2` is the latest published stable skill version. `v1.7.1` was merged as an unpublished integration milestone (no `v1.7.1` tag or GitHub Release was published) and was superseded by `v1.7.2`.
+`VERSION` is the canonical current skill-version source. `1.9.1` is the current development version and `1.7.2` is the latest published stable skill version. `v1.7.1` was merged as an unpublished integration milestone (no `v1.7.1` tag or GitHub Release was published) and was superseded by `v1.7.2`.
 
 Skill, document, table, chunk, bundle, and report schema versions are
 independent contracts. A skill release alone does not require a schema version

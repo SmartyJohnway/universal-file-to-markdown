@@ -47,12 +47,15 @@ def _schema_errors(value: dict, name: str) -> list[str]:
 
 
 def _safe_artifact(candidate_root: Path, item: dict) -> Path | None:
-    path = (candidate_root / item.get("path", "")).resolve(strict=False)
+    candidate = candidate_root / item.get("path", "")
+    if candidate.is_symlink():
+        return None
+    path = candidate.resolve(strict=False)
     try:
         path.relative_to(candidate_root)
     except ValueError:
         return None
-    if not path.is_file() or path.is_symlink():
+    if not path.is_file():
         return None
     if path.stat().st_size != item.get("size_bytes") or sha256_file(path) != item.get("sha256"):
         return None
@@ -61,6 +64,25 @@ def _safe_artifact(candidate_root: Path, item: dict) -> Path | None:
 
 def _canonical_digest(bundle: Path) -> str:
     return native_fingerprint(bundle)
+
+
+def _worker_failure_message(process: subprocess.CompletedProcess) -> str:
+    """Prefer the worker's structured error, then retain bounded stderr context."""
+    structured = None
+    for line in reversed((process.stdout or "").splitlines()):
+        try:
+            candidate = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(candidate, dict) and candidate.get("status") == "failed":
+            error_type = candidate.get("error_type") or "WorkerError"
+            error_message = candidate.get("error_message") or "worker failed"
+            structured = f"{error_type}: {error_message}"
+            break
+    stderr = (process.stderr or "").strip()
+    if structured and stderr:
+        return (structured + "\nworker stderr tail:\n" + stderr[-1000:])[:2000]
+    return (structured or stderr or (process.stdout or "worker result missing"))[-2000:]
 
 
 def _write_index(tier2_root: Path, index: dict) -> dict:
@@ -78,6 +100,8 @@ def run_tier2_candidate(input_path: str, bundle_dir: str, report: dict, *,
                         policy: str, model_manifest_path: str | None,
                         timeout_seconds: float = 120.0,
                         document_timeout_seconds: float = 90.0,
+                        max_num_pages: int = 100,
+                        max_file_size_bytes: int = 20 * 1024 * 1024,
                         worker_command: list[str] | None = None) -> dict:
     input_path = Path(input_path).resolve()
     bundle = Path(bundle_dir).resolve()
@@ -93,6 +117,12 @@ def run_tier2_candidate(input_path: str, bundle_dir: str, report: dict, *,
         "native_bundle_fingerprint_after": before,
         "canonical_mutated": False,
         "selection": "native_retained_pending_manual_review",
+        "limits": {
+            "subprocess_timeout_seconds": timeout_seconds,
+            "document_timeout_seconds": document_timeout_seconds,
+            "max_num_pages": max_num_pages,
+            "max_file_size_bytes": max_file_size_bytes,
+        },
     }
     if report.get("file_type") not in ELIGIBLE_FORMATS:
         base.update(status="not_eligible", reason_codes=["TIER2_FORMAT_NOT_ELIGIBLE"])
@@ -124,6 +154,8 @@ def run_tier2_candidate(input_path: str, bundle_dir: str, report: dict, *,
         "output_dir": str(candidate_root),
         "model_manifest_path": str(manifest_path),
         "document_timeout_seconds": document_timeout_seconds,
+        "max_num_pages": max_num_pages,
+        "max_file_size_bytes": max_file_size_bytes,
         "security": {"remote_services_enabled": False,
                      "external_plugins_enabled": False,
                      "offline_environment_enforced": True},
@@ -136,11 +168,14 @@ def run_tier2_candidate(input_path: str, bundle_dir: str, report: dict, *,
     command = [*command, str(request_path)]
     environment = os.environ.copy()
     environment.update({"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1",
-                        "DO_NOT_TRACK": "1"})
+                        "DO_NOT_TRACK": "1", "PYTHONUTF8": "1",
+                        "PYTHONIOENCODING": "utf-8"})
     started = time.monotonic()
     try:
-        process = subprocess.run(command, capture_output=True, text=True,
-                                 timeout=timeout_seconds, env=environment)
+        process = subprocess.run(
+            command, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=timeout_seconds, env=environment,
+        )
     except subprocess.TimeoutExpired:
         base.update(status="timed_out", reason_codes=["TIER2_ADAPTER_TIMEOUT"],
                     request_path="tier2/request.json",
@@ -150,7 +185,7 @@ def run_tier2_candidate(input_path: str, bundle_dir: str, report: dict, *,
     duration_ms = round((time.monotonic() - started) * 1000)
     worker_result_path = candidate_root / "worker-result.json"
     if process.returncode or not worker_result_path.is_file():
-        message = (process.stderr or process.stdout or "worker result missing")[-2000:]
+        message = _worker_failure_message(process)
         base.update(status="failed", reason_codes=["TIER2_ADAPTER_FAILED"],
                     request_path="tier2/request.json", error_message=message,
                     model_manifest_sha256=sha256_file(manifest_path),

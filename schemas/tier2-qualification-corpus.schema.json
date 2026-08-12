@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tier2-qualification-corpus.schema.json",
+  "title": "Tier-2 qualification corpus",
+  "type": "object",
+  "required": ["schema_version", "corpus_id", "documents"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "corpus_id": {"type": "string", "minLength": 1},
+    "documents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["case_id", "source_path", "sha256", "format", "tags", "expected"],
+        "properties": {
+          "case_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "source_path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "format": {"enum": ["pdf", "image"]},
+          "source_url": {"type": "string", "minLength": 1},
+          "license": {"type": "string", "minLength": 1},
+          "tags": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "expected": {
+            "type": "object",
+            "required": ["tier2_statuses"],
+            "properties": {
+              "tier2_statuses": {
+                "type": "array", "minItems": 1, "uniqueItems": true,
+                "items": {"enum": ["candidate_available", "failed", "timed_out", "unavailable", "native_failed"]}
+              },
+              "min_candidate_text_chars": {"type": "integer", "minimum": 0},
+              "min_candidate_tables": {"type": "integer", "minimum": 0},
+              "required_markdown_fragments": {
+                "type": "array", "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "required_reason_codes": {
+                "type": "array", "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "required_error_fragments": {
+                "type": "array", "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "max_duration_seconds": {"type": "number", "exclusiveMinimum": 0}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

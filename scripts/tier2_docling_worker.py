@@ -37,15 +37,30 @@ def run(request_path: Path) -> dict:
         os.environ[key] = value
 
     from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.datamodel.object_detection_engine_options import (
+        OnnxRuntimeObjectDetectionEngineOptions,
+    )
+    from docling.datamodel.pipeline_options import (
+        LayoutObjectDetectionOptions,
+        PdfPipelineOptions,
+    )
     from docling.document_converter import (
         DocumentConverter, ImageFormatOption, PdfFormatOption,
     )
 
+    # The official Heron preset defaults to the Transformers engine. Its
+    # torch.compile path can require a platform C++ toolchain at runtime.
+    # Select the preset's official ONNX override for a portable, local CPU
+    # worker; the exact ONNX artifact is still covered by the model manifest.
+    layout_options = LayoutObjectDetectionOptions.from_preset(
+        "layout_heron_default",
+        engine_options=OnnxRuntimeObjectDetectionEngineOptions(),
+    )
     options = PdfPipelineOptions(
         artifacts_path=manifest_path.parent,
         do_ocr=True,
         do_table_structure=True,
+        layout_options=layout_options,
         document_timeout=float(request["document_timeout_seconds"]),
         enable_remote_services=False,
         allow_external_plugins=False,
@@ -58,7 +73,11 @@ def run(request_path: Path) -> dict:
         allowed_formats=[input_format],
         format_options={input_format: format_option},
     )
-    result = converter.convert(input_path)
+    result = converter.convert(
+        input_path,
+        max_num_pages=int(request["max_num_pages"]),
+        max_file_size=int(request["max_file_size_bytes"]),
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     document_path = output_dir / "docling-document.json"
     markdown_path = output_dir / "document.md"

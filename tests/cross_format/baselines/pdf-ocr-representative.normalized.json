@@ -321,7 +321,7 @@
       "request_id": "ai-review-request-8816c1df56fa3c70",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.9.0",
+      "skill_version": "1.9.1",
       "source_sha256": "8816c1df56fa3c70d2e0fd0eec79d370cfb57e1fbdd8a3fd5ad8e8099f05fac8",
       "targets": [
         {

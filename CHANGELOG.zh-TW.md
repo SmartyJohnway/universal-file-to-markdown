@@ -6,6 +6,28 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.9.1] - 尚未發布
+
+### 新增 (Added)
+
+* 新增 hash-pinned Tier-2 corpus／qualification-report schema，以及可重跑的 smoke／qualification runner。
+* 新增明確 Docling page-count 與 input-file-size limit，並與既有 wall／document timeout 一起記錄於 Tier-2 index。
+
+### 變更 (Changed)
+
+* Built-in worker 改用 Docling 官方 Heron ONNX Runtime layout override，讓 CPU 執行不必在 runtime 依賴 C++ compiler。
+* Tier-2 child process 與 parent capture 明確採 UTF-8，避免 Windows locale 影響。
+
+### 修正 (Fixed)
+
+* Structured worker error 不再被大量 stderr model log 掩蓋。
+* 非 ASCII child output 不再於繁中 Windows 觸發 CP950 reader-thread failure。
+* Model／candidate validation 現會在 path resolution 前拒絕 symlink，包括 target 仍位於允許 root 內的連結。
+
+### Qualification
+
+* Smoke 通過仍明確不是 production evidence；hard corpus、跨平台、峰值資源與 Hermes consumer gate 仍為必備條件。
+
 ## [1.9.0] - 尚未發布
 
 ### 新增 (Added)

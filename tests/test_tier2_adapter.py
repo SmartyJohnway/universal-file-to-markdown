@@ -39,10 +39,20 @@ def _worker(tmp_path, mode="success"):
     if mode == "timeout":
         body = "import time\ntime.sleep(30)\n"
     elif mode == "failure":
-        body = "import sys\nprint('contained failure', file=sys.stderr)\nsys.exit(7)\n"
+        body = ("import json, sys\n"
+                "print('noisy model log → 中文', file=sys.stderr)\n"
+                "print(json.dumps({'status':'failed','error_type':'UnicodeError',"
+                "'error_message':'structured root cause'}))\n"
+                "sys.exit(7)\n")
     else:
-        body = r'''import hashlib, json, pathlib, sys
+        body = r'''import hashlib, json, os, pathlib, sys
+assert os.environ.get("PYTHONUTF8") == "1"
+assert os.environ.get("PYTHONIOENCODING") == "utf-8"
+assert os.environ.get("HF_HUB_OFFLINE") == "1"
+assert os.environ.get("TRANSFORMERS_OFFLINE") == "1"
 request=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert request["max_num_pages"] == 100
+assert request["max_file_size_bytes"] == 20 * 1024 * 1024
 out=pathlib.Path(request["output_dir"]); out.mkdir(parents=True,exist_ok=True)
 document=out/"docling-document.json"; markdown=out/"document.md"
 document.write_text(json.dumps({"body":{"children":[]},"texts":[],"tables":[],"pictures":[]}),encoding="utf-8")
@@ -63,6 +73,27 @@ def test_model_manifest_is_exact_and_detects_tampering(tmp_path):
     assert not errors and manifest["files"][0]["path"] == "weights.bin"
     (manifest_path.parent / "weights.bin").write_bytes(b"tampered")
     assert "TIER2_MODEL_ARTIFACT" in " ".join(verify_manifest(manifest_path)[1])
+
+
+def test_model_manifest_rejects_in_root_symlink(tmp_path, monkeypatch):
+    manifest_path = _model_manifest(tmp_path)
+    target = manifest_path.parent / "target.bin"
+    target.write_bytes(b"offline-model-placeholder")
+    link = manifest_path.parent / "weights.bin"
+    link.unlink()
+    try:
+        link.symlink_to(target.name)
+    except OSError:
+        # Windows may deny symlink creation without Developer Mode. Exercise
+        # the same fail-closed branch without weakening the local regression.
+        link.write_bytes(target.read_bytes())
+        original = Path.is_symlink
+        monkeypatch.setattr(
+            Path, "is_symlink",
+            lambda self: self.name == "weights.bin" or original(self),
+        )
+    errors = verify_manifest(manifest_path)[1]
+    assert any("SYMLINK_NOT_ALLOWED" in error for error in errors)
 
 
 def test_auto_gate_is_narrow_and_machine_readable():
@@ -135,6 +166,8 @@ def test_candidate_is_validated_but_never_selected_or_copied(tmp_path):
     assert result["status"] == "candidate_available"
     assert result["selection"] == "native_retained_pending_manual_review"
     assert result["canonical_mutated"] is False
+    assert result["limits"]["max_num_pages"] == 100
+    assert result["limits"]["max_file_size_bytes"] == 20 * 1024 * 1024
     assert result["native_bundle_fingerprint_before"] == before == fingerprint(bundle)
     assert (bundle / "document.json").read_bytes() == native_document
     assert (bundle / "tier2" / "candidate" / "docling-document.json").is_file()
@@ -155,6 +188,9 @@ def test_worker_failure_and_timeout_are_contained(tmp_path, mode, status, code, 
         timeout_seconds=timeout,
     )
     assert result["status"] == status and result["reason_codes"] == [code]
+    if mode == "failure":
+        assert "UnicodeError: structured root cause" in result["error_message"]
+        assert "noisy model log → 中文" in result["error_message"]
     assert fingerprint(bundle) == before
     assert validate_bundle(str(bundle))["status"] == "passed"
 
