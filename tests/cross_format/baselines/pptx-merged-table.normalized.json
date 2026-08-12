@@ -410,7 +410,7 @@
       "request_id": "ai-review-request-27b458388651862e",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
+      "skill_version": "1.9.0",
       "source_sha256": "27b458388651862ed3dd021bbedf5cdb26b3b780dcb5216fc39c5d56a04a170f",
       "targets": [
         {

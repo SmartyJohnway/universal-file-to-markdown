@@ -17,6 +17,7 @@
 - [格式能力矩陣](references/capability_matrix.md)
 - [引擎說明與升級指引](references/engine_notes.md)
 - [Chunk consumer contract](references/chunk_consumer_contract.md)
+- [選用 Tier-2 adapter contract](references/tier2_adapter_contract.md)
 - [貢獻指南](CONTRIBUTING.md)
 - [安全政策](SECURITY.md)
 - [支援政策](SUPPORT.md)
@@ -28,7 +29,8 @@
 ## 主要特色
 
 - 支援 PDF、掃描圖片、DOCX、XLSX/XLSM、PPTX、CSV/TSV、JSON、EML，以及 Pandoc 可處理的 markup 格式。
-- 採用輕量結構解析器與離線 OCR，不需要 PyTorch runtime，也不需在執行時下載外部模型。
+- Core route 採用輕量結構解析器與離線 OCR，不需要 PyTorch runtime，也不需在執行時下載外部模型。
+- 提供 opt-in、隔離且要求離線 model manifest 的 Tier-2 candidate adapter，不會取代 native canonical evidence。
 - 針對繁體中文 Big5/CP950 編碼提供候選評分與歧義揭露。
 - Office 合併儲存格可輸出保留 rowspan/colspan 的 HTML。
 - 混合型 PDF 會逐頁區分 digital 與 scanned 路徑。
@@ -68,6 +70,7 @@ tables/                   Canonical JSON、CSV 與保留合併結構的 HTML
 assets/                   擷取的圖片與附件
 manifest.json             來源 SHA-256、版本、時間與最終狀態
 conversion-report.json   引擎細節、警告與 bundle 驗證結果
+tier2/                   選用 candidate sidecar；預設不存在
 ```
 
 重新執行時只會清除已知產物；若後續轉換失敗，不會留下前一次成功執行的過期 canonical outputs。
@@ -128,6 +131,18 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 ```
 
+Tier-2 預設關閉。在另行安裝並完成 qualification 的 Docling 環境中，可只針對
+allowlisted quality signal 產生 candidate：
+
+```bash
+python scripts/router.py source.pdf --output bundle \
+  --tier2 auto \
+  --tier2-model-manifest /models/docling/tier2-model-manifest.json
+```
+
+Candidate 不會取代 `document.json`、chunks 或 tables；詳見
+[Tier-2 adapter contract](references/tier2_adapter_contract.md)。
+
 最終轉換狀態為 `failed` 時，router 會以非零狀態碼結束。
 
 ## 如何判讀結果
@@ -152,7 +167,8 @@ python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 
 ## Canonical contracts
 
-目前 stable release：`1.8.1`
+目前開發目標：`1.9.0`
+最新已發布 stable release：`1.8.1`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
 
@@ -176,6 +192,7 @@ JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `
 ## 已知邊界
 
 - 掃描表格重建採用幾何與 heuristic 方法，複雜無框線或大量合併儲存格的表格可能需要較重型解析器。
+- Tier-2 Docling／model accuracy 與跨平台 runtime 尚未 production-qualified；v1.9.0 只驗證 adapter contract 與 containment。
 - SmartArt 與 embedded OLE 會被偵測與定位，但不會展開內容。
 - Excel chart 目前以 canonical reference 表示，不會重建繪圖 series。
 - Digital PDF 與 PPTX 採 deterministic geometry/placeholder-aware 排序；若視覺意圖仍有歧義，會保留 warning，必須人工檢查。
@@ -190,8 +207,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.1-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.1-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.9.0-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.9.0-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

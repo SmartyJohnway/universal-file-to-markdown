@@ -27,6 +27,7 @@ PYTHON_CAPABILITIES = {
     "msoffcrypto": True,
     "jsonschema": True,
     "markitdown": False,
+    "docling": False,
 }
 SYSTEM_CAPABILITIES = {
     "tesseract": False,
@@ -38,6 +39,11 @@ OPTIONAL_DEPENDENCY_METADATA = {
         "severity": "optional_route_unavailable",
         "required_for": ["generic fallback routes"],
         "affected_formats": ["unknown or fallback-supported formats"],
+    },
+    "docling": {
+        "severity": "optional_tier2_unavailable",
+        "required_for": ["optional Tier-2 difficult PDF/image candidate route"],
+        "affected_formats": ["difficult PDF", "complex scanned table", "complex image layout"],
     },
     "pandoc": {
         "severity": "optional_route_unavailable",

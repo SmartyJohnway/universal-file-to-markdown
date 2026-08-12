@@ -15,13 +15,12 @@ Produces an output bundle:
       conversion-report.json
       assets/                  embedded images/media, if any
 
-Design note: this router deliberately does NOT reach for Docling / MinerU /
-any torch-based engine. See references/engine_notes.md for why - in short,
-those engines need multi-GB installs and a Hugging Face model download that
-is blocked in network-restricted sandboxes (verified empirically for this
-skill). Every engine used here is either pure-stdlib, a small structural
-parser (openpyxl/python-docx/pdfplumber/python-pptx), or a fully
-self-contained offline model (RapidOCR, ~15MB, bundled in the pip wheel).
+Design note: the default router deliberately does NOT reach for Docling,
+MinerU, or another torch-based engine. Core engines remain stdlib, small
+structural parsers, or self-contained offline RapidOCR. v1.9 adds an explicit,
+candidate-only Tier-2 subprocess for separately installed Docling runtimes
+with pre-downloaded, manifested model artifacts; see engine_notes.md and
+tier2_adapter_contract.md.
 """
 
 import argparse
@@ -57,10 +56,13 @@ _GENERATED_FILES = (
     "document.md", "document.json", "chunks.jsonl", "manifest.json",
     "conversion-report.json", "_pandoc_tmp.md", "ai-review-request.json", "ai-review.json", "document-readable.md",
 )
-_GENERATED_DIRS = ("assets", "tables")
+_GENERATED_DIRS = ("assets", "tables", "tier2")
 
 
-def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_url: str = None) -> dict:
+def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_url: str = None,
+            tier2_policy: str = "off", tier2_model_manifest: str = None,
+            tier2_timeout_seconds: float = 120.0,
+            tier2_document_timeout_seconds: float = 90.0) -> dict:
     """Convert one file and always return a structured report.
 
     v1.6 makes the public entry point exception-safe and clears only known
@@ -76,7 +78,34 @@ def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_
         if original_path == output_dir:
             raise ValueError("output path must be a directory, not the input file")
         _clear_previous_bundle(output_dir, protected_path=original_path)
-        return _convert_unchecked(original_path, output_dir, encoding_hint, source_url)
+        report = _convert_unchecked(original_path, output_dir, encoding_hint, source_url)
+        if tier2_policy != "off" and report.get("status") != "failed":
+            try:
+                from tier2_adapter import run_tier2_candidate
+                tier2 = run_tier2_candidate(
+                    original_path, output_dir, report, policy=tier2_policy,
+                    model_manifest_path=tier2_model_manifest,
+                    timeout_seconds=tier2_timeout_seconds,
+                    document_timeout_seconds=tier2_document_timeout_seconds,
+                )
+            except Exception as exc:
+                # Tier-2 is candidate-only. Unexpected adapter failures must
+                # never enter the outer cleanup path and erase a valid native
+                # canonical bundle.
+                try:
+                    from tier2_adapter import record_internal_failure
+                    tier2 = record_internal_failure(
+                        original_path, output_dir, report, tier2_policy, exc
+                    )
+                except Exception:
+                    # The valid native bundle still wins. Do not add a report
+                    # reference to a sidecar that could not itself be written.
+                    tier2 = None
+            if tier2 is not None:
+                report["tier2"] = tier2
+            with open(os.path.join(output_dir, "conversion-report.json"), "w", encoding="utf-8") as handle:
+                json.dump(report, handle, indent=2, ensure_ascii=False)
+        return report
     except Exception as exc:
         # If the output directory itself cannot be created/written there is no
         # honest bundle to return, so re-raise that I/O failure.
@@ -447,8 +476,26 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, help="Output directory for the bundle")
     parser.add_argument("--encoding", help="Explicit text encoding for CSV/TSV/JSON (e.g. big5, gb18030, shift_jis)")
     parser.add_argument("--source-url", help="Original HTTP(S) URL used to resolve HTML relative links")
+    parser.add_argument(
+        "--tier2", choices=("off", "auto", "force"), default="off",
+        help="optional candidate-only Tier-2 route; never replaces native canonical evidence",
+    )
+    parser.add_argument(
+        "--tier2-model-manifest",
+        help="verified manifest for pre-downloaded offline Tier-2 model artifacts",
+    )
+    parser.add_argument("--tier2-timeout-seconds", type=float, default=120.0)
+    parser.add_argument("--tier2-document-timeout-seconds", type=float, default=90.0)
     args = parser.parse_args()
 
-    report = convert(args.input, args.output, args.encoding, args.source_url)
+    if args.tier2_timeout_seconds <= 0 or args.tier2_document_timeout_seconds <= 0:
+        parser.error("Tier-2 timeout values must be greater than zero")
+
+    report = convert(
+        args.input, args.output, args.encoding, args.source_url,
+        tier2_policy=args.tier2, tier2_model_manifest=args.tier2_model_manifest,
+        tier2_timeout_seconds=args.tier2_timeout_seconds,
+        tier2_document_timeout_seconds=args.tier2_document_timeout_seconds,
+    )
     print(json.dumps(report, indent=2, ensure_ascii=False))
     sys.exit(0 if report["status"] != "failed" else 1)

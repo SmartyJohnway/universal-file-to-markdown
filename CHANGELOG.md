@@ -6,6 +6,26 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.9.0] - Unreleased
+
+### Added
+
+* A disabled-by-default, candidate-only Docling Tier-2 adapter for difficult PDF and raster-image cases.
+* Allowlisted `auto` quality gates plus an explicit `force` mode for controlled qualification.
+* Exact offline model artifact manifests with path, size, and SHA-256 verification.
+* A built-in subprocess worker that disables remote services and external plugins, sets offline flags, and applies independent document and wall-time limits.
+* Schema-validated Tier-2 index, worker result, model manifest, source/model/adapter provenance, and candidate artifact hashes.
+
+### Changed
+
+* Capability probing now discloses Docling as an optional Tier-2 dependency; it remains absent from core requirements.
+* Bundle validation covers optional Tier-2 sidecars and verifies native before/after fingerprints.
+
+### Security
+
+* Worker failure, timeout, invalid manifests, malformed results, path escapes, and artifact tampering fail closed while preserving the valid native bundle.
+* Tier-2 candidates never replace canonical evidence automatically; selection remains `native_retained_pending_manual_review` until separate accuracy qualification exists.
+
 ## [1.8.1] - 2026-08-13
 
 This stable release integrates the previously unpublished v1.7.3 hardening and

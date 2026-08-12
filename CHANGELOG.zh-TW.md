@@ -6,6 +6,26 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.9.0] - 尚未發布
+
+### 新增 (Added)
+
+* 新增預設關閉、只產生 candidate 的 Docling Tier-2 adapter，處理困難 PDF 與 raster image 案例。
+* 新增 allowlisted `auto` quality gate，以及供受控 qualification 使用的明確 `force` 模式。
+* 新增離線 model artifact 精確 manifest，驗證 path、size 與 SHA-256。
+* 新增 built-in subprocess worker：關閉 remote services／external plugins、設定 offline flags，並套用獨立 document 與 wall-time limit。
+* 新增 schema-validated Tier-2 index、worker result、model manifest、source/model/adapter provenance 與 candidate artifact hash。
+
+### 變更 (Changed)
+
+* Capability probe 現會揭露 Docling 為選用 Tier-2 dependency；core requirements 仍不包含 Docling。
+* Bundle validation 現涵蓋選用 Tier-2 sidecar，並驗證 native before／after fingerprint。
+
+### 安全性 (Security)
+
+* Worker failure、timeout、無效 manifest、malformed result、path escape 與 artifact tampering 都會 fail closed，同時保留有效 native bundle。
+* Tier-2 candidate 不會自動取代 canonical evidence；在另行完成 accuracy qualification 前，selection 固定為 `native_retained_pending_manual_review`。
+
 ## [1.8.1] - 2026-08-13
 
 此 stable release 整合下方列出的未發布 v1.7.3 hardening 與 v1.8.0

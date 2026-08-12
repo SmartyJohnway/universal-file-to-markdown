@@ -353,7 +353,7 @@
       "request_id": "ai-review-request-d7d3a82b4cf5e16f",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
+      "skill_version": "1.9.0",
       "source_sha256": "d7d3a82b4cf5e16fcc3d9e8f39603ab444523868eb13ffb00e31bc35a919643b",
       "targets": [
         {

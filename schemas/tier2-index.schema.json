@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tier2-index.schema.json",
+  "title": "Tier-2 candidate index",
+  "type": "object",
+  "required": [
+    "schema_version", "policy", "status", "reason_codes", "trigger_codes",
+    "adapter", "source_sha256", "native_bundle_fingerprint_before",
+    "native_bundle_fingerprint_after", "canonical_mutated", "selection"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "policy": {"enum": ["auto", "force"]},
+    "status": {"enum": ["not_triggered", "not_eligible", "unavailable", "timed_out", "failed", "candidate_available"]},
+    "reason_codes": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "trigger_codes": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "adapter": {"const": "docling"},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "native_bundle_fingerprint_before": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "native_bundle_fingerprint_after": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "canonical_mutated": {"const": false},
+    "selection": {"const": "native_retained_pending_manual_review"},
+    "request_path": {"type": "string"},
+    "candidate_result_path": {"type": "string"},
+    "model_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "adapter_version": {"type": "string"},
+    "duration_ms": {"type": "integer", "minimum": 0},
+    "error_message": {"type": "string", "maxLength": 2000}
+  },
+  "additionalProperties": false
+}
