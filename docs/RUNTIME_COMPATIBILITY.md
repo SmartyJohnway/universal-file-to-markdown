@@ -12,6 +12,9 @@ currently supported.**
 routes with declared requirement `rapidocr-onnxruntime>=1.4,<2`; **1.4.4** is
 the qualified version. The capability probe validates native imports in an
 isolated subprocess so failures are reported rather than crashing the probe.
+The default per-child native timeout is 30 seconds and can be changed with
+`--native-timeout-seconds`; timeout evidence remains a required-dependency
+failure rather than being hidden.
 
 Tesseract and Pandoc are optional system binaries. Pandoc is not required for
 the core profile and is required only for Pandoc-enabled routes. Tesseract is

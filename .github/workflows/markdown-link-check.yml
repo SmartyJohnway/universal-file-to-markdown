@@ -16,3 +16,5 @@ jobs:
           python-version: "3.12"
       - name: Validate repository-local Markdown links
         run: python scripts/check_markdown_links.py .
+      - name: Validate release truth consistency
+        run: python scripts/check_release_consistency.py

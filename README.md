@@ -143,11 +143,10 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-## Canonical contracts
+Current development target: `1.7.3`
+Latest published stable release: `1.7.2`
 
-Current development/public release target: `1.7.2`
-Latest published stable release: `1.7.0`
-Unpublished integration milestone: `1.7.1`
+`v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
 
 `VERSION` is the canonical current skill-version source. Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version. The current document/table/chunk schema version is `1.0`; see [VERSIONING.md](VERSIONING.md).
 
@@ -168,13 +167,17 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 
 ```bash
 python scripts/capability_probe.py --json
+python scripts/check_release_consistency.py
+python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.2-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.2-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.3-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.3-skill.zip
 python -m pytest tests/ -q
-python -m py_compile scripts/*.py tests/*.py
+python -m compileall -q scripts tests
 ```
+
+On Windows hosts where the user temp root is inaccessible, pass a unique repository-local `--basetemp` to pytest.
 
 The full regression test suite is maintained in the source repository and is not included in the runtime release package or Agent Skill upload ZIP.
 

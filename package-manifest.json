@@ -5,7 +5,7 @@
   "version_source": "VERSION",
   "top_level_dir_format": "universal-file-to-markdown-{version}",
   "required_paths": [
-    "SKILL.md", "VERSION", "VERSIONING.md", "README.md", "README.zh-TW.md",
+    "SKILL.md", "VERSION", "VERSIONING.md", "CITATION.cff", "README.md", "README.zh-TW.md",
     "CHANGELOG.md", "CHANGELOG.zh-TW.md", "requirements.txt", "package-manifest.json",
     "package-manifests/release.json", "package-manifests/agent-skill.json",
     "scripts/", "schemas/", "references/"

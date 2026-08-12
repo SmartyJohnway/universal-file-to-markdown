@@ -5,7 +5,7 @@ This document defines the release gate for Universal File to Markdown.
 ## 1. Prepare the release branch
 
 - Update `SKILL.md`, both README files, both changelogs, and `CITATION.cff`.
-- Confirm `SKILL_VERSION` in `scripts/router.py`.
+- Confirm `VERSION` and all mirrored release metadata with `scripts/check_release_consistency.py`.
 - Confirm schema versions in `schemas/` remain compatible or document migrations.
 - Remove local caches and generated bundles.
 
@@ -23,8 +23,12 @@ The required dependency probe must pass in the release environment.
 
 ```bash
 python -m pytest tests/ -q
-python -m py_compile scripts/*.py tests/*.py
+python -m compileall -q scripts tests
+python scripts/check_release_consistency.py
+python scripts/check_markdown_links.py
 ```
+
+On Windows hosts where the user temp root is inaccessible, give pytest a unique repository-local `--basetemp` path.
 
 Also run representative smoke conversions for:
 

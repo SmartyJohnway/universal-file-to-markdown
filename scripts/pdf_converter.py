@@ -87,6 +87,8 @@ def _convert_mixed(path: str, doc, page_classes) -> dict:
         d = digital_result["report"]
         report["table_count"] = d.get("table_count", 0)
         report["table_row_consistency"] = d.get("table_row_consistency", "pass")
+        report["page_layout_analysis"] = d.get("page_layout_analysis", [])
+        report.setdefault("warnings", []).extend(d.get("warnings", []))
     if scanned_result:
         s = scanned_result["report"]
         for k in ("ocr_avg_confidence", "ocr_low_confidence_pages", "glued_word_pages",
@@ -113,6 +115,8 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
     tables_out = []
     table_row_consistency = "pass"
     table_count = 0
+    page_layout_analysis = []
+    warnings = []
 
     with pdfplumber.open(path) as pdf:
         for i in page_indices:
@@ -121,15 +125,44 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
             page_md = [f"<!-- page: {i + 1} -->\n"]
             tables = page.find_tables()
             table_bboxes = [t.bbox for t in tables]
+            text_blocks = _extract_digital_text_blocks(doc[i], table_bboxes)
+            layout = _analyze_digital_layout(text_blocks, float(doc[i].rect.width))
+            layout["page"] = i + 1
+            page_layout_analysis.append(layout)
+            if layout["multi_column_detected"]:
+                evidence = {
+                    "page": i + 1,
+                    "column_count": layout["column_count"],
+                    "block_count": layout["block_count"],
+                    "vertical_overlap_ratio": layout["vertical_overlap_ratio"],
+                    "center_gap_ratio": layout["center_gap_ratio"],
+                }
+                warnings.append({
+                    "code": "MULTI_COLUMN_LAYOUT_DETECTED",
+                    **evidence,
+                    "message": "Multiple vertically overlapping text columns were detected from block geometry.",
+                })
+                warnings.append({
+                    "code": "READING_ORDER_UNCERTAIN",
+                    **evidence,
+                    "message": "The v1.7.3 readable projection still uses the PDF engine's native text order; verify this multi-column page manually.",
+                })
+                if table_bboxes:
+                    warnings.append({
+                        "code": "TABLE_TEXT_ASSOCIATION_UNCERTAIN",
+                        **evidence,
+                        "table_count": len(table_bboxes),
+                        "message": "Tables and multiple text columns share this page; the intended prose-to-table association is not inferred.",
+                    })
 
             text = page.extract_text() or ""
             if not tables:
                 page_md.append(text)
-                _append_digital_text_elements(elements, page_id, doc[i], [], text, i + 1)
+                _append_digital_text_elements(elements, page_id, text_blocks, text, i + 1)
             else:
                 text_no_tables = _strip_table_text(page, text, table_bboxes)
                 page_md.append(text_no_tables)
-                _append_digital_text_elements(elements, page_id, doc[i], table_bboxes,
+                _append_digital_text_elements(elements, page_id, text_blocks,
                                               text_no_tables, i + 1)
                 for t in tables:
                     table_count += 1
@@ -169,6 +202,8 @@ def _convert_digital(path: str, doc, page_indices) -> dict:
         "table_count": table_count,
         "table_row_consistency": table_row_consistency,
         "ocr_used": False,
+        "page_layout_analysis": page_layout_analysis,
+        "warnings": warnings,
     }
     return {"markdown": "\n\n".join(per_page_md), "report": report, "_per_page_md": per_page_md,
             "elements": elements, "tables": tables_out}
@@ -196,8 +231,7 @@ def _strip_table_text(page, full_text, table_bboxes):
     return " ".join(kept) if kept else ""
 
 
-def _append_digital_text_elements(elements, page_id, fitz_page, table_bboxes,
-                                  fallback_text, page_number):
+def _extract_digital_text_blocks(fitz_page, table_bboxes):
     blocks = []
     for raw in fitz_page.get_text("blocks"):
         if len(raw) < 5:
@@ -208,6 +242,11 @@ def _append_digital_text_elements(elements, page_id, fitz_page, table_bboxes,
                               for table_bbox in table_bboxes):
             continue
         blocks.append((bbox, content))
+    return blocks
+
+
+def _append_digital_text_elements(elements, page_id, blocks,
+                                  fallback_text, page_number):
     if not blocks and fallback_text.strip():
         blocks = [(None, fallback_text.strip())]
     for index, (bbox, content) in enumerate(blocks, start=1):
@@ -220,6 +259,63 @@ def _append_digital_text_elements(elements, page_id, fitz_page, table_bboxes,
             "source_locator": {"page": page_number,
                                "bbox": list(bbox) if bbox else None},
         })
+
+
+def _analyze_digital_layout(blocks, page_width: float) -> dict:
+    """Detect strong two-column geometry without changing reading order.
+
+    This is intentionally a warning-only v1.7.3 detector. Full-width blocks
+    (titles, headers, and footers) are excluded before looking for a stable
+    center split. v1.8 owns the actual ordering plan.
+    """
+    result = {
+        "multi_column_detected": False,
+        "column_count": 1,
+        "block_count": len(blocks),
+        "vertical_overlap_ratio": 0.0,
+        "center_gap_ratio": 0.0,
+        "method": "deterministic_column_risk_v1",
+    }
+    if page_width <= 0:
+        return result
+    candidates = [
+        (bbox, content) for bbox, content in blocks
+        if bbox is not None and content.strip() and (bbox[2] - bbox[0]) <= page_width * 0.72
+    ]
+    if len(candidates) < 4:
+        return result
+
+    ordered = sorted(candidates, key=lambda item: (item[0][0] + item[0][2]) / 2)
+    centers = [(item[0][0] + item[0][2]) / 2 for item in ordered]
+    gaps = [centers[index + 1] - centers[index] for index in range(len(centers) - 1)]
+    if not gaps:
+        return result
+    split = max(range(len(gaps)), key=gaps.__getitem__) + 1
+    left, right = ordered[:split], ordered[split:]
+    if len(left) < 2 or len(right) < 2:
+        return result
+
+    center_gap_ratio = gaps[split - 1] / page_width
+    left_edge = max(item[0][2] for item in left)
+    right_edge = min(item[0][0] for item in right)
+    horizontal_separation = (right_edge - left_edge) / page_width
+    left_y0, left_y1 = min(item[0][1] for item in left), max(item[0][3] for item in left)
+    right_y0, right_y1 = min(item[0][1] for item in right), max(item[0][3] for item in right)
+    overlap = max(0.0, min(left_y1, right_y1) - max(left_y0, right_y0))
+    smaller_height = max(1.0, min(left_y1 - left_y0, right_y1 - right_y0))
+    vertical_overlap_ratio = overlap / smaller_height
+
+    result.update({
+        "vertical_overlap_ratio": round(vertical_overlap_ratio, 3),
+        "center_gap_ratio": round(center_gap_ratio, 3),
+        "horizontal_separation_ratio": round(horizontal_separation, 3),
+        "left_block_count": len(left),
+        "right_block_count": len(right),
+    })
+    if center_gap_ratio >= 0.18 and horizontal_separation >= 0.02 and vertical_overlap_ratio >= 0.4:
+        result["multi_column_detected"] = True
+        result["column_count"] = 2
+    return result
 
 
 def _bbox_overlap_ratio(a, b):

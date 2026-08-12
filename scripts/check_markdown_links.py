@@ -16,12 +16,18 @@ from urllib.parse import unquote
 
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 IGNORED_PREFIXES = ("http://", "https://", "mailto:", "tel:", "data:")
-IGNORED_DIRS = {".git", ".venv", "venv", "env", "dist", "build", "node_modules"}
+IGNORED_DIRS = {
+    ".git", ".hermes", ".qualification", ".venv", "venv", "env",
+    ".cache", ".deps", ".mypy_cache", ".nox", ".pytest_cache",
+    ".ruff_cache", ".tox", ".uv", "build", "dist", "htmlcov",
+    "local-fixtures", "models", "node_modules", "private-fixtures", "scratch",
+}
 
 
 def iter_markdown_files(root: Path):
     for path in root.rglob("*.md"):
-        if any(part in IGNORED_DIRS for part in path.parts):
+        relative = path.relative_to(root)
+        if any(part in IGNORED_DIRS for part in relative.parts):
             continue
         yield path
 

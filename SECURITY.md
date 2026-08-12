@@ -6,8 +6,8 @@ Security fixes are currently applied to the latest release line.
 
 | Version | Supported |
 |---|---|
-| 1.6.x | Yes |
-| 1.5.x and earlier | No |
+| 1.7.x | Yes |
+| 1.6.x and earlier | No |
 
 ## Reporting a vulnerability
 

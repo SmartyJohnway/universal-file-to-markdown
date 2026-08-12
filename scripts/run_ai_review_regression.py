@@ -30,8 +30,18 @@ def main(output):
         return 2
 
     output.mkdir(parents=True, exist_ok=True); results=[]
+    pytest_temp_root = output / "pytest-temp"
+    pytest_temp_root.mkdir(parents=True, exist_ok=True)
     for case in CASES:
-        result=subprocess.run([sys.executable,'-m','pytest',f'tests/test_ai_review.py::{case}','-q'],text=True,capture_output=True)
+        result=subprocess.run(
+            [
+                sys.executable, '-m', 'pytest', f'tests/test_ai_review.py::{case}', '-q',
+                '--basetemp', str(pytest_temp_root / case),
+            ],
+            cwd=root,
+            text=True,
+            capture_output=True,
+        )
         results.append({'case':case,'status':'passed' if result.returncode==0 else 'failed','output':result.stdout+result.stderr})
     failed=[result for result in results if result['status']=='failed']; passed={result['case'] for result in results if result['status']=='passed'}
     summary={'cases':len(CASES),'passed':len(passed),'failed':len(failed),'canonical_mutations':0 if passed_count(passed,VALID_APPLY_CASES) else None,'invalid_reviews_rejected':passed_count(passed,INVALID_REVIEW_CASES),'valid_reviews_applied':passed_count(passed,VALID_APPLY_CASES),'deterministic_projection_cases':passed_count(passed,DETERMINISTIC_PROJECTION_CASES),'stale_cleanup_cases':passed_count(passed,STALE_CLEANUP_CASES),'validation_status':'passed' if not failed else 'failed','results':results}

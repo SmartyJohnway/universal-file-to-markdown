@@ -6,6 +6,28 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.7.3] - Unreleased
+
+### Added
+
+* Warning-only multi-column PDF and ambiguous PPTX visual-flow detectors with machine-readable evidence.
+* A release-truth consistency gate spanning VERSION, SKILL, READMEs, project status, changelogs, workflow docs, and the mirrored AI Review schema version.
+* Regression coverage for rejected OCR advisory targets, local Markdown-link scope, native timeout forwarding, and layout uncertainty positive/negative cases.
+
+### Fixed
+
+* Rejected OCR table candidates now produce non-writable `advisory` targets instead of falling back to `element_range` when no canonical table exists.
+* Repository Markdown-link checks no longer scan local qualification, Hermes, scratch, cache, or virtual-environment content.
+* RapidOCR/PyMuPDF native probes now use a configurable 30-second default timeout, reducing cold-start and contention false failures while preserving subprocess isolation.
+* The AI Review regression runner now uses repository-local pytest temp directories, avoiding inaccessible Windows user-temp roots.
+* Release package evidence now records the source Git SHA on network filesystems without changing global Git trust settings.
+* Release metadata now reflects the published `v1.7.2` stable release and removes the duplicate README heading.
+* Citation metadata now reflects stable `v1.7.2` and is included in the release package profile.
+
+### Changed
+
+* v1.7.3 detects reading-order risk but deliberately leaves actual ordering behavior unchanged for the v1.8 line.
+
 ## [1.7.2] - 2026-07-24
 
 ### Added

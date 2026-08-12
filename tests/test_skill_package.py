@@ -2,11 +2,25 @@ import hashlib, json, shutil, sys, zipfile
 from pathlib import Path
 import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from build_skill_package import build
+from build_skill_package import build, source_git_sha
 from validate_skill_package import validate
 from skill_package_common import read_version
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_source_git_sha_scopes_network_filesystem_trust(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_check_output(command, **kwargs):
+        seen["command"] = command
+        seen["kwargs"] = kwargs
+        return "abc123\n"
+
+    monkeypatch.setattr("build_skill_package.subprocess.check_output", fake_check_output)
+    assert source_git_sha(tmp_path) == "abc123"
+    assert seen["command"][:3] == ["git", "-c", f"safe.directory={tmp_path.as_posix()}"]
+    assert seen["command"][-2:] == ["rev-parse", "HEAD"]
 
 def test_release_package_build_is_reproducible_and_valid(tmp_path):
     first = build(tmp_path / 'a', profile='release', verify=True)
@@ -19,6 +33,7 @@ def test_release_package_build_is_reproducible_and_valid(tmp_path):
         names = z.namelist()
         prefix = f"universal-file-to-markdown-{first['skill_version']}/"
         assert prefix + 'VERSION' in names and prefix + 'SKILL.md' in names
+        assert prefix + 'CITATION.cff' in names
         assert any(n.startswith(prefix + 'schemas/') for n in names)
         assert all(not any(x in n for x in ('.venv/', '.qualification/', '__pycache__/', '.git/', 'dist/')) for n in names)
     assert validate(a, profile='release')['status'] == 'passed'

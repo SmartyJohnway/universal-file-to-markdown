@@ -90,35 +90,52 @@ def test_rapidocr_import_error_is_required_failure(monkeypatch):
 
 
 def test_capability_probe_fails_on_required_native_crash(monkeypatch):
-    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "failed", "reason": "native_dependency_crash"})
-    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda **_kwargs: {"status": "failed", "reason": "native_dependency_crash"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda **_kwargs: {"status": "passed"})
     assert "pymupdf" in capability_probe.probe()["missing_required"]
 
 
 def test_capability_probe_fails_on_rapidocr_import_error(monkeypatch):
-    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed"})
-    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "failed", "reason": "import_error"})
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda **_kwargs: {"status": "passed"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda **_kwargs: {"status": "failed", "reason": "import_error"})
     assert capability_probe.probe()["status"] == "failed"
 
 
 def test_capability_report_contains_environment(monkeypatch):
-    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed", "version": "1.26.4"})
-    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda **_kwargs: {"status": "passed", "version": "1.26.4"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda **_kwargs: {"status": "passed"})
     assert capability_probe.probe()["environment"]["python_implementation"]
 
 
 def test_capability_report_contains_package_version(monkeypatch):
-    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed", "version": "1.26.4"})
-    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda **_kwargs: {"status": "passed", "version": "1.26.4"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda **_kwargs: {"status": "passed"})
     assert capability_probe.probe()["python_modules"]["fitz"]["version"] == "1.26.4"
 
 
 def test_capability_probe_optional_dependency_disclosure(monkeypatch):
-    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda: {"status": "passed", "version": "1.26.4"})
-    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda: {"status": "passed"})
+    monkeypatch.setattr(capability_probe, "probe_pymupdf", lambda **_kwargs: {"status": "passed", "version": "1.26.4"})
+    monkeypatch.setattr(capability_probe, "probe_rapidocr", lambda **_kwargs: {"status": "passed"})
     result = capability_probe.probe()
     assert "markitdown" in result["python_modules"]
     assert result["python_modules"]["markitdown"]["required"] is False
     assert "affected_routes" in result
     assert "missing_optional_dependencies" in result
+
+
+def test_capability_probe_forwards_configured_native_timeout(monkeypatch):
+    seen = []
+    monkeypatch.setattr(
+        capability_probe,
+        "probe_pymupdf",
+        lambda **kwargs: seen.append(("fitz", kwargs["timeout_seconds"])) or {"status": "passed"},
+    )
+    monkeypatch.setattr(
+        capability_probe,
+        "probe_rapidocr",
+        lambda **kwargs: seen.append(("rapidocr", kwargs["timeout_seconds"])) or {"status": "passed"},
+    )
+    result = capability_probe.probe(timeout_seconds=42.0)
+    assert seen == [("fitz", 42.0), ("rapidocr", 42.0)]
+    assert result["native_probe_timeout_seconds"] == 42.0
 

@@ -25,11 +25,14 @@ Before submitting a pull request, run:
 
 ```bash
 python scripts/capability_probe.py --json
+python scripts/check_release_consistency.py
+python scripts/check_markdown_links.py
 python -m pytest tests/ -q
-python -m py_compile scripts/*.py tests/*.py
+python -m compileall -q scripts tests
 ```
 
 A release-quality environment must pass the capability probe. Optional system tools may be absent when the affected format path is not under test.
+On Windows hosts where the user temp root is inaccessible, give pytest a unique repository-local `--basetemp` path.
 
 ## Change requirements
 

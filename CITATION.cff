@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Universal File to Markdown"
 type: software
-version: 1.6.0
-date-released: 2026-07-21
+version: 1.7.2
+date-released: 2026-07-24
 authors:
   - family-names: "SmartyJohnway"
 repository-code: "https://github.com/SmartyJohnway/universal-file-to-markdown"

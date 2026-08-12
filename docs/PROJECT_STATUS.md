@@ -1,12 +1,12 @@
 # Project Status
 
-Current development target: `v1.7.2`
+Current development target: `v1.7.3`
 
-Latest published stable release: `v1.7.0`
+Latest published stable release: `v1.7.2`
 
-Unpublished integration milestone: `v1.7.1`
+Historical unpublished integration milestone: `v1.7.1` (superseded by `v1.7.2`)
 
-Release readiness: `qualified_for_review`
+Release readiness: `in_development`
 
 Release status: `unreleased`
 
