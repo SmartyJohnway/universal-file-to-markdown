@@ -18,6 +18,7 @@
 - [引擎說明與升級指引](references/engine_notes.md)
 - [Chunk consumer contract](references/chunk_consumer_contract.md)
 - [選用 Tier-2 adapter contract](references/tier2_adapter_contract.md)
+- [Tier-2 qualification protocol](references/tier2_qualification.md)
 - [貢獻指南](CONTRIBUTING.md)
 - [安全政策](SECURITY.md)
 - [支援政策](SUPPORT.md)
@@ -141,7 +142,9 @@ python scripts/router.py source.pdf --output bundle \
 ```
 
 Candidate 不會取代 `document.json`、chunks 或 tables；詳見
-[Tier-2 adapter contract](references/tier2_adapter_contract.md)。
+[Tier-2 adapter contract](references/tier2_adapter_contract.md)。在宣稱任何
+engine／model 支援前，必須執行
+[qualification protocol](references/tier2_qualification.md)。
 
 最終轉換狀態為 `failed` 時，router 會以非零狀態碼結束。
 
@@ -167,7 +170,7 @@ Candidate 不會取代 `document.json`、chunks 或 tables；詳見
 
 ## Canonical contracts
 
-目前開發目標：`1.9.0`
+目前開發目標：`1.9.1`
 最新已發布 stable release：`1.7.2`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
@@ -190,7 +193,7 @@ JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `
 ## 已知邊界
 
 - 掃描表格重建採用幾何與 heuristic 方法，複雜無框線或大量合併儲存格的表格可能需要較重型解析器。
-- Tier-2 Docling／model accuracy 與跨平台 runtime 尚未 production-qualified；v1.9.0 只驗證 adapter contract 與 containment。
+- Tier-2 Docling／model accuracy 與跨平台 runtime 尚未 production-qualified；v1.9.1 新增 fail-closed qualification runner，但 smoke report 明確不等於 production evidence。
 - SmartArt 與 embedded OLE 會被偵測與定位，但不會展開內容。
 - Excel chart 目前以 canonical reference 表示，不會重建繪圖 series。
 - Digital PDF 與 PPTX 採 deterministic geometry/placeholder-aware 排序；若視覺意圖仍有歧義，會保留 warning，必須人工檢查。
@@ -205,8 +208,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.9.0-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.9.0-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.9.1-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.9.1-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

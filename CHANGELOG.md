@@ -6,6 +6,28 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.9.1] - Unreleased
+
+### Added
+
+* Hash-pinned Tier-2 corpus and qualification-report schemas plus a repeatable smoke/qualification runner.
+* Explicit Docling page-count and input-file-size limits, recorded with existing wall/document timeouts in the Tier-2 index.
+
+### Changed
+
+* The built-in worker uses Docling's official Heron ONNX Runtime layout override for portable CPU execution without a runtime C++ compiler.
+* Tier-2 child processes and parent capture now use explicit UTF-8 behavior for locale-independent Windows execution.
+
+### Fixed
+
+* Structured worker errors are no longer hidden behind verbose stderr model logs.
+* Non-ASCII child output no longer triggers CP950 reader-thread failures on Traditional Chinese Windows hosts.
+* Model and candidate validation now rejects symlinks before path resolution, including links whose targets remain inside the allowed root.
+
+### Qualification
+
+* A passed smoke remains explicitly non-production evidence; hard-corpus, multi-platform, peak-resource, and Hermes consumer gates remain required.
+
 ## [1.9.0] - Unreleased
 
 ### Added

@@ -31,6 +31,17 @@
     "model_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "adapter_version": {"type": "string"},
     "duration_ms": {"type": "integer", "minimum": 0},
+    "limits": {
+      "type": "object",
+      "required": ["subprocess_timeout_seconds", "document_timeout_seconds", "max_num_pages", "max_file_size_bytes"],
+      "properties": {
+        "subprocess_timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "document_timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "max_num_pages": {"type": "integer", "minimum": 1},
+        "max_file_size_bytes": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
     "error_message": {"type": "string", "maxLength": 2000}
   },
   "additionalProperties": false

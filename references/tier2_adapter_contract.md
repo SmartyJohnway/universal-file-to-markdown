@@ -1,6 +1,6 @@
 # Optional Tier-2 adapter contract
 
-Skill version `1.9.0` introduces a candidate-only adapter framework for
+Skill version `1.9.0` introduced a candidate-only adapter framework for
 difficult PDF and raster-image cases. It does not make Docling a core
 dependency, does not route Office files through a model, and does not replace
 native canonical evidence automatically.
@@ -16,10 +16,14 @@ The built-in worker:
 
 - runs in a child process with an outer wall-time limit;
 - sets Hugging Face and Transformers offline environment flags;
+- starts the worker in Python UTF-8 mode for locale-independent model/config loading;
+- uses Docling's Heron ONNX Runtime layout-engine override to avoid requiring
+  a platform C++ compiler for `torch.compile` during CPU conversion;
 - configures Docling with `enable_remote_services=False`;
 - configures `allow_external_plugins=False`;
 - requires a local `artifacts_path` backed by an exact file/hash manifest;
 - applies an independent Docling document timeout;
+- passes explicit Docling page-count and input-file-size limits;
 - emits Docling JSON and Markdown as candidates, never as canonical truth.
 
 Environment flags and Docling options reduce unintended network use; they are
@@ -77,7 +81,12 @@ Optional limits:
 ```text
 --tier2-timeout-seconds           outer subprocess wall time (default 120)
 --tier2-document-timeout-seconds  Docling document timeout (default 90)
+--tier2-max-num-pages             Docling page limit (default 100)
+--tier2-max-file-size-bytes       Docling input limit (default 20 MiB)
 ```
+
+These limits govern only the optional Tier-2 worker. The native evidence route
+runs first under its existing format-specific controls.
 
 ## Serialized output
 
@@ -107,7 +116,8 @@ schema, security flags, and every candidate artifact hash.
 
 ## Deliberate non-claims
 
-v1.9.0 proves adapter isolation and contract behavior with synthetic workers.
+v1.9.0 proved adapter isolation and contract behavior with synthetic workers;
+v1.9.1 adds a qualification runner and Windows/runtime hardening.
 It does not claim:
 
 - that Docling is installed in the core runtime;
@@ -116,6 +126,6 @@ It does not claim:
 - automatic candidate arbitration;
 - cross-platform Tier-2 performance or reproducible model packages.
 
-Those are v1.9.1 evidence gates. Until they pass, a human or downstream agent
+Those remain evidence gates. Until they pass, a human or downstream agent
 may compare the candidate with native evidence, but must not silently promote
 it to canonical truth.

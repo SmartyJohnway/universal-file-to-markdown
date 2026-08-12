@@ -62,7 +62,9 @@ _GENERATED_DIRS = ("assets", "tables", "tier2")
 def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_url: str = None,
             tier2_policy: str = "off", tier2_model_manifest: str = None,
             tier2_timeout_seconds: float = 120.0,
-            tier2_document_timeout_seconds: float = 90.0) -> dict:
+            tier2_document_timeout_seconds: float = 90.0,
+            tier2_max_num_pages: int = 100,
+            tier2_max_file_size_bytes: int = 20 * 1024 * 1024) -> dict:
     """Convert one file and always return a structured report.
 
     v1.6 makes the public entry point exception-safe and clears only known
@@ -87,6 +89,8 @@ def convert(input_path: str, output_dir: str, encoding_hint: str = None, source_
                     model_manifest_path=tier2_model_manifest,
                     timeout_seconds=tier2_timeout_seconds,
                     document_timeout_seconds=tier2_document_timeout_seconds,
+                    max_num_pages=tier2_max_num_pages,
+                    max_file_size_bytes=tier2_max_file_size_bytes,
                 )
             except Exception as exc:
                 # Tier-2 is candidate-only. Unexpected adapter failures must
@@ -486,16 +490,21 @@ if __name__ == "__main__":
     )
     parser.add_argument("--tier2-timeout-seconds", type=float, default=120.0)
     parser.add_argument("--tier2-document-timeout-seconds", type=float, default=90.0)
+    parser.add_argument("--tier2-max-num-pages", type=int, default=100)
+    parser.add_argument("--tier2-max-file-size-bytes", type=int, default=20 * 1024 * 1024)
     args = parser.parse_args()
 
-    if args.tier2_timeout_seconds <= 0 or args.tier2_document_timeout_seconds <= 0:
-        parser.error("Tier-2 timeout values must be greater than zero")
+    if (args.tier2_timeout_seconds <= 0 or args.tier2_document_timeout_seconds <= 0
+            or args.tier2_max_num_pages <= 0 or args.tier2_max_file_size_bytes <= 0):
+        parser.error("Tier-2 timeout and size/page limit values must be greater than zero")
 
     report = convert(
         args.input, args.output, args.encoding, args.source_url,
         tier2_policy=args.tier2, tier2_model_manifest=args.tier2_model_manifest,
         tier2_timeout_seconds=args.tier2_timeout_seconds,
         tier2_document_timeout_seconds=args.tier2_document_timeout_seconds,
+        tier2_max_num_pages=args.tier2_max_num_pages,
+        tier2_max_file_size_bytes=args.tier2_max_file_size_bytes,
     )
     print(json.dumps(report, indent=2, ensure_ascii=False))
     sys.exit(0 if report["status"] != "failed" else 1)

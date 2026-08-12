@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tier2-qualification-report.schema.json",
+  "title": "Tier-2 qualification report",
+  "type": "object",
+  "required": [
+    "schema_version", "mode", "status", "qualification_gate_status",
+    "production_qualified", "production_blockers", "corpus", "environment",
+    "model", "limits", "summary", "cases"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "mode": {"enum": ["smoke", "qualification"]},
+    "status": {"enum": ["passed", "failed"]},
+    "qualification_gate_status": {"enum": ["passed", "failed", "not_evaluated"]},
+    "production_qualified": {"const": false},
+    "production_blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "corpus": {"type": "object"},
+    "environment": {"type": "object"},
+    "model": {"type": "object"},
+    "limits": {"type": "object"},
+    "summary": {
+      "type": "object",
+      "required": ["case_count", "passed", "failed", "run_count", "candidate_available_runs", "deterministic_cases"],
+      "properties": {
+        "case_count": {"type": "integer", "minimum": 0},
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "run_count": {"type": "integer", "minimum": 0},
+        "candidate_available_runs": {"type": "integer", "minimum": 0},
+        "deterministic_cases": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "cases": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": false
+}

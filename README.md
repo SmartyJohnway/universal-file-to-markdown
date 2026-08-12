@@ -18,6 +18,7 @@ The project is designed for environments where conversion must remain transparen
 - [Engine notes and escalation guidance](references/engine_notes.md)
 - [Chunk consumer contract](references/chunk_consumer_contract.md)
 - [Optional Tier-2 adapter contract](references/tier2_adapter_contract.md)
+- [Tier-2 qualification protocol](references/tier2_qualification.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Support policy](SUPPORT.md)
@@ -142,7 +143,9 @@ python scripts/router.py source.pdf --output bundle \
 ```
 
 The candidate never replaces `document.json`, chunks, or tables. See the
-[Tier-2 adapter contract](references/tier2_adapter_contract.md).
+[Tier-2 adapter contract](references/tier2_adapter_contract.md). Run the
+[qualification protocol](references/tier2_qualification.md) before making any
+engine/model support claim.
 
 The router exits non-zero when the final conversion status is `failed`.
 
@@ -168,7 +171,7 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current development target: `1.9.0`
+Current development target: `1.9.1`
 Latest published stable release: `1.7.2`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
@@ -193,7 +196,7 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 ## Known boundaries
 
 - Scanned table reconstruction is geometric and heuristic; complex borderless or merged tables may require a heavier parser.
-- Tier-2 Docling/model accuracy and cross-platform runtime are not yet production-qualified; v1.9.0 validates the adapter contract and containment only.
+- Tier-2 Docling/model accuracy and cross-platform runtime are not yet production-qualified; v1.9.1 adds a fail-closed qualification runner but a smoke report is explicitly not production evidence.
 - SmartArt and embedded OLE objects are detected and located but not expanded.
 - Excel chart objects are represented as references; plotted series are not rendered in this release.
 - Digital PDF and PPTX use deterministic geometry/placeholder-aware order; ambiguous visual intent remains warning-bearing and must be inspected.
@@ -208,8 +211,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.9.0-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.9.0-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.9.1-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.9.1-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

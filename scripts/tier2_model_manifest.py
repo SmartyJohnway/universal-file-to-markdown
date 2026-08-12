@@ -53,7 +53,10 @@ def create_manifest(root: Path, model_id: str, model_version: str,
 
 
 def verify_manifest(manifest_path: Path) -> tuple[dict | None, list[str]]:
-    manifest_path = manifest_path.resolve()
+    manifest_candidate = Path(manifest_path)
+    if manifest_candidate.is_symlink():
+        return None, ["TIER2_MODEL_MANIFEST_SYMLINK_NOT_ALLOWED"]
+    manifest_path = manifest_candidate.resolve()
     errors = []
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -79,23 +82,30 @@ def verify_manifest(manifest_path: Path) -> tuple[dict | None, list[str]]:
             errors.append(f"TIER2_MODEL_MANIFEST_DUPLICATE_PATH: {relative}")
             continue
         seen.add(relative)
-        target = (root / relative).resolve(strict=False)
+        candidate = root / relative
+        if candidate.is_symlink():
+            errors.append(f"TIER2_MODEL_ARTIFACT_SYMLINK_NOT_ALLOWED: {relative}")
+            continue
+        target = candidate.resolve(strict=False)
         try:
             target.relative_to(root)
         except ValueError:
             errors.append(f"TIER2_MODEL_MANIFEST_PATH_ESCAPE: {relative}")
             continue
-        if target.is_symlink() or not target.is_file():
+        if not target.is_file():
             errors.append(f"TIER2_MODEL_ARTIFACT_MISSING: {relative}")
             continue
         if target.stat().st_size != item.get("size_bytes"):
             errors.append(f"TIER2_MODEL_ARTIFACT_SIZE_MISMATCH: {relative}")
         if sha256_file(target) != item.get("sha256"):
             errors.append(f"TIER2_MODEL_ARTIFACT_HASH_MISMATCH: {relative}")
-    actual = {
-        _safe_relative(root, path) for path in root.rglob("*")
-        if path.is_file() and path.resolve() != manifest_path
-    }
+    actual = set()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            errors.append(f"TIER2_MODEL_ARTIFACT_SYMLINK_NOT_ALLOWED: {_safe_relative(root, path)}")
+            continue
+        if path.is_file() and path.resolve() != manifest_path:
+            actual.add(_safe_relative(root, path))
     if actual != seen:
         errors.append("TIER2_MODEL_MANIFEST_FILE_SET_MISMATCH")
     return manifest, errors

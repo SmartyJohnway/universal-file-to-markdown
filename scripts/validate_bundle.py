@@ -234,13 +234,17 @@ def _tier2_safe_path(root: Path, relative, errors, code) -> Path | None:
     if not isinstance(relative, str) or not relative:
         errors.append(code)
         return None
-    target = (root / relative).resolve(strict=False)
+    candidate = root / relative
+    if candidate.is_symlink():
+        errors.append(code)
+        return None
+    target = candidate.resolve(strict=False)
     try:
         target.relative_to(root)
     except ValueError:
         errors.append(code)
         return None
-    if target.is_symlink() or not target.is_file():
+    if not target.is_file():
         errors.append(code)
         return None
     return target

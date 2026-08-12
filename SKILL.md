@@ -1,6 +1,6 @@
 ---
 name: universal-file-to-markdown
-version: 1.9.0
+version: 1.9.1
 release_status: development
 description: >
   Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
@@ -12,7 +12,7 @@ license: Apache-2.0
 compatibility: Requires Python 3.10–3.12; Python 3.11 recommended.
 ---
 
-# Universal File to Markdown v1.9.0
+# Universal File to Markdown v1.9.1
 
 Convert supported files with deterministic structural parsers and offline OCR.
 Never treat `document.md` alone as proof of success: inspect the quality report
@@ -100,7 +100,7 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.9.0 (development)
+skill_version: 1.9.1 (development)
 published_stable_version: 1.7.2
 document/table/chunk schema_version: 1.0
 ```
@@ -140,7 +140,9 @@ Tier-2 is disabled by default. Use `--tier2 auto` only in a separately
 qualified Docling environment with a verified offline model manifest. Its
 outputs remain candidate sidecars under `tier2/`; the native canonical bundle
 is fingerprinted, retained, and never automatically replaced. Read
-`references/tier2_adapter_contract.md` before enabling it.
+`references/tier2_adapter_contract.md` before enabling it. Use
+`scripts/qualify_tier2.py` and `references/tier2_qualification.md` to keep a
+single-environment smoke distinct from production qualification.
 
 ## Quality interpretation
 
@@ -157,7 +159,7 @@ not extracted, and Excel charts represented only as references.
 
 - Scanned table reconstruction is geometric and heuristic. The optional Tier-2
   candidate adapter can inspect difficult PDF/image cases, but is unqualified
-  until the separate v1.9.1 hard-document gates pass.
+  until the hard-document, multi-platform, resource, and consumer gates pass.
 - SmartArt and embedded OLE content are detected and located but not expanded.
 - Excel chart objects are detected as canonical references; plotted series are
   not rendered in this release.
