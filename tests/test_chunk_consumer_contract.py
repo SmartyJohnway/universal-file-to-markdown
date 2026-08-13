@@ -145,6 +145,9 @@ def test_scorecard_reports_contract_locator_and_limits(tmp_path):
     assert report["status"] == "passed"
     assert report["bundle_count"] == 1
     assert report["consumer_contract_coverage"] == 1.0
+    assert report["context_prefix_coverage"] == 0.0
+    assert report["related_element_coverage"] == 0.0
+    assert report["locator_coverage"] == 1.0
     scored = report["bundles"][0]
     assert scored["locator_coverage"] == 1.0
     assert scored["embedding_hard_limit_violations"] == 0

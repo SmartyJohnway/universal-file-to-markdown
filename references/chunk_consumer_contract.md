@@ -68,12 +68,15 @@ Score one or more validated bundles without changing them:
 python scripts/score_chunk_context.py bundle-a bundle-b
 ```
 
-The JSON scorecard reports bundle validation, contract/context/locator
-coverage, duplicate exact-text chunks, length distributions, truncated-context
-counts, relationship coverage, and hard-limit violations. These are operational
-signals, not a claim that retrieval relevance or semantic understanding has
-been solved. Retrieval hit-rate evaluation still requires consumer queries and
-ground-truth judgments outside the extraction core.
+The JSON scorecard separately reports emitted consumer-contract-marker,
+context-prefix, relationship, and locator coverage; it also reports duplicate
+exact-text chunks, length distributions, truncated-context counts, and
+hard-limit violations. In particular, consumer-contract-marker coverage only
+counts chunks that emit `consumer_contract_version: "1.0"`; it does not claim
+that every chunk has a relationship, useful context, or improved retrieval.
+These are operational signals, not a claim that retrieval relevance or semantic
+understanding has been solved. Retrieval hit-rate evaluation still requires
+consumer queries and ground-truth judgments outside the extraction core.
 
 ## Consumer rules
 

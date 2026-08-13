@@ -97,6 +97,9 @@ def score_bundles(bundles: list[Path]) -> dict:
     results = [score_bundle(bundle) for bundle in bundles]
     chunks = sum(result["chunk_count"] for result in results)
     contract_chunks = sum(result["consumer_contract_chunks"] for result in results)
+    context_prefix_chunks = sum(result["context_prefix_chunks"] for result in results)
+    related_element_chunks = sum(result["related_element_chunks"] for result in results)
+    locator_chunks = sum(result["locator_chunks"] for result in results)
     return {
         "scorecard_version": "1.0",
         "status": "passed" if results and all(result["status"] == "passed"
@@ -106,6 +109,13 @@ def score_bundles(bundles: list[Path]) -> dict:
         "consumer_contract_coverage": (
             contract_chunks / chunks if chunks else None
         ),
+        "context_prefix_coverage": (
+            context_prefix_chunks / contract_chunks if contract_chunks else None
+        ),
+        "related_element_coverage": (
+            related_element_chunks / contract_chunks if contract_chunks else None
+        ),
+        "locator_coverage": locator_chunks / chunks if chunks else None,
         "embedding_hard_limit_violations": sum(
             result["embedding_hard_limit_violations"] for result in results
         ),
