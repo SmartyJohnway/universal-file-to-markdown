@@ -2,18 +2,16 @@
 
 ## Current phase
 
-The repository is in **v1.6.1 iterative development**. Automatic push and
-pull-request validation is temporarily disabled to conserve GitHub Actions
-minutes. Developers must run the complete local/Codex-sandbox validation suite
-before every review handoff.
+The repository is preparing the **v1.8.1 stable release**. Pull requests to
+`main` and pushes to `main` run the required automated validation workflows.
+Developers must still run the complete local validation suite before every
+review handoff.
 
 ## Manual validation
 
-Development workflows are available through `workflow_dispatch` and should be
-run only at explicit review and release gates. Dependency Review cannot produce
-a meaningful comparison without pull-request context; its manual workflow
-reports that it is deferred to final release validation rather than claiming a
-successful review.
+The release gate remains manually dispatched at explicit release checkpoints.
+Dependency Review runs only for pull requests, where GitHub provides the base
+and head comparison required for a meaningful result.
 
 ## Release packaging
 
@@ -21,11 +19,9 @@ successful review.
 tag trigger. Tagged releases therefore still produce the clean ZIP and
 SHA-256 checksum.
 
-## Restoration before v1.6.1 stable
+## Stable-release controls
 
-Restore automatic validation in a dedicated release-readiness PR before the
-stable release, including: test, CodeQL, dependency review, Markdown links,
-license check, metadata/YAML validation, and release gate. Maintainers must
-also confirm required-status-check branch protection matches the active trigger
-policy; otherwise GitHub may wait indefinitely for checks that are no longer
-automatically created.
+Before tagging a stable release, maintainers must confirm that branch
+protection requires the active test, CodeQL, dependency review, Markdown-link,
+license, and metadata/YAML workflows. The manually dispatched release gate
+must pass on the exact candidate commit.

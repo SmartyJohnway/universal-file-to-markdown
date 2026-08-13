@@ -165,6 +165,8 @@ PDF/PPTX elements may include additive `properties.layout` and
 `properties.associations` metadata. The exact fields, evidence thresholds, and
 consumer rules are documented in
 [`references/layout_association_contract.md`](references/layout_association_contract.md).
+Located digital-PDF text may also include parser-derived
+`source_extraction_index`, distinct from visual reading order.
 
 Chunks may include the additive `consumer_contract_version: "1.0"` projection:
 validated ancestor/section/unit/relationship/layout IDs, context budget

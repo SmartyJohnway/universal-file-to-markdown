@@ -164,6 +164,8 @@ python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 PDF/PPTX element 可包含 additive `properties.layout` 與
 `properties.associations` metadata；確切欄位、證據門檻與 consumer 規則請見
 [`references/layout_association_contract.md`](references/layout_association_contract.md)。
+已定位的 digital-PDF 文字也可包含 parser-derived
+`source_extraction_index`，與視覺閱讀順序分開。
 
 Chunk 可包含 additive `consumer_contract_version: "1.0"` projection，包括
 經驗證的 ancestor／section／unit／relationship／layout ID、context budget
