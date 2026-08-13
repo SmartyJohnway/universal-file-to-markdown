@@ -1,0 +1,1149 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "# Trading\n\nSee [rules](https://example.test/rules).\n\n## Rates\n\n- one\n\n  - nested\n\n![chart](https://example.test/page/images/chart.png)\n\n| Kind | Rates | Rates |\n| --- | --- | --- |\n| Kind | A | B |\n| Stock | 1 | Two detail |\n\n| x | y |\n| --- | --- |",
+  "document": {
+    "content_element_count": 10,
+    "element_count": 11,
+    "elements": [
+      {
+        "child_ids": [
+          "html-heading-0001"
+        ],
+        "children": [
+          "html-heading-0001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "complex_tables.html",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "html-paragraph-0002",
+          "html-heading-0003"
+        ],
+        "children": [
+          "html-paragraph-0002",
+          "html-heading-0003"
+        ],
+        "confidence": null,
+        "content": "# Trading",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [],
+        "id": "html-heading-0001",
+        "locator_precision": "exact",
+        "ordinal": 1,
+        "parent_id": "document-root",
+        "properties": {
+          "level": 1
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 1,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "heading",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "See [rules](https://example.test/rules).",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading"
+        ],
+        "id": "html-paragraph-0002",
+        "locator_precision": "exact",
+        "ordinal": 2,
+        "parent_id": "html-heading-0001",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 2,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "paragraph",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "html-list-0004",
+          "html-image-0008",
+          "html-table-0009",
+          "html-table-0010"
+        ],
+        "children": [
+          "html-list-0004",
+          "html-image-0008",
+          "html-table-0009",
+          "html-table-0010"
+        ],
+        "confidence": null,
+        "content": "## Rates",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading"
+        ],
+        "id": "html-heading-0003",
+        "locator_precision": "exact",
+        "ordinal": 3,
+        "parent_id": "html-heading-0001",
+        "properties": {
+          "level": 2
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 3,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "heading",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "html-list_item-0005"
+        ],
+        "children": [
+          "html-list_item-0005"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-list-0004",
+        "locator_precision": "exact",
+        "ordinal": 4,
+        "parent_id": "html-heading-0003",
+        "properties": {
+          "level": 1,
+          "ordered": false
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 4,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "list",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "html-list-0006"
+        ],
+        "children": [
+          "html-list-0006"
+        ],
+        "confidence": null,
+        "content": "- one",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-list_item-0005",
+        "locator_precision": "exact",
+        "ordinal": 5,
+        "parent_id": "html-list-0004",
+        "properties": {
+          "level": 1,
+          "ordered": false
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 5,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "list_item",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "html-list_item-0007"
+        ],
+        "children": [
+          "html-list_item-0007"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-list-0006",
+        "locator_precision": "exact",
+        "ordinal": 6,
+        "parent_id": "html-list_item-0005",
+        "properties": {
+          "level": 2,
+          "ordered": false
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 6,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "list",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "  - nested",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-list_item-0007",
+        "locator_precision": "exact",
+        "ordinal": 7,
+        "parent_id": "html-list-0006",
+        "properties": {
+          "level": 2,
+          "ordered": false
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 7,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "list_item",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "![chart](https://example.test/page/images/chart.png)",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-image-0008",
+        "locator_precision": "exact",
+        "ordinal": 8,
+        "parent_id": "html-heading-0003",
+        "properties": {
+          "remote_resource": true,
+          "url": "https://example.test/page/images/chart.png"
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 8,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "image",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "| Kind | Rates | Rates |\n| --- | --- | --- |\n| Kind | A | B |\n| Stock | 1 | Two detail |",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-table-0009",
+        "locator_precision": "exact",
+        "ordinal": 9,
+        "parent_id": "html-heading-0003",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": "merged",
+          "element_index": 9,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "table_id": "table-html-0001",
+        "type": "table",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "| x | y |\n| --- | --- |",
+        "content_format": "markdown",
+        "engine": "beautifulsoup4_lxml",
+        "heading_path": [
+          "Trading",
+          "Rates"
+        ],
+        "id": "html-table-0010",
+        "locator_precision": "exact",
+        "ordinal": 10,
+        "parent_id": "html-heading-0003",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": 10,
+          "element_start": null,
+          "filename": null,
+          "format": "html",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "table_id": "table-html-0002",
+        "type": "table",
+        "warnings": []
+      }
+    ],
+    "file_type": "html",
+    "metadata": {
+      "source_url": "https://example.test/page/index.html"
+    },
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "complex_tables.html",
+    "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [
+        "html-heading-0001"
+      ],
+      "char_count": 40,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 65,
+      "context_element_ids": [
+        "html-heading-0001"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Trading]\n[section_element_id: html-heading-0001]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "html-paragraph-0002"
+      ],
+      "embedding_char_count": 105,
+      "embedding_text": "[heading_path: Trading]\n[section_element_id: html-heading-0001]\n\nSee [rules](https://example.test/rules).",
+      "heading_path": [
+        "Trading"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "exact",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": "html-heading-0001",
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "complex_tables.html",
+      "source_locator": {
+        "element_index": 2,
+        "format": "html",
+        "source_file": "complex_tables.html"
+      },
+      "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6",
+      "table_ids": [],
+      "text": "See [rules](https://example.test/rules).",
+      "unit_element_id": null
+    },
+    {
+      "ancestor_element_ids": [
+        "html-heading-0001",
+        "html-heading-0003",
+        "html-list-0004",
+        "html-list_item-0005",
+        "html-list-0006"
+      ],
+      "char_count": 8,
+      "chunk_id": "chunk-00002",
+      "chunk_index": 2,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 73,
+      "context_element_ids": [
+        "html-heading-0001",
+        "html-heading-0003",
+        "html-list-0004",
+        "html-list_item-0005",
+        "html-list-0006"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Trading > Rates]\n[section_element_id: html-heading-0003]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "html-list_item-0007"
+      ],
+      "embedding_char_count": 81,
+      "embedding_text": "[heading_path: Trading > Rates]\n[section_element_id: html-heading-0003]\n\n- nested",
+      "heading_path": [
+        "Trading",
+        "Rates"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "exact",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": "html-heading-0003",
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "complex_tables.html",
+      "source_locator": {
+        "element_index": 7,
+        "format": "html",
+        "source_file": "complex_tables.html"
+      },
+      "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6",
+      "table_ids": [],
+      "text": "- nested",
+      "unit_element_id": null
+    },
+    {
+      "ancestor_element_ids": [
+        "html-heading-0001",
+        "html-heading-0003"
+      ],
+      "char_count": 167,
+      "chunk_id": "chunk-00003",
+      "chunk_index": 3,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 73,
+      "context_element_ids": [
+        "html-heading-0001",
+        "html-heading-0003"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Trading > Rates]\n[section_element_id: html-heading-0003]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "html-image-0008",
+        "html-table-0009",
+        "html-table-0010"
+      ],
+      "embedding_char_count": 240,
+      "embedding_text": "[heading_path: Trading > Rates]\n[section_element_id: html-heading-0003]\n\n![chart](https://example.test/page/images/chart.png)\n\n| Kind | Rates | Rates |\n| --- | --- | --- |\n| Kind | A | B |\n| Stock | 1 | Two detail |\n\n| x | y |\n| --- | --- |",
+      "heading_path": [
+        "Trading",
+        "Rates"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "range",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": "html-heading-0003",
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": null,
+      "source_locators": [
+        {
+          "element_index": 8,
+          "format": "html",
+          "source_file": "complex_tables.html"
+        },
+        {
+          "element_id": "merged",
+          "element_index": 9,
+          "format": "html",
+          "source_file": "complex_tables.html"
+        },
+        {
+          "element_index": 10,
+          "format": "html",
+          "source_file": "complex_tables.html"
+        }
+      ],
+      "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6",
+      "table_ids": [
+        "table-html-0001",
+        "table-html-0002"
+      ],
+      "text": "![chart](https://example.test/page/images/chart.png)\n\n| Kind | Rates | Rates |\n| --- | --- | --- |\n| Kind | A | B |\n| Stock | 1 | Two detail |\n\n| x | y |\n| --- | --- |",
+      "unit_element_id": null
+    }
+  ],
+  "tables": [
+    {
+      "cell_blocks": [
+        {
+          "blocks": [
+            {
+              "text": "Two",
+              "type": "paragraph"
+            },
+            {
+              "level": 1,
+              "ordered": false,
+              "text": "detail",
+              "type": "list_item"
+            }
+          ],
+          "column": 2,
+          "row": 2
+        }
+      ],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 2,
+          "source_locator": null,
+          "value": "Kind"
+        },
+        {
+          "colspan": 2,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "Rates"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "A"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": true,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "B"
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "Stock"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "1"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "Two detail"
+        }
+      ],
+      "confidence": null,
+      "dimensions": {
+        "columns": 3,
+        "rows": 3
+      },
+      "engine": "beautifulsoup4_lxml",
+      "grid": [
+        [
+          "Kind",
+          "Rates",
+          "Rates"
+        ],
+        [
+          "Kind",
+          "A",
+          "B"
+        ],
+        [
+          "Stock",
+          "1",
+          "Two detail"
+        ]
+      ],
+      "id": "table-html-0001",
+      "merged_cells": [
+        {
+          "anchor_column": 0,
+          "anchor_row": 0,
+          "colspan": 1,
+          "rowspan": 2,
+          "value": "Kind"
+        },
+        {
+          "anchor_column": 1,
+          "anchor_row": 0,
+          "colspan": 2,
+          "rowspan": 1,
+          "value": "Rates"
+        }
+      ],
+      "merged_cells_flattened_in_csv": true,
+      "merged_cells_present": true,
+      "properties": {},
+      "schema_version": "1.0",
+      "source_dimensions": {
+        "row_count": 3,
+        "source_cell_count": 7
+      },
+      "source_format": "html",
+      "source_locator": {
+        "element_id": "merged",
+        "format": "html",
+        "table_index": 1
+      }
+    },
+    {
+      "cell_blocks": [],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "x"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "y"
+        }
+      ],
+      "confidence": null,
+      "dimensions": {
+        "columns": 2,
+        "rows": 1
+      },
+      "engine": "beautifulsoup4_lxml",
+      "grid": [
+        [
+          "x",
+          "y"
+        ]
+      ],
+      "id": "table-html-0002",
+      "merged_cells": [],
+      "merged_cells_flattened_in_csv": false,
+      "merged_cells_present": false,
+      "properties": {},
+      "schema_version": "1.0",
+      "source_dimensions": {
+        "row_count": 1,
+        "source_cell_count": 2
+      },
+      "source_format": "html",
+      "source_locator": {
+        "format": "html",
+        "table_index": 2
+      }
+    }
+  ],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed",
+    "file_type": "html",
+    "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6"
+  },
+  "report_contract": {
+    "status": "passed",
+    "engine": "beautifulsoup4_lxml",
+    "warnings": [],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 3,
+        "elements": 11,
+        "tables": 2
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {
+    "ai-review-request.json": {
+      "allowed_operations": [
+        "add_non-factual_section_spacing",
+        "annotate_uncertain_structure",
+        "improve_heading_readability",
+        "reduce_duplicate_visual_labels",
+        "render_table_cell_links",
+        "render_table_cell_lists"
+      ],
+      "canonical_bundle_fingerprint": "de8e24ccc9591bd1bf219eaa6151ec9a2e76c0f27e83cdb61e5b28a288669d7d",
+      "instructions": {
+        "do_not_modify_canonical": true,
+        "preserve_facts": true,
+        "preserve_numbers": true,
+        "preserve_source_order": true,
+        "preserve_table_ids": true,
+        "preserve_urls": true
+      },
+      "prohibited_operations": [
+        "invent_content",
+        "remove_source_content",
+        "change_numbers",
+        "change_dates",
+        "change_urls",
+        "change table geometry",
+        "merge unrelated source sections",
+        "rewrite canonical JSON",
+        "change provenance"
+      ],
+      "reason_codes": [
+        "MERGED_TABLE_GEOMETRY_PRESENT",
+        "HTML_MERGED_TABLE_COMPLEX"
+      ],
+      "request_id": "ai-review-request-37675069135d0a49",
+      "review_scope": "readable_projection_only",
+      "schema_version": "1.0",
+      "skill_version": "1.8.1",
+      "source_sha256": "37675069135d0a494e04adfa5ae4bf29f67b5d6682ee2c3bab32c5a544d858e6",
+      "targets": [
+        {
+          "canonical": {
+            "cell_blocks": [
+              {
+                "blocks": [
+                  {
+                    "text": "Two",
+                    "type": "paragraph"
+                  },
+                  {
+                    "level": 1,
+                    "ordered": false,
+                    "text": "detail",
+                    "type": "list_item"
+                  }
+                ],
+                "column": 2,
+                "row": 2
+              }
+            ],
+            "dimensions": {
+              "columns": 3,
+              "rows": 3
+            },
+            "grid": [
+              [
+                "Kind",
+                "Rates",
+                "Rates"
+              ],
+              [
+                "Kind",
+                "A",
+                "B"
+              ],
+              [
+                "Stock",
+                "1",
+                "Two detail"
+              ]
+            ],
+            "merged_cells": [
+              {
+                "anchor_column": 0,
+                "anchor_row": 0,
+                "colspan": 1,
+                "rowspan": 2,
+                "value": "Kind"
+              },
+              {
+                "anchor_column": 1,
+                "anchor_row": 0,
+                "colspan": 2,
+                "rowspan": 1,
+                "value": "Rates"
+              }
+            ]
+          },
+          "faithful_markdown": "| Kind | Rates | Rates |\n| --- | --- | --- |\n| Kind | A | B |\n| Stock | 1 | Two detail |",
+          "reason_codes": [
+            "MERGED_TABLE_GEOMETRY_PRESENT",
+            "HTML_MERGED_TABLE_COMPLEX"
+          ],
+          "source_locator": {
+            "element_id": "merged",
+            "format": "html",
+            "table_index": 1
+          },
+          "target_id": "table-html-0001",
+          "target_type": "table"
+        }
+      ],
+      "truncation": []
+    }
+  },
+  "readable_projection": null
+}

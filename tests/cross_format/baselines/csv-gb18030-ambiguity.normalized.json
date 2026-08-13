@@ -1,0 +1,318 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "<!-- source_encoding: big5 -->\n| 张伟 | 北京市 | GB18030 |\n| --- | --- | --- |\n| 李娜 | 上海市 | 100 |\n",
+  "document": {
+    "content_element_count": 1,
+    "element_count": 2,
+    "elements": [
+      {
+        "child_ids": [
+          "csv-table-0001"
+        ],
+        "children": [
+          "csv-table-0001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "csv_native",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "csv",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "gb18030.csv",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "<!-- source_encoding: big5 -->\n| 张伟 | 北京市 | GB18030 |\n| --- | --- | --- |\n| 李娜 | 上海市 | 100 |\n",
+        "content_format": "markdown",
+        "engine": "csv_native",
+        "heading_path": [],
+        "id": "csv-table-0001",
+        "locator_precision": "exact",
+        "ordinal": 1,
+        "parent_id": "document-root",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "csv",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": 2,
+          "row_start": 1,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "table_id": "table-0001",
+        "type": "table",
+        "warnings": []
+      }
+    ],
+    "file_type": "csv",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "gb18030.csv",
+    "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [],
+      "char_count": 92,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 0,
+      "context_element_ids": [],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "",
+      "context_truncated": false,
+      "element_ids": [
+        "csv-table-0001"
+      ],
+      "embedding_char_count": 92,
+      "embedding_text": "<!-- source_encoding: big5 -->\n| 张伟 | 北京市 | GB18030 |\n| --- | --- | --- |\n| 李娜 | 上海市 | 100 |",
+      "heading_path": [],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "exact",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "gb18030.csv",
+      "source_locator": {
+        "format": "csv",
+        "row_end": 2,
+        "row_start": 1,
+        "source_file": "gb18030.csv"
+      },
+      "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d",
+      "table_ids": [
+        "table-0001"
+      ],
+      "text": "<!-- source_encoding: big5 -->\n| 张伟 | 北京市 | GB18030 |\n| --- | --- | --- |\n| 李娜 | 上海市 | 100 |",
+      "unit_element_id": null
+    }
+  ],
+  "tables": [
+    {
+      "cell_blocks": [],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "张伟"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "北京市"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "GB18030"
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "李娜"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "上海市"
+        },
+        {
+          "colspan": 1,
+          "column": 2,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "100"
+        }
+      ],
+      "confidence": null,
+      "dimensions": {
+        "columns": 3,
+        "rows": 2
+      },
+      "engine": "csv_native",
+      "grid": [
+        [
+          "张伟",
+          "北京市",
+          "GB18030"
+        ],
+        [
+          "李娜",
+          "上海市",
+          "100"
+        ]
+      ],
+      "id": "table-0001",
+      "merged_cells": [],
+      "merged_cells_flattened_in_csv": false,
+      "merged_cells_present": false,
+      "properties": {},
+      "schema_version": "1.0",
+      "source_dimensions": null,
+      "source_format": "csv",
+      "source_locator": {
+        "context": "csv",
+        "format": "csv",
+        "row_end": 2,
+        "row_start": 1
+      }
+    }
+  ],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed_with_warnings",
+    "file_type": "csv",
+    "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d"
+  },
+  "report_contract": {
+    "status": "passed_with_warnings",
+    "engine": "csv_native",
+    "warnings": [
+      {
+        "candidates": [
+          {
+            "encoding": "big5",
+            "score": 1.0
+          },
+          {
+            "encoding": "cp950",
+            "score": 1.0
+          },
+          {
+            "encoding": "gb18030",
+            "score": 1.0
+          },
+          {
+            "encoding": "utf-16-be",
+            "score": 0.222
+          },
+          {
+            "encoding": "utf-16",
+            "score": 0.167
+          }
+        ],
+        "code": "ENCODING_AMBIGUOUS",
+        "message": "More than one text encoding decoded this file with a similar plausibility score. The top candidate was used, but if the output looks wrong, this file's encoding could not be determined with high confidence - check the encoding_candidates list and consider re-specifying it manually."
+      }
+    ],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 2,
+        "tables": 1
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {},
+  "readable_projection": null
+}

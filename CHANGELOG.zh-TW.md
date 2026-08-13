@@ -6,6 +6,24 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.8.1] - 尚未發布
+
+### 新增 (Added)
+
+* 新增 additive chunk consumer contract，包含經驗證的 ancestor、section、unit、relationship 與 layout reference。
+* 新增 source-first `embedding_text` projection、明確 context budget 帳務，並維持既有 2,000 字元硬上限。
+* 新增多 bundle chunk scorecard，量測 contract、context、locator、重複文字與長度指標。
+* 新增十組邊界長度 fixture，以及正向、legacy 相容與 tamper rejection 測試。
+
+### 變更 (Changed)
+
+* Chunk schema 維持 `1.0`；所有 v1.8.1 consumer 欄位皆為向後相容的 optional 欄位。
+* 相關內容以 canonical element ID 與 relationship evidence 表示，不複製目標文字。
+
+### 修復 (Fixed)
+
+* Bundle validation 現會拒絕過期或捏造的 chunk context、不一致的 embedding projection、遺失的 context reference，以及超出硬上限的 context。
+
 ## [1.8.0] - 尚未發布
 
 ### 新增 (Added)

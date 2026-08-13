@@ -25,6 +25,9 @@
     "schema_version": {
       "const": "1.0"
     },
+    "consumer_contract_version": {
+      "const": "1.0"
+    },
     "chunk_id": {
       "type": "string"
     },
@@ -126,6 +129,104 @@
         "derived",
         "unknown"
       ]
+    },
+    "ancestor_element_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "section_element_id": {
+      "type": ["string", "null"]
+    },
+    "unit_element_id": {
+      "type": ["string", "null"]
+    },
+    "related_element_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "relation_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["caption_of", "captioned_by", "note_for", "has_note"]
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_element_id", "relation", "target_element_id",
+          "confidence", "evidence", "method"
+        ],
+        "properties": {
+          "source_element_id": {"type": "string", "minLength": 1},
+          "relation": {
+            "enum": ["caption_of", "captioned_by", "note_for", "has_note"]
+          },
+          "target_element_id": {"type": "string", "minLength": 1},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "method": {"const": "deterministic_rule_v1"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "layout_region_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "layout_zones": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "layout_order_methods": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "column_indexes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 0}
+    },
+    "context_element_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "context_policy": {
+      "const": "source_text_priority_v1"
+    },
+    "context_prefix": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "context_char_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2000
+    },
+    "context_truncated": {
+      "type": "boolean"
+    },
+    "embedding_text": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "embedding_char_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2000
     }
   },
   "additionalProperties": true

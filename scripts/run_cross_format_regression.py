@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Run the declared, reproducible cross-format corpus through production router."""
-import argparse, hashlib, json, re, shutil, subprocess, sys, tempfile
+import argparse, hashlib, json, re, shutil, subprocess, sys, tempfile, time, zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -15,6 +15,37 @@ OCR_FONT_CANDIDATES=(
     Path('/Library/Fonts/Arial Bold.ttf'),
     Path('C:/Windows/Fonts/arialbd.ttf'),
 )
+FIXED_ARCHIVE_TIME=(2000, 1, 1, 0, 0, 0)
+FIXED_DOCUMENT_TIME='2000-01-01T00:00:00Z'
+
+
+def stabilize_ooxml(path):
+    """Remove generation-time entropy from programmatic OOXML fixtures."""
+    path=Path(path); entries=[]
+    with zipfile.ZipFile(path) as source:
+        for original in source.infolist():
+            data=source.read(original.filename)
+            if original.filename == 'docProps/core.xml':
+                data=re.sub(
+                    rb'>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z<',
+                    b'>'+FIXED_DOCUMENT_TIME.encode('ascii')+b'<', data,
+                )
+            entries.append((original, data))
+    with zipfile.ZipFile(path, 'w') as target:
+        for original, data in entries:
+            stable=zipfile.ZipInfo(original.filename, FIXED_ARCHIVE_TIME)
+            stable.compress_type=original.compress_type
+            stable.comment=original.comment
+            stable.extra=original.extra
+            stable.create_system=original.create_system
+            stable.create_version=original.create_version
+            stable.extract_version=original.extract_version
+            stable.external_attr=original.external_attr
+            stable.internal_attr=original.internal_attr
+            target.writestr(stable, data)
+    return path
+
+
 def resolve_ocr_font(image_font, size=72, candidates=OCR_FONT_CANDIDATES):
     """Choose a readable TrueType font, with Pillow's scalable built-in fallback."""
     for candidate in candidates:
@@ -65,14 +96,14 @@ def generate(name, directory):
         d=Document(); p=d.add_paragraph(); p.add_run('bold').bold=True; p.add_run(' italic').italic=True
         if name!='docx_basic':
             t=d.add_table(rows=2,cols=2); a=t.cell(0,0); a.merge(t.cell(0,1) if name.endswith('horizontal_merge') else t.cell(1,0)); a.text='Merged'; t.cell(1,0).text='A';t.cell(1,1).text='B'
-        p=directory/(name+'.docx');d.save(p);return p
+        p=directory/(name+'.docx');d.save(p);return stabilize_ooxml(p)
     if name.startswith('xlsx'):
         import openpyxl
         w=openpyxl.Workbook();s=w.active;s['A1']='Header';s['B1']='Value';s['A2']='A';s['B2']=1
         if name=='xlsx_merged':s.merge_cells('A1:B1')
         if name=='xlsx_two_blocks':s['A5']='Second';s['B5']='Value';s['A6']='B';s['B6']=2
         if name=='xlsx_formula':s['C3']='=A2+B2'
-        p=directory/(name+'.xlsx');w.save(p);return p
+        p=directory/(name+'.xlsx');w.save(p);return stabilize_ooxml(p)
     if name.startswith('pptx'):
         from pptx import Presentation
         from pptx.util import Inches
@@ -92,10 +123,10 @@ def generate(name, directory):
                 # Preserve the actual table XML under a group shape, matching
                 # the production converter's recursive group traversal path.
                 slide.shapes._spTree.remove(shape._element); group=slide.shapes.add_group_shape([]); group._element.append(shape._element)
-        out=directory/(name+'.pptx');p.save(out);return out
+        out=directory/(name+'.pptx');p.save(out);return stabilize_ooxml(out)
     if name=='pdf_digital':
         from reportlab.pdfgen import canvas
-        p=directory/'digital.pdf';c=canvas.Canvas(str(p));c.drawString(100,700,'Digital PDF Test 123');c.save();return p
+        p=directory/'digital.pdf';c=canvas.Canvas(str(p),invariant=1);c.drawString(100,700,'Digital PDF Test 123');c.save();return p
     if name.startswith('pdf_ocr_'):
         from PIL import Image, ImageDraw, ImageFont
         font=resolve_ocr_font(ImageFont, 72)
@@ -112,7 +143,9 @@ def generate(name, directory):
         else:
             draw.text((130,180),'MODEL ABC-100',font=font,fill='black')
             draw.text((130,330),'VOLTAGE 480 V',font=font,fill='black')
-        p=directory/(name+'.pdf'); image.save(p,'PDF',resolution=144.0); return p
+        p=directory/(name+'.pdf'); image.save(
+            p, 'PDF', resolution=144.0, creationDate=time.gmtime(0), modDate=time.gmtime(0)
+        ); return p
     if name=='csv_big5':
         p=directory/'big5.csv';p.write_bytes('名稱,數量\n鋼管,10\n'.encode('big5'));return p
     if name=='csv_gb18030':

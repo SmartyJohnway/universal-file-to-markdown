@@ -2,7 +2,7 @@
 
 This roadmap is directional and does not promise delivery dates. Canonical evidence, provenance, validation, and truthful uncertainty take priority over visually attractive reconstruction.
 
-## Current development line: 1.8.0
+## Implemented foundation: 1.8.0
 
 Reading order and structural association without breaking document/table/chunk schema 1.0:
 
@@ -12,12 +12,12 @@ Reading order and structural association without breaking document/table/chunk s
 - strong-evidence caption/table/figure and speaker-note/slide relationships;
 - validation of reading-order and association references.
 
-## v1.8.1: chunk context and consumer contract
+## Current development line: 1.8.1
 
-- chunk metadata that carries validated layout/association references;
-- related/ancestor element IDs without copying large source content;
-- explicit context budget accounting while retaining the 2,000-character limit;
-- consumer fixtures for RAG and agent handoff.
+- chunk metadata carries validated layout/association references;
+- related/ancestor element IDs are emitted without copying target content;
+- source-first context budget accounting retains the 2,000-character limit;
+- a machine-readable multi-bundle scorecard supports RAG/agent qualification.
 
 ## v1.9.x: optional Tier-2 document understanding
 

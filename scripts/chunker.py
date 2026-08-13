@@ -124,6 +124,37 @@ def _resolved_locator(element: dict, by_id: dict) -> dict:
     return resolved
 
 
+def _ordered_unique(values) -> list:
+    return list(dict.fromkeys(value for value in values if value is not None))
+
+
+def _ancestor_ids(element: dict, by_id: dict) -> list:
+    ancestors = []
+    parent_id = element.get("parent_id")
+    visited = set()
+    while parent_id and parent_id in by_id and parent_id not in visited:
+        visited.add(parent_id)
+        parent = by_id[parent_id]
+        if parent.get("type") != "document":
+            ancestors.append(parent_id)
+        parent_id = parent.get("parent_id")
+    return list(reversed(ancestors))
+
+
+def _nearest_ancestor_id(element: dict, by_id: dict, types: set[str]):
+    if element.get("type") in types:
+        return element.get("id")
+    parent_id = element.get("parent_id")
+    visited = set()
+    while parent_id and parent_id in by_id and parent_id not in visited:
+        visited.add(parent_id)
+        parent = by_id[parent_id]
+        if parent.get("type") in types:
+            return parent_id
+        parent_id = parent.get("parent_id")
+    return None
+
+
 def _a1_bounds(cell_range: str):
     match = re.fullmatch(r"\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?", cell_range or "")
     if not match:
@@ -209,7 +240,85 @@ def build_chunk_provenance(elements: list, by_id: dict) -> dict:
     result = ({"source_locator": merged} if isinstance(merged, dict) else {"source_locators": merged})
     result["locator_precision"] = precision
     if table_ids: result["table_ids"] = table_ids
+    ancestor_element_ids = _ordered_unique(
+        ancestor_id
+        for element in elements
+        for ancestor_id in _ancestor_ids(element, by_id)
+    )
+    section_ids = _ordered_unique(
+        _nearest_ancestor_id(element, by_id, {"heading"}) for element in elements
+    )
+    unit_ids = _ordered_unique(
+        _nearest_ancestor_id(element, by_id, {"page", "slide", "sheet"})
+        for element in elements
+    )
+    relationships = []
+    for element in elements:
+        for edge in (element.get("properties") or {}).get("associations") or []:
+            relationships.append({
+                "source_element_id": element.get("id"),
+                "relation": edge.get("relation"),
+                "target_element_id": edge.get("target_id"),
+                "confidence": edge.get("confidence"),
+                "evidence": list(edge.get("evidence") or []),
+                "method": edge.get("method"),
+            })
+    related_element_ids = _ordered_unique(
+        relationship.get("target_element_id") for relationship in relationships
+    )
+    layout_values = [
+        (element.get("properties") or {}).get("layout") or {}
+        for element in elements
+    ]
+    layout_region_ids = _ordered_unique(value.get("region_id") for value in layout_values)
+    layout_zones = _ordered_unique(value.get("layout_zone") for value in layout_values)
+    layout_order_methods = _ordered_unique(value.get("order_method") for value in layout_values)
+    column_indexes = _ordered_unique(value.get("column_index") for value in layout_values)
+    result.update({
+        "ancestor_element_ids": ancestor_element_ids,
+        "section_element_id": section_ids[0] if len(section_ids) == 1 else None,
+        "unit_element_id": unit_ids[0] if len(unit_ids) == 1 else None,
+        "related_element_ids": related_element_ids,
+        "relation_types": _ordered_unique(
+            relationship.get("relation") for relationship in relationships
+        ),
+        "relationships": relationships,
+        "layout_region_ids": layout_region_ids,
+        "layout_zones": layout_zones,
+        "layout_order_methods": layout_order_methods,
+        "column_indexes": column_indexes,
+        "context_element_ids": _ordered_unique(
+            [*ancestor_element_ids, *related_element_ids]
+        ),
+    })
     return result
+
+
+def _build_context_prefix(heading_path, provenance, text: str) -> tuple[str, bool]:
+    """Use only remaining embedding budget; canonical source text always wins."""
+    lines = []
+    if heading_path:
+        lines.append("[heading_path: " + " > ".join(str(value) for value in heading_path) + "]")
+    if provenance.get("section_element_id"):
+        lines.append(f"[section_element_id: {provenance['section_element_id']}]")
+    if provenance.get("unit_element_id"):
+        lines.append(f"[unit_element_id: {provenance['unit_element_id']}]")
+    if provenance.get("relation_types"):
+        lines.append("[relation_types: " + ", ".join(provenance["relation_types"]) + "]")
+    if provenance.get("related_element_ids"):
+        lines.append("[related_element_ids: " + ", ".join(provenance["related_element_ids"]) + "]")
+    if provenance.get("layout_region_ids"):
+        lines.append("[layout_region_ids: " + ", ".join(provenance["layout_region_ids"]) + "]")
+
+    selected = []
+    for line in lines:
+        candidate_lines = [*selected, line]
+        candidate_prefix = "\n".join(candidate_lines) + "\n\n"
+        if len(candidate_prefix) + len(text) <= HARD_MAX_CHUNK_CHARS:
+            selected.append(line)
+    prefix = ("\n".join(selected) + "\n\n") if selected else ""
+    return prefix, len(selected) != len(lines)
+
 
 def build_chunks(markdown: str, elements: list, sha256: str) -> list:
     if not elements:
@@ -259,8 +368,13 @@ def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_co
     locator = provenance.get("source_locator") or {}
     page = locator.get("page_start", locator.get("page"))
     slide = locator.get("slide_number", locator.get("slide"))
+    context_prefix, context_truncated = _build_context_prefix(
+        heading_path or [], provenance, text
+    )
+    embedding_text = context_prefix + text
     return {
         "schema_version": "1.0",
+        "consumer_contract_version": "1.0",
         "chunk_id": f"chunk-{counter:05d}",
         "heading_path": heading_path,
         "element_ids": element_ids,
@@ -278,5 +392,22 @@ def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_co
         "slide_start": slide,
         "slide_end": slide,
         "source_sha256": sha256,
+        "ancestor_element_ids": provenance.get("ancestor_element_ids", []),
+        "section_element_id": provenance.get("section_element_id"),
+        "unit_element_id": provenance.get("unit_element_id"),
+        "related_element_ids": provenance.get("related_element_ids", []),
+        "relation_types": provenance.get("relation_types", []),
+        "relationships": provenance.get("relationships", []),
+        "layout_region_ids": provenance.get("layout_region_ids", []),
+        "layout_zones": provenance.get("layout_zones", []),
+        "layout_order_methods": provenance.get("layout_order_methods", []),
+        "column_indexes": provenance.get("column_indexes", []),
+        "context_element_ids": provenance.get("context_element_ids", []),
+        "context_policy": "source_text_priority_v1",
+        "context_prefix": context_prefix,
+        "context_char_count": len(context_prefix),
+        "context_truncated": context_truncated,
+        "embedding_text": embedding_text,
+        "embedding_char_count": len(embedding_text),
         **({"source_locator": locator} if "source_locator" in provenance else {"source_locators": provenance["source_locators"]} if "source_locators" in provenance else {}),
     }

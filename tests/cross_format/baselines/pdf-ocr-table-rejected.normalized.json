@@ -1,0 +1,367 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "<!-- page: 1 -->\n\nMODELABC-100\nVOLTAGE480V",
+  "document": {
+    "content_element_count": 2,
+    "element_count": 3,
+    "elements": [
+      {
+        "child_ids": [
+          "page-0001"
+        ],
+        "children": [
+          "page-0001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "rapidocr_onnxruntime",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "pdf_ocr_table_rejected.pdf",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "page-0001-text-001"
+        ],
+        "children": [
+          "page-0001-text-001"
+        ],
+        "confidence": 0.994,
+        "content": "<!-- page: 1 -->",
+        "content_format": "markdown",
+        "engine": "rapidocr",
+        "heading_path": [],
+        "id": "page-0001",
+        "locator_precision": "derived",
+        "ordinal": 1,
+        "page": 1,
+        "parent_id": "document-root",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": 1,
+          "page_end": 1,
+          "page_start": 1,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "page",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": 0.994,
+        "content": "MODELABC-100\nVOLTAGE480V",
+        "content_format": "markdown",
+        "engine": "rapidocr",
+        "heading_path": [],
+        "id": "page-0001-text-001",
+        "locator_precision": "derived",
+        "ordinal": 2,
+        "parent_id": "page-0001",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": 1,
+          "page_end": 1,
+          "page_start": 1,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "text",
+        "warnings": []
+      }
+    ],
+    "file_type": "pdf",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "pdf_ocr_table_rejected.pdf",
+    "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [
+        "page-0001"
+      ],
+      "char_count": 24,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 53,
+      "context_element_ids": [
+        "page-0001"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "page-0001-text-001"
+      ],
+      "embedding_char_count": 77,
+      "embedding_text": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\nMODELABC-100\nVOLTAGE480V",
+      "heading_path": [
+        "Page 1"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "derived",
+      "page_end": 1,
+      "page_start": 1,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "pdf_ocr_table_rejected.pdf",
+      "source_locator": {
+        "format": "pdf",
+        "page": 1,
+        "page_end": 1,
+        "page_start": 1,
+        "source_file": "pdf_ocr_table_rejected.pdf"
+      },
+      "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7",
+      "table_ids": [],
+      "text": "MODELABC-100\nVOLTAGE480V",
+      "unit_element_id": "page-0001"
+    }
+  ],
+  "tables": [],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed_with_warnings",
+    "file_type": "pdf",
+    "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7"
+  },
+  "report_contract": {
+    "status": "passed_with_warnings",
+    "engine": "rapidocr_onnxruntime",
+    "warnings": [
+      {
+        "code": "OCR_TABLE_INSUFFICIENT_ROWS",
+        "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted.",
+        "page": 1
+      },
+      {
+        "code": "OCR_TABLE_COLUMN_INCONSISTENT",
+        "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted.",
+        "page": 1
+      },
+      {
+        "code": "OCR_TABLE_IRREGULAR_ROWS",
+        "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted.",
+        "page": 1
+      },
+      {
+        "code": "OCR_TABLE_EMPTY",
+        "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted.",
+        "page": 1
+      },
+      {
+        "code": "OCR_TABLE_LOW_CONFIDENCE",
+        "message": "OCR table heuristic is uncertain; text was preserved unless the candidate was accepted.",
+        "page": 1
+      }
+    ],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 3,
+        "tables": 0
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {
+    "ai-review-request.json": {
+      "allowed_operations": [
+        "add_non-factual_section_spacing",
+        "annotate_uncertain_structure",
+        "improve_heading_readability",
+        "reduce_duplicate_visual_labels",
+        "render_table_cell_links",
+        "render_table_cell_lists"
+      ],
+      "canonical_bundle_fingerprint": "86c4df1289143d3f4b0c4e7a8163de84cc23d905543288da4087fdca8540a916",
+      "instructions": {
+        "do_not_modify_canonical": true,
+        "preserve_facts": true,
+        "preserve_numbers": true,
+        "preserve_source_order": true,
+        "preserve_table_ids": true,
+        "preserve_urls": true
+      },
+      "prohibited_operations": [
+        "invent_content",
+        "remove_source_content",
+        "change_numbers",
+        "change_dates",
+        "change_urls",
+        "change table geometry",
+        "merge unrelated source sections",
+        "rewrite canonical JSON",
+        "change provenance"
+      ],
+      "reason_codes": [
+        "OCR_TABLE_INSUFFICIENT_ROWS",
+        "OCR_TABLE_COLUMN_INCONSISTENT",
+        "OCR_TABLE_IRREGULAR_ROWS",
+        "OCR_TABLE_EMPTY",
+        "OCR_TABLE_LOW_CONFIDENCE",
+        "OCR_TABLE_REJECTED",
+        "OCR_TABLE_FALLBACK_TO_TEXT",
+        "OCR_TABLE_STRUCTURE_UNVERIFIED"
+      ],
+      "request_id": "ai-review-request-f3857fa8771a7827",
+      "review_scope": "readable_projection_only",
+      "schema_version": "1.0",
+      "skill_version": "1.8.1",
+      "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7",
+      "targets": [
+        {
+          "allowed_outcomes": [
+            "needs_human_review",
+            "no_action"
+          ],
+          "canonical": {
+            "candidate_id": "ocr-table-candidate-0001",
+            "confidence": 0.0,
+            "decision": "fallback_to_text",
+            "raw_text": "MODELABC-100\nVOLTAGE480V",
+            "signals": {
+              "aligned_row_ratio": 0.0,
+              "bounding_box_geometry_available": true,
+              "column_count": 0,
+              "consistent_column_ratio": 0.0,
+              "irregular_row_ratio": 1.0,
+              "key_value_pattern_ratio": 0.0,
+              "numeric_column_ratio": 0.0,
+              "row_count": 0
+            }
+          },
+          "canonical_mutation_allowed": false,
+          "faithful_markdown": "MODELABC-100\nVOLTAGE480V",
+          "projection_write_allowed": false,
+          "reason_codes": [
+            "OCR_TABLE_INSUFFICIENT_ROWS",
+            "OCR_TABLE_COLUMN_INCONSISTENT",
+            "OCR_TABLE_IRREGULAR_ROWS",
+            "OCR_TABLE_EMPTY",
+            "OCR_TABLE_LOW_CONFIDENCE",
+            "OCR_TABLE_REJECTED",
+            "OCR_TABLE_FALLBACK_TO_TEXT",
+            "OCR_TABLE_STRUCTURE_UNVERIFIED"
+          ],
+          "source_locator": {
+            "format": "pdf",
+            "page_end": 1,
+            "page_start": 1
+          },
+          "target_id": "advisory-ocr-table-candidate-0001",
+          "target_type": "advisory"
+        }
+      ],
+      "truncation": []
+    }
+  },
+  "readable_projection": null
+}

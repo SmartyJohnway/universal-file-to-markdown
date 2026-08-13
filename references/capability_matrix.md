@@ -24,3 +24,5 @@ merge-aware HTML, and `tables/index.json`.
 
 PDF and PPTX elements may also expose the additive layout/association contract
 documented in [layout_association_contract.md](layout_association_contract.md).
+Chunks may expose validated ID-only context and a bounded retrieval projection
+as documented in [chunk_consumer_contract.md](chunk_consumer_contract.md).

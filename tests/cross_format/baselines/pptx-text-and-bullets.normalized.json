@@ -1,0 +1,304 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "<!-- slide: 1 -->\n\n- Explicit bullet\n1. Explicit numbered bullet",
+  "document": {
+    "content_element_count": 2,
+    "element_count": 3,
+    "elements": [
+      {
+        "child_ids": [
+          "slide-0001"
+        ],
+        "children": [
+          "slide-0001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "python-pptx_custom",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pptx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "pptx_text.pptx",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "slide-0001-shape-2"
+        ],
+        "children": [
+          "slide-0001-shape-2"
+        ],
+        "confidence": null,
+        "content": "<!-- slide: 1 -->",
+        "content_format": "markdown",
+        "engine": "python-pptx_custom",
+        "heading_path": [],
+        "id": "slide-0001",
+        "locator_precision": "unknown",
+        "ordinal": 1,
+        "parent_id": "document-root",
+        "properties": {
+          "layout": {
+            "column_count": 1,
+            "order_method": "placeholder_role_geometry_v1",
+            "region_count": 1,
+            "visual_flow_ambiguous": false
+          }
+        },
+        "slide": 1,
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pptx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": 1,
+          "slide_number": 1,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "slide",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": null,
+        "content": "- Explicit bullet\n1. Explicit numbered bullet",
+        "content_format": "markdown",
+        "engine": "python-pptx_custom",
+        "heading_path": [],
+        "id": "slide-0001-shape-2",
+        "locator_precision": "exact",
+        "ordinal": 2,
+        "parent_id": "slide-0001",
+        "properties": {
+          "layout": {
+            "column_index": 0,
+            "layout_zone": "body",
+            "order_confidence": 0.95,
+            "order_method": "placeholder_role_geometry_v1",
+            "placeholder_role": "none",
+            "reading_order": 1,
+            "region_id": "slide-0001-region-01",
+            "region_type": "body",
+            "source_z_order": 0
+          }
+        },
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": {
+            "height": 1828800,
+            "left": 914400,
+            "top": 914400,
+            "width": 3657600
+          },
+          "bboxes": [
+            {
+              "height": 1828800,
+              "left": 914400,
+              "top": 914400,
+              "width": 3657600
+            }
+          ],
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pptx",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": 2,
+          "shape_ids": null,
+          "shape_name": "TextBox 1",
+          "sheet": null,
+          "sheet_name": null,
+          "slide": 1,
+          "slide_number": 1,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "list",
+        "warnings": []
+      }
+    ],
+    "file_type": "pptx",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "pptx_text.pptx",
+    "source_sha256": "577a636a3c2ca9a50b3b0e7f9487c183f3a8f200e9d89fdcdcdc806be2274f25"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [
+        "slide-0001"
+      ],
+      "char_count": 45,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [
+        0
+      ],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 97,
+      "context_element_ids": [
+        "slide-0001"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Slide 1]\n[unit_element_id: slide-0001]\n[layout_region_ids: slide-0001-region-01]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "slide-0001-shape-2"
+      ],
+      "embedding_char_count": 142,
+      "embedding_text": "[heading_path: Slide 1]\n[unit_element_id: slide-0001]\n[layout_region_ids: slide-0001-region-01]\n\n- Explicit bullet\n1. Explicit numbered bullet",
+      "heading_path": [
+        "Slide 1"
+      ],
+      "layout_order_methods": [
+        "placeholder_role_geometry_v1"
+      ],
+      "layout_region_ids": [
+        "slide-0001-region-01"
+      ],
+      "layout_zones": [
+        "body"
+      ],
+      "locator_precision": "exact",
+      "page_end": null,
+      "page_start": null,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": null,
+      "slide_end": 1,
+      "slide_start": 1,
+      "source_file": "pptx_text.pptx",
+      "source_locator": {
+        "bbox": {
+          "height": 1828800,
+          "left": 914400,
+          "top": 914400,
+          "width": 3657600
+        },
+        "bboxes": [
+          {
+            "height": 1828800,
+            "left": 914400,
+            "top": 914400,
+            "width": 3657600
+          }
+        ],
+        "format": "pptx",
+        "shape_id": 2,
+        "shape_name": "TextBox 1",
+        "slide": 1,
+        "slide_number": 1,
+        "source_file": "pptx_text.pptx"
+      },
+      "source_sha256": "577a636a3c2ca9a50b3b0e7f9487c183f3a8f200e9d89fdcdcdc806be2274f25",
+      "table_ids": [],
+      "text": "- Explicit bullet\n1. Explicit numbered bullet",
+      "unit_element_id": "slide-0001"
+    }
+  ],
+  "tables": [],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed",
+    "file_type": "pptx",
+    "source_sha256": "577a636a3c2ca9a50b3b0e7f9487c183f3a8f200e9d89fdcdcdc806be2274f25"
+  },
+  "report_contract": {
+    "status": "passed",
+    "engine": "python-pptx_custom",
+    "warnings": [],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 3,
+        "tables": 0
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {},
+  "readable_projection": null
+}
