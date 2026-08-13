@@ -5,7 +5,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from ai_review import assess_ai_review_eligibility, prepare_request, validate_review
+from ai_review import _schema, assess_ai_review_eligibility, prepare_request, validate_review
 
 
 def _candidate():
@@ -65,6 +65,7 @@ def test_rejected_candidate_is_a_non_writable_advisory_without_canonical_table()
     assert result["recommended"] is True
     assert [target["target_type"] for target in result["targets"]] == ["advisory"]
     assert result["targets"][0]["projection_write_allowed"] is False
+    assert result["targets"][0]["allowed_outcomes"] == ["needs_human_review", "no_change"]
 
 
 def test_prepare_request_preserves_rejected_candidate_evidence_as_advisory(tmp_path):
@@ -80,6 +81,47 @@ def test_prepare_request_preserves_rejected_candidate_evidence_as_advisory(tmp_p
     assert target["canonical"]["decision"] == "fallback_to_text"
     assert target["canonical"]["signals"]["row_count"] == 2
     assert "OCR_TABLE_REJECTED" in target["reason_codes"]
+    assert target["allowed_outcomes"] == ["needs_human_review", "no_change"]
+
+
+def test_rejected_candidate_advisory_accepts_only_declared_decisions(tmp_path):
+    bundle = tmp_path / "bundle"
+    _write_bundle(bundle)
+    request = prepare_request(bundle)
+    review = {
+        "schema_version": "1.0",
+        "request_id": request["request_id"],
+        "source_sha256": request["source_sha256"],
+        "canonical_bundle_fingerprint": request["canonical_bundle_fingerprint"],
+        "reviewer": {"type": "host_ai", "provider": "test", "model": "test"},
+        "review_status": "completed",
+        "target_reviews": [{
+            "target_id": request["targets"][0]["target_id"],
+            "decision": "no_change",
+            "confidence": 0.9,
+            "operations": [],
+            "notes": [],
+            "uncertainties": [],
+        }],
+    }
+    review_path = tmp_path / "review.json"
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    assert validate_review(bundle, review_path)["status"] == "passed"
+
+    review["target_reviews"][0]["decision"] = "apply_projection"
+    review["target_reviews"][0]["readable_markdown"] = "Model ABC-100 Voltage 480 V"
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    result = validate_review(bundle, review_path)
+    assert "AI_REVIEW_DECISION_NOT_ALLOWED" in result["errors"]
+
+
+def test_request_schema_rejects_non_decision_advisory_outcome(tmp_path):
+    bundle = tmp_path / "bundle"
+    _write_bundle(bundle)
+    request = prepare_request(bundle)
+    request["targets"][0]["allowed_outcomes"] = ["needs_human_review", "no_action"]
+    errors = _schema("ai-review-request.schema.json", request)
+    assert any("no_action" in error for error in errors)
 
 
 def test_rejected_candidate_advisory_refuses_projection_write(tmp_path):

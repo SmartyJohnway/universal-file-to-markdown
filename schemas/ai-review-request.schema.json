@@ -88,7 +88,16 @@
             "type": "string"
           },
           "allowed_outcomes": {
-            "type": "array"
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "apply_projection",
+                "no_change",
+                "needs_human_review",
+                "reject_target"
+              ]
+            }
           },
           "projection_write_allowed": {
             "type": "boolean"

@@ -135,7 +135,7 @@ def _candidate_advisory_descriptor(candidate: dict) -> dict:
         "target_id": _candidate_advisory_id(candidate),
         "candidate_id": candidate.get("candidate_id"),
         "reason_codes": list(dict.fromkeys(reasons)),
-        "allowed_outcomes": ["needs_human_review", "no_action"],
+        "allowed_outcomes": ["needs_human_review", "no_change"],
         "projection_write_allowed": False,
         "canonical_mutation_allowed": False,
         "source_locator": candidate.get("source_locator", {}),
@@ -187,7 +187,7 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
                 "target_type": "advisory",
                 "target_id": f"advisory-{t['id']}",
                 "reason_codes": ["OCR_TABLE_STRUCTURE_UNVERIFIED"],
-                "allowed_outcomes": ["needs_human_review", "no_action"],
+                "allowed_outcomes": ["needs_human_review", "no_change"],
                 "projection_write_allowed": False,
                 "canonical_mutation_allowed": False,
                 "source_locator": t.get("source_locator", {}),
@@ -250,7 +250,7 @@ def _advisory_target(t):
             "grid": t.get("grid", []),
         },
         "faithful_markdown": table_markdown(t),
-        "allowed_outcomes": ["needs_human_review", "no_action"],
+        "allowed_outcomes": ["needs_human_review", "no_change"],
         "projection_write_allowed": False,
         "canonical_mutation_allowed": False,
     }
@@ -457,6 +457,8 @@ def validate_review(bundle, review_path):
         seen.add(tid)
         if x.get("decision") not in DECISIONS:
             errors.append("AI_REVIEW_DECISION_INVALID")
+        elif tid in tm and tm[tid].get("allowed_outcomes") and x.get("decision") not in tm[tid]["allowed_outcomes"]:
+            errors.append("AI_REVIEW_DECISION_NOT_ALLOWED")
         if not isinstance(x.get("confidence"), (int, float)) or not 0 <= x.get("confidence", -1) <= 1:
             errors.append("AI_REVIEW_CONFIDENCE_INVALID")
         if any(not isinstance(o, dict) or o.get("operation") not in ALLOWED_OPERATIONS for o in x.get("operations", [])):
