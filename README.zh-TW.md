@@ -200,7 +200,10 @@ python -m compileall -q scripts tests
 
 完整的迴歸測試套件維持於原始程式碼儲存庫（source repository）中，不包含在 runtime release package 或 Agent Skill 上傳 ZIP 內。
 
-GitHub Actions 目前依 repository CI execution policy 採 **manual-only**；請在本機執行上述檢查或手動觸發已記錄的 workflow。發布專用檢查請參考 `RELEASING.md` 與 `RELEASE_CHECKLIST.md`。
+對 `main` 的 pull request 與 push 會自動執行必要的 GitHub Actions
+validation workflow。Release gate 仍須對精確 candidate commit 手動 dispatch；
+package workflow 則在 `v*` tag 時執行。發布專用檢查請參考 `RELEASING.md` 與
+`RELEASE_CHECKLIST.md`。
 
 ## 專案結構
 

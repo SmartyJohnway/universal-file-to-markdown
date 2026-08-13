@@ -27,7 +27,7 @@ reading-order 工作。
 
 * Bundle validation 現會拒絕過期或捏造的 chunk context、不一致的 embedding projection、遺失的 context reference，以及超出硬上限的 context。
 
-## [1.8.0] - 尚未發布
+## [1.8.0] - 已納入 v1.8.1（未獨立發布）
 
 ### 新增 (Added)
 
@@ -50,7 +50,7 @@ reading-order 工作。
 * 狹窄頁首與頁尾不會被誤分配至 body 左欄。
 * 缺少外框幾何的 PPTX group proxy 會安全回退到 source order，不再產生無效 `reading_order`。
 
-## [1.7.3] - 尚未發布
+## [1.7.3] - 已納入 v1.8.1（未獨立發布）
 
 ### 新增 (Added)
 
