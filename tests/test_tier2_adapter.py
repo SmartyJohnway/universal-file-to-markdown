@@ -67,7 +67,8 @@ def test_model_manifest_is_exact_and_detects_tampering(tmp_path):
 
 def test_auto_gate_is_narrow_and_machine_readable():
     report = {"warnings": [{"code": "TABLE_STRUCTURE_UNVERIFIED"},
-                           {"code": "FORMULA_RESULT_UNAVAILABLE"}],
+                           {"code": "FORMULA_RESULT_UNAVAILABLE"},
+                           {"code": "READING_ORDER_UNCERTAIN"}],
               "details": {"ocr_table_candidates": [
                   {"reason_codes": ["OCR_TABLE_IRREGULAR_ROWS"]}
               ]}}
@@ -139,6 +140,22 @@ def test_candidate_is_validated_but_never_selected_or_copied(tmp_path):
     assert (bundle / "document.json").read_bytes() == native_document
     assert (bundle / "tier2" / "candidate" / "docling-document.json").is_file()
     assert validate_bundle(str(bundle))["status"] == "passed"
+
+
+def test_candidate_artifact_symlink_is_rejected_before_resolution(tmp_path, monkeypatch):
+    source, bundle, report = _pdf_bundle(tmp_path)
+    original = Path.is_symlink
+    monkeypatch.setattr(
+        Path, "is_symlink",
+        lambda self: self.name == "document.md" or original(self),
+    )
+    result = run_tier2_candidate(
+        str(source), str(bundle), report, policy="force",
+        model_manifest_path=str(_model_manifest(tmp_path)),
+        worker_command=_worker(tmp_path),
+    )
+    assert result["status"] == "failed"
+    assert result["reason_codes"] == ["TIER2_CANDIDATE_VALIDATION_FAILED"]
 
 
 @pytest.mark.parametrize(("mode", "status", "code", "timeout"), [

@@ -20,7 +20,6 @@ AUTO_TRIGGER_CODES = {
     "OCR_TABLE_GEOMETRY_UNAVAILABLE",
     "OCR_TABLE_IRREGULAR_ROWS",
     "OCR_TABLE_INSUFFICIENT_ROWS",
-    "READING_ORDER_UNCERTAIN",
     "TABLE_TEXT_ASSOCIATION_UNCERTAIN",
 }
 ELIGIBLE_FORMATS = {"pdf", "image"}
@@ -47,12 +46,20 @@ def _schema_errors(value: dict, name: str) -> list[str]:
 
 
 def _safe_artifact(candidate_root: Path, item: dict) -> Path | None:
-    path = (candidate_root / item.get("path", "")).resolve(strict=False)
+    relative_path = item.get("path")
+    if not isinstance(relative_path, str):
+        return None
+    candidate = candidate_root / relative_path
+    # Check the submitted path before resolving it: resolve() follows links
+    # and would otherwise erase the evidence that the worker supplied one.
+    if candidate.is_symlink():
+        return None
+    path = candidate.resolve(strict=False)
     try:
         path.relative_to(candidate_root)
     except ValueError:
         return None
-    if not path.is_file() or path.is_symlink():
+    if not path.is_file():
         return None
     if path.stat().st_size != item.get("size_bytes") or sha256_file(path) != item.get("sha256"):
         return None

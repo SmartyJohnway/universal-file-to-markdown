@@ -68,7 +68,10 @@ python scripts/router.py source.pdf --output bundle \
 ```
 
 `auto` launches only for PDF/image warnings in the allowlist, including
-unverified table structure and reading-order/table-association uncertainty.
+unverified table structure and table-association uncertainty. Generic
+`READING_ORDER_UNCERTAIN` remains visible for human review but does not alone
+launch Tier-2: v1.8.1 deliberately emits it even when a deterministic layout
+rule has strong geometric support.
 `force` bypasses the quality signal for PDF/image qualification work, but does
 not bypass format, manifest, security, validation, or containment gates.
 
