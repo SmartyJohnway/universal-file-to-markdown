@@ -13,6 +13,8 @@ import sys
 import time
 from typing import Sequence
 
+DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS = 30.0
+
 
 @dataclass
 class NativeProbeResult:
@@ -131,7 +133,10 @@ def _child_failure(base: dict, completed: subprocess.CompletedProcess[str], time
                    duration_ms=duration_ms, reason=reason)
 
 
-def probe_pymupdf(python_executable: str = sys.executable, timeout_seconds: float = 10.0) -> dict:
+def probe_pymupdf(
+    python_executable: str = sys.executable,
+    timeout_seconds: float = DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS,
+) -> dict:
     """Qualify PyMuPDF in *python_executable*; child evidence is authoritative."""
     completed, timed_out, duration = _run_child([python_executable, "-c", _PYMUPDF_IMPORT], timeout_seconds)
     empty = {"package": "pymupdf", "module": "fitz", "version": None, "module_discovered": False}
@@ -154,7 +159,10 @@ def probe_pymupdf(python_executable: str = sys.executable, timeout_seconds: floa
     return _result(base, status="passed", import_status="passed", functional_status="passed", return_code=0, signal=None, timed_out=False, stdout=functional.stdout, stderr=functional.stderr, duration_ms=total)
 
 
-def probe_rapidocr(python_executable: str = sys.executable, timeout_seconds: float = 10.0) -> dict:
+def probe_rapidocr(
+    python_executable: str = sys.executable,
+    timeout_seconds: float = DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS,
+) -> dict:
     """Import RapidOCR and OpenCV in the child to expose missing native libraries."""
     completed, timed_out, duration = _run_child([python_executable, "-c", _RAPIDOCR_IMPORT], timeout_seconds)
     empty = {"package": "rapidocr-onnxruntime", "module": "rapidocr_onnxruntime", "version": None, "module_discovered": False}

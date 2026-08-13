@@ -8,7 +8,11 @@ import platform
 import shutil
 import sys
 
-from native_probe import probe_pymupdf, probe_rapidocr
+from native_probe import (
+    DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS,
+    probe_pymupdf,
+    probe_rapidocr,
+)
 
 
 PYTHON_CAPABILITIES = {
@@ -48,7 +52,7 @@ OPTIONAL_DEPENDENCY_METADATA = {
 }
 
 
-def probe() -> dict:
+def probe(timeout_seconds: float = DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS) -> dict:
     python_modules = {
         name: {"available": importlib.util.find_spec(name) is not None, "required": required}
         for name, required in PYTHON_CAPABILITIES.items()
@@ -57,8 +61,8 @@ def probe() -> dict:
         name: {"available": shutil.which(name) is not None, "required": required}
         for name, required in SYSTEM_CAPABILITIES.items()
     }
-    pymupdf = probe_pymupdf()
-    rapidocr = probe_rapidocr()
+    pymupdf = probe_pymupdf(timeout_seconds=timeout_seconds)
+    rapidocr = probe_rapidocr(timeout_seconds=timeout_seconds)
     python_modules["fitz"].update(pymupdf)
     python_modules["rapidocr_onnxruntime"].update(rapidocr)
 
@@ -117,6 +121,7 @@ def probe() -> dict:
         "core_required_dependencies": core_required,
         "optional_route_dependencies": optional_route_deps,
         "affected_routes": affected_routes,
+        "native_probe_timeout_seconds": timeout_seconds,
         "python_modules": python_modules,
         "system_binaries": system_binaries,
         "environment": {
@@ -132,8 +137,16 @@ def probe() -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Probe file-conversion capabilities")
     parser.add_argument("--json", action="store_true", help="emit JSON (default output is concise text)")
+    parser.add_argument(
+        "--native-timeout-seconds",
+        type=float,
+        default=DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS,
+        help="per-child native import/smoke timeout (default: 30 seconds)",
+    )
     args = parser.parse_args()
-    result = probe()
+    if args.native_timeout_seconds <= 0:
+        parser.error("--native-timeout-seconds must be greater than zero")
+    result = probe(timeout_seconds=args.native_timeout_seconds)
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:

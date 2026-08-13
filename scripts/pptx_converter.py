@@ -67,12 +67,26 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
     image_count = 0
     chart_count = 0
     notes_count = 0
+    slide_layout_analysis = []
+    layout_warnings = []
 
     for slide_idx, slide in enumerate(prs.slides):
         slide_num = slide_idx + 1
         slide_id = f"slide-{slide_num:04d}"
         blocks = [f"<!-- slide: {slide_num} -->"]
         slide_children = []
+
+        layout = _analyze_slide_layout(slide.shapes, prs.slide_width, prs.slide_height)
+        layout["slide"] = slide_num
+        slide_layout_analysis.append(layout)
+        if layout["visual_flow_ambiguous"]:
+            layout_warnings.append({
+                "code": "VISUAL_FLOW_AMBIGUOUS",
+                "slide": slide_num,
+                "signals": layout["signals"],
+                "material_shape_count": layout["material_shape_count"],
+                "message": "Overlapping or independent side-by-side content flows were detected; top/left geometry may not match the author's intended reading order.",
+            })
 
         top_shapes = sorted(slide.shapes, key=_shape_sort_key)
         for shape in top_shapes:
@@ -162,9 +176,11 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
         "ole_objects_found": special_parts["ole_objects_found"],
         "smartart_occurrences": special_parts["smartart_occurrences"],
         "ole_occurrences": special_parts["ole_occurrences"],
+        "slide_layout_analysis": slide_layout_analysis,
+        "warnings": layout_warnings,
         "metadata": metadata,
     }
-    if special_parts["smartart_parts_found"] or special_parts["ole_objects_found"]:
+    if special_parts["smartart_parts_found"] or special_parts["ole_objects_found"] or layout_warnings:
         report["status"] = "passed_with_warnings"
 
     return {"markdown": "\n\n".join(sections), "report": report,
@@ -228,6 +244,65 @@ def _shape_sort_key(shape):
     top = shape.top if shape.top is not None else 0
     left = shape.left if shape.left is not None else 0
     return (top, left)
+
+
+def _analyze_slide_layout(shapes, slide_width, slide_height) -> dict:
+    """Detect geometry where a single top/left order is not trustworthy."""
+    del slide_height  # reserved for layout-zone refinement in v1.8
+    material = []
+    for shape in shapes:
+        has_text = bool(getattr(shape, "has_text_frame", False) and (getattr(shape, "text", "") or "").strip())
+        is_material = (
+            has_text
+            or bool(getattr(shape, "has_table", False))
+            or bool(getattr(shape, "has_chart", False))
+            or getattr(shape, "shape_type", None) in (MSO_SHAPE_TYPE.PICTURE, MSO_SHAPE_TYPE.GROUP)
+        )
+        left = getattr(shape, "left", None)
+        top = getattr(shape, "top", None)
+        width = getattr(shape, "width", None)
+        height = getattr(shape, "height", None)
+        if not is_material or None in (left, top, width, height) or width <= 0 or height <= 0:
+            continue
+        material.append((shape, (float(left), float(top), float(left + width), float(top + height))))
+
+    signals = []
+    side_by_side_pairs = 0
+    overlapping_pairs = 0
+    normalized_width = max(float(slide_width or 0), 1.0)
+    for index, (_, first) in enumerate(material):
+        for _, second in material[index + 1:]:
+            ix = max(0.0, min(first[2], second[2]) - max(first[0], second[0]))
+            iy = max(0.0, min(first[3], second[3]) - max(first[1], second[1]))
+            intersection = ix * iy
+            first_area = max((first[2] - first[0]) * (first[3] - first[1]), 1.0)
+            second_area = max((second[2] - second[0]) * (second[3] - second[1]), 1.0)
+            if intersection / min(first_area, second_area) >= 0.2:
+                overlapping_pairs += 1
+
+            vertical_overlap = max(0.0, min(first[3], second[3]) - max(first[1], second[1]))
+            smaller_height = max(1.0, min(first[3] - first[1], second[3] - second[1]))
+            gap = max(second[0] - first[2], first[0] - second[2])
+            if (
+                vertical_overlap / smaller_height >= 0.5
+                and gap >= normalized_width * 0.02
+                and (first[2] - first[0]) <= normalized_width * 0.6
+                and (second[2] - second[0]) <= normalized_width * 0.6
+            ):
+                side_by_side_pairs += 1
+
+    if overlapping_pairs:
+        signals.append("material_shape_overlap")
+    if side_by_side_pairs:
+        signals.append("independent_side_by_side_flows")
+    return {
+        "visual_flow_ambiguous": bool(signals),
+        "signals": signals,
+        "material_shape_count": len(material),
+        "overlapping_pair_count": overlapping_pairs,
+        "side_by_side_pair_count": side_by_side_pairs,
+        "method": "deterministic_visual_flow_risk_v1",
+    }
 
 
 def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:

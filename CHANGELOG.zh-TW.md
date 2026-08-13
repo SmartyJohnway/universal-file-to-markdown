@@ -6,6 +6,28 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.7.3] - 尚未發布
+
+### 新增 (Added)
+
+* 新增只告警、不自動重排的多欄 PDF 與 PPTX 視覺流歧義偵測，並提供 machine-readable evidence。
+* 新增 release truth consistency gate，涵蓋 VERSION、SKILL、README、project status、changelog、workflow 文件與 AI Review schema 的 mirrored version。
+* 新增 rejected OCR advisory target、本機 Markdown link scope、native timeout 傳遞與 layout uncertainty 正反案例 regression coverage。
+
+### 修復 (Fixed)
+
+* rejected OCR table candidate 在沒有 canonical table 時，會產生不可寫入 projection 的 `advisory` target，不再退回 `element_range`。
+* Markdown link gate 不再掃描本機 qualification、Hermes、scratch、cache 與虛擬環境內容。
+* RapidOCR／PyMuPDF native probe 改用可設定的 30 秒預設 timeout，降低 cold start／contention 假失敗，同時保留 subprocess isolation。
+* AI Review regression runner 改用 repository-local pytest temp，避免 Windows user-temp root 無權限造成假失敗。
+* release package evidence 現可在網路檔案系統記錄 source Git SHA，且不修改全域 Git trust 設定。
+* release metadata 現正確反映已發布的 `v1.7.2` stable release，並移除英文 README 重複標題。
+* citation metadata 現正確反映 stable `v1.7.2`，並納入 release package profile。
+
+### 變更 (Changed)
+
+* v1.7.3 只偵測 reading-order 風險；實際重排留給 v1.8 release line。
+
 ## [1.7.2] - 2026-07-24
 
 ### 新增 (Added)

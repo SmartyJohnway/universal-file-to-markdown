@@ -114,6 +114,49 @@ def derive_table_geometry_reason_codes(table: dict) -> list[str]:
             reasons.append("HTML_MERGED_TABLE_COMPLEX")
     return list(dict.fromkeys(reasons))
 
+def _ocr_candidates(report: dict) -> list[dict]:
+    details = report.get("details", {}) if isinstance(report.get("details"), dict) else {}
+    candidates = details.get("ocr_table_candidates", report.get("ocr_table_candidates", []))
+    return [candidate for candidate in candidates if isinstance(candidate, dict)]
+
+def _candidate_advisory_id(candidate: dict) -> str:
+    candidate_id = str(candidate.get("candidate_id") or "unknown")
+    return f"advisory-{candidate_id}"
+
+def _candidate_advisory_descriptor(candidate: dict) -> dict:
+    reasons = [
+        code for code in candidate.get("reason_codes", [])
+        if isinstance(code, str) and code != "OCR_TABLE_CANDIDATE_ACCEPTED"
+    ]
+    if "OCR_TABLE_STRUCTURE_UNVERIFIED" not in reasons:
+        reasons.append("OCR_TABLE_STRUCTURE_UNVERIFIED")
+    return {
+        "target_type": "advisory",
+        "target_id": _candidate_advisory_id(candidate),
+        "candidate_id": candidate.get("candidate_id"),
+        "reason_codes": list(dict.fromkeys(reasons)),
+        "allowed_outcomes": ["needs_human_review", "no_change"],
+        "projection_write_allowed": False,
+        "canonical_mutation_allowed": False,
+        "source_locator": candidate.get("source_locator", {}),
+    }
+
+def _ocr_candidate_advisory_target(candidate: dict) -> dict:
+    target = _candidate_advisory_descriptor(candidate)
+    target.pop("candidate_id", None)
+    raw_text = str(candidate.get("raw_text") or "")
+    target.update({
+        "canonical": {
+            "candidate_id": candidate.get("candidate_id"),
+            "decision": candidate.get("decision"),
+            "confidence": candidate.get("confidence"),
+            "signals": candidate.get("signals", {}),
+            "raw_text": raw_text,
+        },
+        "faithful_markdown": raw_text,
+    })
+    return target
+
 def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     if report.get("status") == "failed" or not bundle_valid:
         return {"recommended": False, "priority": "none", "reason_codes": [], "targets": [], "policy_status": "prohibited"}
@@ -121,6 +164,17 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     ws = {w.get("code") for w in report.get("warnings", []) if isinstance(w, dict)}
     reasons = []
     targets = []
+
+    # Rejected OCR table candidates deliberately have no canonical table.
+    # Model them directly as non-writable advisory targets instead of falling
+    # back to an element_range target that loses the candidate decision,
+    # signals, and reason-code provenance.
+    for candidate in _ocr_candidates(report):
+        if candidate.get("decision") == "accepted":
+            continue
+        descriptor = _candidate_advisory_descriptor(candidate)
+        targets.append(descriptor)
+        reasons.extend(descriptor["reason_codes"])
 
     for t in tables:
         geom_reasons = derive_table_geometry_reason_codes(t)
@@ -133,7 +187,7 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
                 "target_type": "advisory",
                 "target_id": f"advisory-{t['id']}",
                 "reason_codes": ["OCR_TABLE_STRUCTURE_UNVERIFIED"],
-                "allowed_outcomes": ["needs_human_review", "no_action"],
+                "allowed_outcomes": ["needs_human_review", "no_change"],
                 "projection_write_allowed": False,
                 "canonical_mutation_allowed": False,
                 "source_locator": t.get("source_locator", {}),
@@ -151,6 +205,10 @@ def assess_ai_review_eligibility(report, tables, bundle_valid=True):
     }.items():
         if w in ws:
             reasons.append(c)
+
+    # Candidate-level warnings already use the AI Review reason-code
+    # vocabulary. Preserve them without requiring a second alias table.
+    reasons.extend(sorted(code for code in ws if code in AI_REVIEW_POLICY))
 
     reasons = list(dict.fromkeys(reasons))
     rec = any(AI_REVIEW_POLICY.get(x) == "recommended" for x in reasons)
@@ -192,7 +250,7 @@ def _advisory_target(t):
             "grid": t.get("grid", []),
         },
         "faithful_markdown": table_markdown(t),
-        "allowed_outcomes": ["needs_human_review", "no_action"],
+        "allowed_outcomes": ["needs_human_review", "no_change"],
         "projection_write_allowed": False,
         "canonical_mutation_allowed": False,
     }
@@ -274,6 +332,7 @@ def prepare_request(bundle, force_user_request=False, target_table=None, target_
     ts = []
     target_map = {x["target_id"]: x for x in e["targets"]}
     ids = set(target_map.keys())
+    handled_ids = set()
     is_explicit = force_user_request or "EXPLICIT_USER_REQUEST" in e.get("reason_codes", [])
 
     for t in tables:
@@ -281,15 +340,31 @@ def prepare_request(bundle, force_user_request=False, target_table=None, target_
             x = _target(t, is_explicit_user_request=is_explicit)
             _bound(x, tr)
             ts.append(x)
+            handled_ids.add(t["id"])
         elif f"advisory-{t['id']}" in ids:
             x = _advisory_target(t)
             _bound(x, tr)
             ts.append(x)
+            handled_ids.add(f"advisory-{t['id']}")
 
-    if len(ts) < len(ids):
+    candidate_by_target = {
+        _candidate_advisory_id(candidate): candidate
+        for candidate in _ocr_candidates(report)
+        if candidate.get("decision") != "accepted"
+    }
+    for target_id in ids - handled_ids:
+        if target_id not in candidate_by_target:
+            continue
+        x = _ocr_candidate_advisory_target(candidate_by_target[target_id])
+        _bound(x, tr)
+        ts.append(x)
+        handled_ids.add(target_id)
+
+    unresolved_ids = ids - handled_ids
+    if unresolved_ids:
         for i, x in enumerate([x for x in load(b / "document.json").get("elements", []) if x.get("text") or x.get("content")], 1):
             eid = f"ocr-element-{i:04d}"
-            if eid in ids or x.get("id") in ids:
+            if eid in unresolved_ids or x.get("id") in unresolved_ids:
                 t = {
                     "target_type": "element_range",
                     "target_id": eid if eid in ids else x.get("id"),
@@ -302,6 +377,7 @@ def prepare_request(bundle, force_user_request=False, target_table=None, target_
                 }
                 _bound(t, tr)
                 ts.append(t)
+                handled_ids.add(t["target_id"])
 
     m = load(b / "manifest.json")
     r = {
@@ -381,6 +457,8 @@ def validate_review(bundle, review_path):
         seen.add(tid)
         if x.get("decision") not in DECISIONS:
             errors.append("AI_REVIEW_DECISION_INVALID")
+        elif tid in tm and tm[tid].get("allowed_outcomes") and x.get("decision") not in tm[tid]["allowed_outcomes"]:
+            errors.append("AI_REVIEW_DECISION_NOT_ALLOWED")
         if not isinstance(x.get("confidence"), (int, float)) or not 0 <= x.get("confidence", -1) <= 1:
             errors.append("AI_REVIEW_CONFIDENCE_INVALID")
         if any(not isinstance(o, dict) or o.get("operation") not in ALLOWED_OPERATIONS for o in x.get("operations", [])):

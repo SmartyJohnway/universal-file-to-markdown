@@ -8,8 +8,8 @@ route, not a promise of perfect visual reconstruction.
 |---|---|---|---|---|---|---|
 | DOCX | OOXML structural extraction | supported | python-docx + OOXML | hierarchical elements, tables, assets | tracked changes, nested tables, exact image anchoring | regression-covered |
 | XLSX/XLSM | workbook extraction | supported | openpyxl | sheets, table blocks, references | chart series and dashboard semantics | regression-covered |
-| PPTX | OOXML slide extraction | supported | python-pptx + OOXML | slide/group elements, tables, assets | SmartArt/OLE; unusual visual reading order | regression-covered |
-| Digital PDF | text/table extraction | supported | PyMuPDF + pdfplumber | page blocks and tables | multi-column reading order | regression-covered |
+| PPTX | OOXML slide extraction | supported | python-pptx + OOXML | slide/group elements, tables, assets | SmartArt/OLE; overlapping or side-by-side flows emit `VISUAL_FLOW_AMBIGUOUS` | regression-covered |
+| Digital PDF | text/table extraction | supported | PyMuPDF + pdfplumber | page blocks and tables | multi-column geometry emits `MULTI_COLUMN_LAYOUT_DETECTED` and `READING_ORDER_UNCERTAIN`; v1.7.3 does not reorder it | regression-covered |
 | Scanned PDF | OCR route | partial | RapidOCR; Tesseract fallback | OCR regions and heuristic tables | complex, borderless, or merged tables | regression-covered containment cases |
 | Raster images | OCR route | partial | RapidOCR; Tesseract fallback | OCR regions and heuristic tables | complex layout reconstruction | regression-covered containment cases |
 | CSV/TSV | native parsing | supported | Python stdlib | canonical table | short samples can have ambiguous encodings | regression-covered |

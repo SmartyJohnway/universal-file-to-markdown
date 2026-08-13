@@ -66,6 +66,14 @@ scanned PDFs**. In that case:
    reported `status` honest about which engine actually produced the
    final table.
 
+## v1.7.3 truthfulness hardening
+
+v1.7.3 remains warning-only for layout intelligence. Digital PDF block geometry can emit `MULTI_COLUMN_LAYOUT_DETECTED`, `READING_ORDER_UNCERTAIN`, and, when tables share the page, `TABLE_TEXT_ASSOCIATION_UNCERTAIN`; it does not claim to have corrected the order. PPTX overlap or independent side-by-side flows emit `VISUAL_FLOW_AMBIGUOUS` while retaining the established top/left projection.
+
+Rejected OCR table candidates are not canonical tables. They now become explicit non-writable AI Review `advisory` targets carrying candidate decision evidence, rather than being mislabeled as an `element_range` through the generic fallback path.
+
+Native PyMuPDF/RapidOCR probes remain isolated in child processes. Their default per-child timeout is 30 seconds and can be overridden with `capability_probe.py --native-timeout-seconds`; this contains crashes while avoiding a 10-second cold-start/contention false failure observed on Windows.
+
 ## Real-world validation round (post-v1): three bugs found and fixed
 
 After v1 shipped, a real mixed Chinese/English scanned document (with a

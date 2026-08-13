@@ -14,8 +14,10 @@
 
 - [ ] `python -m pip install -r requirements.txt`
 - [ ] `python scripts/capability_probe.py --json` passes.
+- [ ] `python scripts/check_release_consistency.py` passes.
+- [ ] `python scripts/check_markdown_links.py` passes.
 - [ ] `python -m pytest tests/ -q` passes with zero failures and zero errors.
-- [ ] `python -m py_compile scripts/*.py tests/*.py` passes.
+- [ ] `python -m compileall -q scripts tests` passes.
 - [ ] GitHub Actions test workflow is green.
 - [ ] CodeQL is green or has no unresolved release-blocking alert.
 - [ ] Manual release-gate workflow is green.

@@ -77,7 +77,7 @@ python scripts/render_readable_projection.py <bundle_directory> --review <ai_rev
 
 ### Key Fields in Request (`ai-review-request.json`)
 - `schema_version`: `"1.0"`
-- `skill_version`: `"1.7.2"`
+- `skill_version`: `"1.7.3"`
 - `request_id`: e.g. `ai-review-request-a1b2c3d4e5f60718`
 - `source_sha256`: SHA-256 of original source file.
 - `canonical_bundle_fingerprint`: Cryptographic hash of canonical bundle.
@@ -111,7 +111,8 @@ python scripts/render_readable_projection.py <bundle_directory> --review <ai_rev
 2. **Advisory Element Targets (`target_type: "element_range"`)**:
    - Provides OCR text context for LLM review. `apply_projection` is not supported.
 3. **Advisory Targets (`target_type: "advisory"`)**:
-   - Generated for low-confidence or unverified OCR table structures.
+   - Generated directly from rejected or fallback OCR table candidates, even though those candidates correctly have no canonical table asset.
+   - Carries the candidate decision, confidence, signals, reason codes, locator, and bounded raw text as review evidence.
    - `apply_projection` is strictly forbidden (`projection_write_allowed: false`). Host AI can suggest `needs_human_review` or `no_action`.
 
 ---

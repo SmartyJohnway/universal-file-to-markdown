@@ -1,16 +1,16 @@
 name: Dependency review
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
-  deferred-dependency-review:
+  dependency-review:
     runs-on: ubuntu-latest
     steps:
-      - name: Explain deferred validation
-        run: |
-          echo "Dependency review requires pull_request context and is deferred to final release validation."
-          exit 1
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v4
