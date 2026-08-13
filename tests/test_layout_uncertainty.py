@@ -8,7 +8,7 @@ from pdf_converter import _analyze_digital_layout
 from pptx_converter import _analyze_slide_layout, convert_pptx
 
 
-def test_pdf_two_column_geometry_is_flagged_without_reordering():
+def test_pdf_two_column_geometry_is_flagged_for_deterministic_ordering():
     blocks = [
         ((40, 100, 220, 140), "A1"),
         ((40, 180, 220, 220), "A2"),

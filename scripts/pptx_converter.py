@@ -76,7 +76,9 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
         blocks = [f"<!-- slide: {slide_num} -->"]
         slide_children = []
 
-        layout = _analyze_slide_layout(slide.shapes, prs.slide_width, prs.slide_height)
+        top_shapes, reading_plan, layout = _plan_slide_reading_order(
+            slide.shapes, prs.slide_width, prs.slide_height
+        )
         layout["slide"] = slide_num
         slide_layout_analysis.append(layout)
         if layout["visual_flow_ambiguous"]:
@@ -85,12 +87,14 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
                 "slide": slide_num,
                 "signals": layout["signals"],
                 "material_shape_count": layout["material_shape_count"],
-                "message": "Overlapping or independent side-by-side content flows were detected; top/left geometry may not match the author's intended reading order.",
+                "message": "Overlapping or independent side-by-side content flows were detected; the deterministic role/column plan may not match the author's intended reading order.",
             })
 
-        top_shapes = sorted(slide.shapes, key=_shape_sort_key)
         for shape in top_shapes:
-            rendered = _render_shape(shape, assets_dir, slide_num)
+            rendered = _render_shape(
+                shape, assets_dir, slide_num, reading_plan=reading_plan,
+                slide_width=prs.slide_width, slide_height=prs.slide_height,
+            )
             if rendered["markdown"]:
                 blocks.append(rendered["markdown"])
             image_count += rendered["image_count"]
@@ -123,6 +127,16 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
                     "type": "speaker_note", "content": notes_text,
                     "token": f"notes-{slide_num}",
                     "source_locator": {"slide": slide_num, "part": "speaker_notes"},
+                    "properties": {"layout": {
+                        "reading_order": len(slide_children) + 1,
+                        "region_id": f"{slide_id}-notes",
+                        "region_type": "notes",
+                        "column_index": 0,
+                        "layout_zone": "speaker_notes",
+                        "placeholder_role": "notes",
+                        "order_confidence": 1.0,
+                        "order_method": "ooxml_notes_relationship_v1",
+                    }},
                 })
 
         slide_md = "\n\n".join(b for b in blocks if b)
@@ -135,6 +149,12 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
             "engine": "python-pptx_custom",
             "confidence": None,
             "source_locator": {"slide": slide_num},
+            "properties": {"layout": {
+                "order_method": layout["reading_order_method"],
+                "visual_flow_ambiguous": layout["visual_flow_ambiguous"],
+                "column_count": layout["column_count"],
+                "region_count": layout["region_count"],
+            }},
         })
         token_to_id = {item.get("token"): f"{slide_id}-{item.get('token')}"
                        for item in slide_children if item.get("token")}
@@ -159,6 +179,12 @@ def convert_pptx(path: str, assets_dir: str = None) -> dict:
             if table_id:
                 element["table_id"] = table_id
             elements.append(element)
+        slide_elements = [element for element in elements
+                          if element["id"] == slide_id or element.get("parent_id") == slide_id
+                          or element["id"].startswith(f"{slide_id}-")]
+        _associate_pptx_slide_elements(
+            slide_elements, slide_id, float(prs.slide_width), float(prs.slide_height)
+        )
 
     special_parts = _scan_special_parts(path)
 
@@ -248,7 +274,7 @@ def _shape_sort_key(shape):
 
 def _analyze_slide_layout(shapes, slide_width, slide_height) -> dict:
     """Detect geometry where a single top/left order is not trustworthy."""
-    del slide_height  # reserved for layout-zone refinement in v1.8
+    del slide_height
     material = []
     for shape in shapes:
         has_text = bool(getattr(shape, "has_text_frame", False) and (getattr(shape, "text", "") or "").strip())
@@ -295,23 +321,213 @@ def _analyze_slide_layout(shapes, slide_width, slide_height) -> dict:
         signals.append("material_shape_overlap")
     if side_by_side_pairs:
         signals.append("independent_side_by_side_flows")
+    split_x = None
+    if side_by_side_pairs and material:
+        ordered_centers = sorted(
+            (bbox[0] + bbox[2]) / 2 for shape, bbox in material
+            if (bbox[2] - bbox[0]) <= normalized_width * 0.65
+            and not _is_title_placeholder(shape)
+            and not _is_footer_placeholder(shape)
+        )
+        gaps = [ordered_centers[index + 1] - ordered_centers[index]
+                for index in range(len(ordered_centers) - 1)]
+        if gaps:
+            split_index = max(range(len(gaps)), key=gaps.__getitem__)
+            split_x = round((ordered_centers[split_index] + ordered_centers[split_index + 1]) / 2, 3)
     return {
         "visual_flow_ambiguous": bool(signals),
         "signals": signals,
         "material_shape_count": len(material),
         "overlapping_pair_count": overlapping_pairs,
         "side_by_side_pair_count": side_by_side_pairs,
+        "column_split_x": split_x,
         "method": "deterministic_visual_flow_risk_v1",
     }
 
 
-def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
+def _placeholder_role(shape) -> str:
+    if not getattr(shape, "is_placeholder", False):
+        return "none"
+    try:
+        value = shape.placeholder_format.type
+        name = getattr(value, "name", None)
+        if name:
+            return name.lower()
+        return str(value).split(" (")[0].lower().replace(" ", "_")
+    except Exception:
+        return "unknown"
+
+
+def _is_footer_placeholder(shape) -> bool:
+    return _placeholder_role(shape) in {"footer", "date", "slide_number"}
+
+
+def _shape_bbox_tuple(shape):
+    values = tuple(getattr(shape, key, None) for key in ("left", "top", "width", "height"))
+    if any(value is None for value in values) or values[2] <= 0 or values[3] <= 0:
+        return None
+    return (float(values[0]), float(values[1]),
+            float(values[0] + values[2]), float(values[1] + values[3]))
+
+
+def _shape_is_material(shape) -> bool:
+    has_text = bool(getattr(shape, "has_text_frame", False)
+                    and (getattr(shape, "text", "") or "").strip())
+    return (
+        has_text
+        or bool(getattr(shape, "has_table", False))
+        or bool(getattr(shape, "has_chart", False))
+        or getattr(shape, "shape_type", None) in (MSO_SHAPE_TYPE.PICTURE, MSO_SHAPE_TYPE.GROUP)
+    )
+
+
+def _plan_slide_reading_order(shapes, slide_width, slide_height):
+    """Build a role-aware, deterministic reading plan for one shape collection."""
+    shapes = list(shapes)
+    analysis = _analyze_slide_layout(shapes, slide_width, slide_height)
+    width = max(float(slide_width or 0), 1.0)
+    height = max(float(slide_height or 0), 1.0)
+    material = []
+    for source_index, shape in enumerate(shapes):
+        bbox = _shape_bbox_tuple(shape)
+        if not _shape_is_material(shape) or bbox is None:
+            continue
+        role = _placeholder_role(shape)
+        is_title = _is_title_placeholder(shape)
+        is_footer = _is_footer_placeholder(shape)
+        spanning = (bbox[2] - bbox[0]) >= width * 0.72
+        material.append({
+            "shape": shape, "bbox": bbox, "source_index": source_index,
+            "placeholder_role": role, "is_title": is_title,
+            "is_footer": is_footer, "spanning": spanning,
+        })
+
+    split_x = analysis.get("column_split_x")
+    use_columns = bool(
+        split_x is not None
+        and analysis.get("side_by_side_pair_count")
+        and not analysis.get("overlapping_pair_count")
+    )
+    for item in material:
+        bbox = item["bbox"]
+        if item["is_title"]:
+            item["zone"] = "title"
+            item["column_index"] = 0
+        elif item["is_footer"] or bbox[1] >= height * 0.9:
+            item["zone"] = "footer"
+            item["column_index"] = 0
+        elif use_columns and not item["spanning"]:
+            item["column_index"] = 1 if (bbox[0] + bbox[2]) / 2 < split_x else 2
+            item["zone"] = "body_left" if item["column_index"] == 1 else "body_right"
+        else:
+            item["zone"] = "body"
+            item["column_index"] = 0
+
+    def key(item):
+        return (item["bbox"][1], item["bbox"][0], item["source_index"])
+
+    if use_columns:
+        spanning = sorted((item for item in material if item["column_index"] == 0), key=key)
+        columns = [item for item in material if item["column_index"] in (1, 2)]
+        ordered_items = []
+        emitted = set()
+        for full_item in spanning:
+            top = full_item["bbox"][1]
+            before = [item for item in columns
+                      if id(item) not in emitted
+                      and (item["bbox"][1] + item["bbox"][3]) / 2 < top]
+            for column in (1, 2):
+                for item in sorted((x for x in before if x["column_index"] == column), key=key):
+                    ordered_items.append(item)
+                    emitted.add(id(item))
+            ordered_items.append(full_item)
+        for column in (1, 2):
+            ordered_items.extend(sorted(
+                (item for item in columns
+                 if id(item) not in emitted and item["column_index"] == column),
+                key=key,
+            ))
+        method = "placeholder_role_columns_v1"
+        confidence = 0.88
+    else:
+        role_priority = {"title": 0, "body": 1, "footer": 2}
+        ordered_items = sorted(
+            material,
+            key=lambda item: (role_priority.get(item["zone"], 1), *key(item)),
+        )
+        method = (
+            "geometry_top_left_ambiguous_v1"
+            if analysis.get("overlapping_pair_count")
+            else "placeholder_role_geometry_v1"
+        )
+        confidence = 0.6 if analysis.get("visual_flow_ambiguous") else 0.95
+
+    plan = {}
+    region_keys = []
+    for reading_order, item in enumerate(ordered_items, start=1):
+        region_key = (item["zone"], item["column_index"])
+        if region_key not in region_keys:
+            region_keys.append(region_key)
+        plan[item["shape"].shape_id] = {
+            "reading_order": reading_order,
+            "region_id": f"slide-region-{region_keys.index(region_key) + 1:02d}",
+            "region_type": "column" if item["column_index"] else item["zone"],
+            "column_index": item["column_index"],
+            "layout_zone": item["zone"],
+            "placeholder_role": item["placeholder_role"],
+            "order_confidence": confidence,
+            "order_method": method,
+            "source_z_order": item["source_index"],
+        }
+    material_ids = {id(item["shape"]) for item in ordered_items}
+    nonmaterial = [shape for shape in shapes if id(shape) not in material_ids]
+    ordered_shapes = [item["shape"] for item in ordered_items] + sorted(nonmaterial, key=_shape_sort_key)
+    next_order = len(ordered_items) + 1
+    for source_index, shape in enumerate(ordered_shapes):
+        if _shape_is_material(shape) and shape.shape_id not in plan:
+            plan[shape.shape_id] = {
+                "reading_order": next_order,
+                "region_id": "slide-region-unlocated",
+                "region_type": "unlocated",
+                "column_index": 0,
+                "layout_zone": "freeform",
+                "placeholder_role": _placeholder_role(shape),
+                "order_confidence": 0.5,
+                "order_method": "stable_source_order_fallback_v1",
+                "source_z_order": source_index,
+            }
+            next_order += 1
+    effective_method = method if ordered_items else (
+        "stable_source_order_fallback_v1" if plan else method
+    )
+    analysis.update({
+        "reading_order_method": effective_method,
+        "column_count": 2 if use_columns else 1,
+        "region_count": len({value["region_id"] for value in plan.values()}),
+        "ordering_applied": bool(plan),
+    })
+    return ordered_shapes, plan, analysis
+
+
+def _render_shape(shape, assets_dir, slide_num, token_prefix="", reading_plan=None,
+                  slide_width=None, slide_height=None) -> dict:
     """Returns {"markdown": str, "image_count": int, "chart_count": int,
     "tables": [table_dict, ...]}. `tables` is a list (not a single
     optional dict) specifically so group shapes can propagate every
     nested table's standalone asset, not just the first."""
     empty = {"markdown": "", "image_count": 0, "chart_count": 0, "tables": [], "items": []}
     shape_token = f"{token_prefix}shape-{shape.shape_id}"
+    reading_plan = reading_plan or {}
+    shape_layout = dict(reading_plan.get(shape.shape_id, {
+        "reading_order": 1, "region_id": "unplanned", "region_type": "unknown",
+        "column_index": 0, "layout_zone": "freeform",
+        "placeholder_role": _placeholder_role(shape), "order_confidence": 0.5,
+        "order_method": "geometry_fallback_v1", "source_z_order": 0,
+    }))
+    if shape_layout["region_id"].startswith("slide-region-"):
+        shape_layout["region_id"] = (
+            f"slide-{slide_num:04d}-" + shape_layout["region_id"].removeprefix("slide-")
+        )
 
     if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         pieces = []
@@ -320,10 +536,17 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
         items = []
         group_token = f"{token_prefix}group-{shape.shape_id}"
         group_item = {"type": "group", "content": "", "token": group_token,
-                      "source_locator": _shape_locator(shape)}
-        for sub in sorted(shape.shapes, key=_shape_sort_key):
-            sub_result = _render_shape(sub, assets_dir, slide_num,
-                                       token_prefix=f"{group_token}-")
+                      "source_locator": _shape_locator(shape),
+                      "properties": {"layout": shape_layout}}
+        sub_shapes, sub_plan, _ = _plan_slide_reading_order(
+            shape.shapes, slide_width or getattr(shape, "width", 1),
+            slide_height or getattr(shape, "height", 1),
+        )
+        for sub in sub_shapes:
+            sub_result = _render_shape(
+                sub, assets_dir, slide_num, token_prefix=f"{group_token}-",
+                reading_plan=sub_plan, slide_width=slide_width, slide_height=slide_height,
+            )
             if sub_result["markdown"]:
                 pieces.append(sub_result["markdown"])
             img_c += sub_result["image_count"]
@@ -343,6 +566,7 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
                 "chart_count": 1, "tables": [],
                 "items": [{"type": "chart", "content": markdown,
                            "token": shape_token,
+                           "properties": {"layout": shape_layout},
                            "source_locator": {**_shape_locator(shape),
                                               "part": str(shape.chart.part.partname)}}]}
 
@@ -355,6 +579,7 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
                 "tables": [table_dict],
                 "items": [{"type": "table", "content": md,
                            "token": shape_token,
+                           "properties": {"layout": shape_layout},
                            "source_locator": _shape_locator(shape)}]}
 
     if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
@@ -366,6 +591,7 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
                     "chart_count": 0, "tables": [],
                     "items": [{"type": "image", "content": markdown,
                                "token": shape_token, "asset": asset,
+                               "properties": {"layout": shape_layout},
                                "source_locator": {**_shape_locator(shape),
                                                   "relationship_id": relationship_id,
                                                   "part": part}}]}
@@ -384,9 +610,85 @@ def _render_shape(shape, assets_dir, slide_num, token_prefix="") -> dict:
                 "chart_count": 0, "tables": [],
                 "items": [{"type": semantic_type,
                            "content": markdown, "token": shape_token,
+                           "properties": {"layout": shape_layout},
                            "source_locator": _shape_locator(shape)}]}
 
     return dict(empty)
+
+
+_PPTX_CAPTION_PREFIX = re.compile(
+    r"^\s*(?P<kind>table|figure|fig\.?|表|圖)\s*(?:[0-9IVXivx一二三四五六七八九十]+|[:：])",
+    re.IGNORECASE,
+)
+
+
+def _pptx_locator_bbox(element):
+    bbox = (element.get("source_locator") or {}).get("bbox")
+    if not isinstance(bbox, dict):
+        return None
+    values = tuple(bbox.get(key) for key in ("left", "top", "width", "height"))
+    if any(not isinstance(value, (int, float)) for value in values):
+        return None
+    return (float(values[0]), float(values[1]),
+            float(values[0] + values[2]), float(values[1] + values[3]))
+
+
+def _add_pptx_association(element, relation, target_id, confidence, evidence):
+    associations = element.setdefault("properties", {}).setdefault("associations", [])
+    edge = {
+        "relation": relation, "target_id": target_id, "confidence": confidence,
+        "evidence": evidence, "method": "deterministic_rule_v1",
+    }
+    if edge not in associations:
+        associations.append(edge)
+
+
+def _associate_pptx_slide_elements(elements, slide_id, slide_width, slide_height):
+    """Create strong OOXML/geometry-backed associations without semantic guessing."""
+    by_id = {element["id"]: element for element in elements}
+    slide = by_id.get(slide_id)
+    if slide is None:
+        return
+    for note in (element for element in elements if element.get("type") == "speaker_note"):
+        _add_pptx_association(note, "note_for", slide_id, 1.0,
+                              ["ooxml_notes_relationship"])
+        _add_pptx_association(slide, "has_note", note["id"], 1.0,
+                              ["ooxml_notes_relationship"])
+
+    targets = [element for element in elements
+               if element.get("type") in {"table", "image", "chart"}]
+    max_gap = max(slide_height * 0.08, 100000.0)
+    for caption in elements:
+        match = _PPTX_CAPTION_PREFIX.match((caption.get("content") or "").lstrip("# "))
+        caption_bbox = _pptx_locator_bbox(caption)
+        if not match or caption_bbox is None:
+            continue
+        kind = match.group("kind").lower()
+        allowed = {"table"} if kind in {"table", "表"} else {"image", "chart"}
+        candidates = []
+        for target in targets:
+            if target.get("type") not in allowed:
+                continue
+            target_bbox = _pptx_locator_bbox(target)
+            if target_bbox is None:
+                continue
+            gap = min(abs(target_bbox[1] - caption_bbox[3]),
+                      abs(caption_bbox[1] - target_bbox[3]))
+            horizontal_overlap = max(
+                0.0, min(caption_bbox[2], target_bbox[2]) - max(caption_bbox[0], target_bbox[0])
+            )
+            alignment = horizontal_overlap / max(
+                1.0, min(caption_bbox[2] - caption_bbox[0], target_bbox[2] - target_bbox[0])
+            )
+            if gap <= max_gap and alignment >= 0.5:
+                candidates.append((gap, -alignment, target))
+        if not candidates:
+            continue
+        _, _, target = min(candidates, key=lambda value: (value[0], value[1], value[2]["id"]))
+        caption["type"] = "caption"
+        evidence = ["caption_prefix", "vertical_proximity", "horizontal_alignment"]
+        _add_pptx_association(caption, "caption_of", target["id"], 0.95, evidence)
+        _add_pptx_association(target, "captioned_by", caption["id"], 0.95, evidence)
 
 
 def _shape_locator(shape) -> dict:

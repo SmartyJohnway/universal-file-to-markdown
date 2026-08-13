@@ -6,6 +6,29 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
+## [1.8.0] - Unreleased
+
+### Added
+
+* A shared, deterministic PDF page plan that drives both Markdown projection and canonical element order.
+* Line-level PDF region rebuilding to prevent PyMuPDF from merging independent same-row columns into one block.
+* Column-major XY-cut ordering with full-width header/footer bands and bbox-based table insertion.
+* PPTX reading plans using placeholder roles, layout zones, column flows, group-local ordering, and stable source-order fallbacks.
+* Additive `properties.layout` hints and strong-evidence `properties.associations` for captions, tables, figures, and speaker notes.
+* Per-page PDF `source_extraction_index` evidence that remains distinct from deterministic visual reading order.
+* Cross-element association and sibling reading-order validation in bundle validation.
+
+### Changed
+
+* Multi-column PDF and side-by-side PPTX layouts now receive deterministic ordering while retaining uncertainty warnings where author intent cannot be proven.
+* Canonical schema remains `1.0`; layout and association data are backward-compatible optional properties.
+
+### Fixed
+
+* Digital PDF tables are inserted into their bbox position instead of always following all page prose.
+* Narrow page headers and footers are kept outside detected body columns.
+* Geometry-less PPTX group proxies fall back to stable source order without invalid `reading_order` values.
+
 ## [1.7.3] - Unreleased
 
 ### Added

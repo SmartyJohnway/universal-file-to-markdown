@@ -63,6 +63,7 @@ def validate_bundle(bundle_dir: str) -> dict:
     if len(ids) != len(set(ids)):
         errors.append("element IDs are not unique")
     by_id = {element.get("id"): element for element in elements}
+    _validate_element_layout_and_associations(elements, by_id, errors)
     root_id = document.get("root_element_id")
     root = by_id.get(root_id)
     if root is None:
@@ -262,6 +263,50 @@ def _validate_provenance(record: dict, errors: list, subject: str) -> None:
         errors.append("LOCATOR_PRECISION_INVALID")
     if fmt == "docx" and precision == "exact":
         errors.append("LOCATOR_PRECISION_INVALID")
+
+
+def _validate_element_layout_and_associations(elements, by_id, errors):
+    """Validate additive v1.8 layout hints and cross-element association edges."""
+    reciprocal = {
+        "caption_of": "captioned_by", "captioned_by": "caption_of",
+        "note_for": "has_note", "has_note": "note_for",
+    }
+    sibling_orders = {}
+    for element in elements:
+        element_id = element.get("id")
+        properties = element.get("properties") or {}
+        layout = properties.get("layout") or {}
+        if "reading_order" in layout:
+            order = layout.get("reading_order")
+            if not isinstance(order, int) or order < 1:
+                errors.append(f"LAYOUT_READING_ORDER_INVALID: {element_id}")
+            else:
+                key = (element.get("parent_id"), order)
+                if key in sibling_orders:
+                    errors.append(
+                        f"LAYOUT_READING_ORDER_DUPLICATE: {sibling_orders[key]} and {element_id}"
+                    )
+                sibling_orders[key] = element_id
+        for edge in properties.get("associations") or []:
+            relation = edge.get("relation")
+            target_id = edge.get("target_id")
+            if target_id == element_id:
+                errors.append(f"ASSOCIATION_SELF_REFERENCE: {element_id}")
+                continue
+            target = by_id.get(target_id)
+            if target is None:
+                errors.append(f"ASSOCIATION_TARGET_MISSING: {element_id} -> {target_id}")
+                continue
+            inverse = reciprocal.get(relation)
+            target_edges = (target.get("properties") or {}).get("associations") or []
+            if inverse and not any(
+                candidate.get("relation") == inverse
+                and candidate.get("target_id") == element_id
+                for candidate in target_edges
+            ):
+                errors.append(
+                    f"ASSOCIATION_RECIPROCAL_MISSING: {element_id} {relation} {target_id}"
+                )
 
 
 def _validate_source_locator(locator: dict, errors: list) -> None:

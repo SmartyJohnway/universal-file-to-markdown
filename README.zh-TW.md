@@ -32,6 +32,8 @@
 - Office 合併儲存格可輸出保留 rowspan/colspan 的 HTML。
 - 混合型 PDF 會逐頁區分 digital 與 scanned 路徑。
 - 產出 canonical 階層元素，並在可取得時保留頁碼、工作表、投影片、shape、表格與 bbox 定位。
+- 對 PDF 與 PPTX 套用 deterministic column/role-aware 閱讀計畫，並在 canonical element 記錄 additive layout hints。
+- 只有 caption 前綴、幾何或 OOXML relationship 提供強證據時才建立關聯。
 - RAG chunks 具有 2,000 字元硬上限。
 - 對不支援或低信心內容明確警告，不以 silent success 掩蓋資訊遺失。
 - 驗證 schema、階層、chunk 參照、表格尺寸、資產與整體 bundle 一致性。
@@ -42,8 +44,8 @@
 |---|---|---|---|
 | DOCX | python-docx + OOXML | heading、paragraph、list item、table | 粗斜體、連結、註記、頁首頁尾、合併儲存格 |
 | XLSX/XLSM | openpyxl | sheet、空白分隔 block、table、chart/image reference | 公式、註解、合併儲存格、隱藏狀態 metadata |
-| PPTX | python-pptx + OOXML | slide、group、title、paragraph、list、table、chart、image、note | bullet inheritance、穩定資產名稱、SmartArt/OLE 揭露 |
-| 數位 PDF | PyMuPDF + pdfplumber | page、定位文字 block、table | 表格文字去重與 bbox 定位 |
+| PPTX | python-pptx + OOXML | slide、group、title、paragraph、list、table、chart、image、note | role/column 閱讀計畫、bullet inheritance、SmartArt/OLE 揭露 |
+| 數位 PDF | PyMuPDF + pdfplumber | page、定位文字 block、table | line-aware XY-cut 排序、bbox 表格插入與文字去重 |
 | 掃描 PDF | RapidOCR；Tesseract fallback | page、OCR region、table | OCR confidence 與 table likelihood |
 | PNG/JPEG/TIFF/BMP/WebP | RapidOCR；Tesseract fallback | OCR region、table | 直接離線圖片 OCR |
 | CSV/TSV | Python stdlib CSV | canonical table | UTF-8 優先，搭配繁體中文編碼評分 |
@@ -143,7 +145,7 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 ## Canonical contracts
 
-目前開發目標：`1.7.3`
+目前開發目標：`1.8.0`
 最新已發布 stable release：`1.7.2`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
@@ -152,6 +154,12 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 
 所有 canonical element 都具有固定的階層、content format、engine、confidence、source locator、properties 與 warnings 欄位。Canonical table 以 `cells` 保留 merge anchors，並提供矩形 `grid` 供 CSV 與後續處理使用。
 
+PDF/PPTX element 可包含 additive `properties.layout` 與
+`properties.associations` metadata；確切欄位、證據門檻與 consumer 規則請見
+[`references/layout_association_contract.md`](references/layout_association_contract.md)。
+已定位的 digital-PDF 文字也可包含 parser-derived
+`source_extraction_index`，與視覺閱讀順序分開。
+
 JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `references/capability_matrix.md`。
 
 ## 已知邊界
@@ -159,7 +167,7 @@ JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `
 - 掃描表格重建採用幾何與 heuristic 方法，複雜無框線或大量合併儲存格的表格可能需要較重型解析器。
 - SmartArt 與 embedded OLE 會被偵測與定位，但不會展開內容。
 - Excel chart 目前以 canonical reference 表示，不會重建繪圖 series。
-- PPTX 閱讀順序依 top/left 幾何排序，重疊或多閱讀流版面可能不準確。
+- Digital PDF 與 PPTX 採 deterministic geometry/placeholder-aware 排序；若視覺意圖仍有歧義，會保留 warning，必須人工檢查。
 - DOCX tracked changes、nested tables 與精確 inline-image anchoring 仍有限制。
 - 舊式二進位 Office 與轉回 Office 格式不在目前範圍內。
 
@@ -171,8 +179,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.3-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.3-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.0-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.0-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

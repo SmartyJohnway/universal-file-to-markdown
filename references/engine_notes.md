@@ -74,6 +74,29 @@ Rejected OCR table candidates are not canonical tables. They now become explicit
 
 Native PyMuPDF/RapidOCR probes remain isolated in child processes. Their default per-child timeout is 30 seconds and can be overridden with `capability_probe.py --native-timeout-seconds`; this contains crashes while avoiding a 10-second cold-start/contention false failure observed on Windows.
 
+## v1.8.0 deterministic reading order and association
+
+Digital PDF ordering no longer trusts PyMuPDF's block grouping as canonical
+evidence. Real two-column qualification showed that independent same-row
+column lines can be returned as one block (`A1\nB1`). The converter therefore
+extracts line bboxes, conservatively regroups only horizontally aligned lines
+with ordinary line spacing, detects strong column separation, and applies one
+column-major plan to both `document.md` and canonical elements. Full-width or
+page-edge header/footer regions split the flow into bands. Detected tables
+participate in the same bbox plan instead of being appended after all prose.
+
+PPTX uses placeholder role, geometry, layout zones, group hierarchy, and
+stable source z-order as a tie-breaker. Strong non-overlapping side-by-side
+flows are ordered left-column then right-column. Overlap or independent flows
+remain warning-bearing because geometry cannot prove presenter intent.
+
+Both routes place additive evidence in `properties.layout`. Association edges
+are deliberately narrower: a caption prefix plus proximity and horizontal
+alignment may link a caption to a table/image/chart; the native OOXML notes
+relationship links a speaker note to its slide. Every edge is reciprocal and
+bundle-validated. No unrestricted semantic inference or ML layout model is
+used. See `layout_association_contract.md` for the serialized contract.
+
 ## Real-world validation round (post-v1): three bugs found and fixed
 
 After v1 shipped, a real mixed Chinese/English scanned document (with a
@@ -408,9 +431,10 @@ boxes default to prose.
 - **DOCX/XLSX/PPTX -> DOCX/XLSX/PPTX round-tripping**: this skill only
   converts TO Markdown/JSON, never back to Office formats.
 - **Canonical granularity is deterministic rather than visually semantic.**
-  PPTX shapes and XLSX blank-separated blocks are explicit, and digital PDF
-  blocks carry bounding boxes, but complex dashboards, overlapping slide
-  flows, and multi-column PDF reading order are not inferred by a layout model.
+  v1.8 adds geometry/role-aware PDF and PPTX order plus narrow association
+  rules, but complex dashboards and overlapping flows are not understood by a
+  layout model. Warning-bearing order is a reproducible approximation, not a
+  claim about author intent.
 - **The 2,000-character chunk limit is hard.** Large pipe tables repeat their
   headers. A pathological individual row longer than the limit is split at a
   word or character boundary because preserving both the row and hard limit is

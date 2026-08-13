@@ -6,6 +6,7 @@ Security fixes are currently applied to the latest release line.
 
 | Version | Supported |
 |---|---|
+| 1.8.x | Yes (development line) |
 | 1.7.x | Yes |
 | 1.6.x and earlier | No |
 

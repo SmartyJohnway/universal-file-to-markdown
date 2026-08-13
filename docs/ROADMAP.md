@@ -2,22 +2,22 @@
 
 This roadmap is directional and does not promise delivery dates. Canonical evidence, provenance, validation, and truthful uncertainty take priority over visually attractive reconstruction.
 
-## Current development line: 1.7.3
+## Current development line: 1.8.0
 
-Truthfulness and hardening without breaking document/table/chunk schema 1.0:
+Reading order and structural association without breaking document/table/chunk schema 1.0:
 
-- release metadata and documentation consistency gates;
-- rejected OCR candidate advisory-target closure;
-- reading-order and visual-flow uncertainty reason codes;
-- native runtime probe and repository validation robustness;
-- focused regression expansion.
+- line-aware deterministic multi-column PDF regions and table insertion;
+- PPTX placeholder roles, layout zones, column flows, and group fallback;
+- additive canonical layout hints;
+- strong-evidence caption/table/figure and speaker-note/slide relationships;
+- validation of reading-order and association references.
 
-## v1.8.x: reading order and structural association
+## v1.8.1: chunk context and consumer contract
 
-- deterministic multi-column PDF region detection and ordering;
-- PPTX placeholder roles, layout zones, group hierarchy, and ambiguity handling;
-- strong-evidence heading, caption, table, figure, and note associations;
-- chunk context that carries validated layout/association references.
+- chunk metadata that carries validated layout/association references;
+- related/ancestor element IDs without copying large source content;
+- explicit context budget accounting while retaining the 2,000-character limit;
+- consumer fixtures for RAG and agent handoff.
 
 ## v1.9.x: optional Tier-2 document understanding
 

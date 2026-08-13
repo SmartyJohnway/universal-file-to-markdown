@@ -6,6 +6,29 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.8.0] - 尚未發布
+
+### 新增 (Added)
+
+* 新增 PDF page 共用 deterministic ordering plan，同時驅動 Markdown projection 與 canonical element 順序。
+* 新增 line-level PDF region 重組，避免 PyMuPDF 把同一水平帶的獨立左右欄合成單一 block。
+* 新增 column-major XY-cut、full-width 頁首頁尾 band 與依 bbox 插回表格的排序。
+* PPTX reading plan 現納入 placeholder role、layout zone、column flow、group-local order 與穩定 source-order fallback。
+* 新增 additive `properties.layout` hints，以及 caption、table、figure、speaker note 的強證據 `properties.associations`。
+* 新增每頁 PDF `source_extraction_index` 證據，與 deterministic 視覺閱讀順序分開保存。
+* Bundle validation 新增跨 element association 與 sibling reading-order 驗證。
+
+### 變更 (Changed)
+
+* 多欄 PDF 與並排 PPTX 現會採 deterministic 排序；無法證明作者意圖時仍保留 uncertainty warning。
+* Canonical schema 維持 `1.0`；layout 與 association 是向後相容的 optional properties。
+
+### 修復 (Fixed)
+
+* Digital PDF table 會依 bbox 插回頁內位置，不再固定附加於所有 prose 之後。
+* 狹窄頁首與頁尾不會被誤分配至 body 左欄。
+* 缺少外框幾何的 PPTX group proxy 會安全回退到 source order，不再產生無效 `reading_order`。
+
 ## [1.7.3] - 尚未發布
 
 ### 新增 (Added)

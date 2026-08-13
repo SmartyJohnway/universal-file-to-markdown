@@ -32,6 +32,8 @@ The project is designed for environments where conversion must remain transparen
 - Preserves merged Office tables with rowspan/colspan-aware HTML output.
 - Routes mixed digital/scanned PDF pages independently.
 - Produces canonical hierarchical elements with page, sheet, slide, shape, table, and bounding-box locators where available.
+- Applies deterministic column/role-aware PDF and PPTX reading plans and records additive layout hints on canonical elements.
+- Links captions and speaker notes only when prefix, geometry, or OOXML relationships provide strong evidence.
 - Emits RAG chunks with a hard maximum of 2,000 characters.
 - Detects unsupported or uncertain content instead of silently reporting success.
 - Validates schemas, hierarchy, chunk references, table dimensions, assets, and bundle consistency.
@@ -42,8 +44,8 @@ The project is designed for environments where conversion must remain transparen
 |---|---|---|---|
 | DOCX | python-docx + OOXML | heading, paragraph, list item, table | Formatting, links, notes, headers/footers, merged cells |
 | XLSX/XLSM | openpyxl | sheet, blank-separated block, table, chart/image reference | Formulas, comments, merged cells, hidden-state metadata |
-| PPTX | python-pptx + OOXML | slide, group, title, paragraph, list, table, chart, image, note | Bullet inheritance, stable assets, SmartArt/OLE disclosure |
-| Digital PDF | PyMuPDF + pdfplumber | page, located text block, table | Table-text de-duplication and bounding boxes |
+| PPTX | python-pptx + OOXML | slide, group, title, paragraph, list, table, chart, image, note | Role/column reading plan, bullet inheritance, SmartArt/OLE disclosure |
+| Digital PDF | PyMuPDF + pdfplumber | page, located text block, table | Line-aware XY-cut order, bbox table insertion, de-duplication |
 | Scanned PDF | RapidOCR; Tesseract fallback | page, OCR region, table | OCR confidence and table-likelihood reporting |
 | PNG/JPEG/TIFF/BMP/WebP | RapidOCR; Tesseract fallback | OCR region, table | Direct offline image OCR |
 | CSV/TSV | Python stdlib CSV | canonical table | Encoding scoring with Traditional Chinese support |
@@ -143,7 +145,7 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current development target: `1.7.3`
+Current development target: `1.8.0`
 Latest published stable release: `1.7.2`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
@@ -152,6 +154,13 @@ Latest published stable release: `1.7.2`
 
 Every canonical element has fixed fields for hierarchy, content format, engine, confidence, source locator, properties, and warnings. Canonical tables preserve merge anchors in `cells` and provide a rectangular `grid` for CSV and downstream processing.
 
+PDF/PPTX elements may include additive `properties.layout` and
+`properties.associations` metadata. The exact fields, evidence thresholds, and
+consumer rules are documented in
+[`references/layout_association_contract.md`](references/layout_association_contract.md).
+Located digital-PDF text may also include parser-derived
+`source_extraction_index`, distinct from visual reading order.
+
 JSON Schemas are stored in `schemas/`. Format-specific granularity is documented in `references/capability_matrix.md`.
 
 ## Known boundaries
@@ -159,7 +168,7 @@ JSON Schemas are stored in `schemas/`. Format-specific granularity is documented
 - Scanned table reconstruction is geometric and heuristic; complex borderless or merged tables may require a heavier parser.
 - SmartArt and embedded OLE objects are detected and located but not expanded.
 - Excel chart objects are represented as references; plotted series are not rendered in this release.
-- PPTX reading order uses top/left geometry and may be wrong for overlapping or multi-flow layouts.
+- Digital PDF and PPTX use deterministic geometry/placeholder-aware order; ambiguous visual intent remains warning-bearing and must be inspected.
 - DOCX tracked changes, nested tables, and exact inline-image anchoring remain limited.
 - Legacy binary Office files and round-trip conversion back to Office formats are out of scope.
 
@@ -171,8 +180,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.7.3-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.7.3-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.0-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.0-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

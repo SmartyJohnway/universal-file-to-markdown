@@ -77,7 +77,7 @@ python scripts/render_readable_projection.py <bundle_directory> --review <ai_rev
 
 ### Key Fields in Request (`ai-review-request.json`)
 - `schema_version`: `"1.0"`
-- `skill_version`: `"1.7.3"`
+- `skill_version`: `"1.8.0"`
 - `request_id`: e.g. `ai-review-request-a1b2c3d4e5f60718`
 - `source_sha256`: SHA-256 of original source file.
 - `canonical_bundle_fingerprint`: Cryptographic hash of canonical bundle.
