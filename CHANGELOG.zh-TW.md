@@ -6,7 +6,10 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
-## [1.8.1] - 尚未發布
+## [1.8.1] - 2026-08-13
+
+此 stable release 整合下方列出的未發布 v1.7.3 hardening 與 v1.8.0
+reading-order 工作。
 
 ### 新增 (Added)
 
