@@ -111,7 +111,9 @@ Every canonical element has fixed keys including `parent_id`, `children`,
 remain as additional fields for backward compatibility.
 
 Located PDF and PPTX elements may carry additive `properties.layout` hints
-(`reading_order`, region, column, layout zone, confidence, and method).
+(`reading_order`, region, column, layout zone, confidence, and method). Located
+digital-PDF text can additionally carry parser-derived
+`source_extraction_index`, which is separate from visual reading order.
 Strong-evidence caption/table/figure and speaker-note/slide edges use
 `properties.associations`. These hints do not change schema 1.0 or claim that
 the author's semantic intent is known. See

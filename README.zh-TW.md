@@ -157,6 +157,8 @@ python scripts/validate_bundle.py OUTPUT_DIRECTORY
 PDF/PPTX element 可包含 additive `properties.layout` 與
 `properties.associations` metadata；確切欄位、證據門檻與 consumer 規則請見
 [`references/layout_association_contract.md`](references/layout_association_contract.md)。
+已定位的 digital-PDF 文字也可包含 parser-derived
+`source_extraction_index`，與視覺閱讀順序分開。
 
 JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `references/capability_matrix.md`。
 

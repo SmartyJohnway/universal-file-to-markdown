@@ -287,11 +287,16 @@ def _extract_digital_text_blocks(fitz_page, table_bboxes):
     wrapped prose line.
     """
     lines = []
+    source_extraction_index = 0
     page_dict = fitz_page.get_text("dict") or {}
     for raw_block in page_dict.get("blocks", []):
         if raw_block.get("type", 0) != 0:
             continue
         for raw_line in raw_block.get("lines", []):
+            # Keep the parser traversal position before applying geometry and
+            # table filters. It is evidence about extraction, not visual or
+            # author-intended order, and gaps are therefore meaningful.
+            source_extraction_index += 1
             bbox = tuple(raw_line.get("bbox") or ())
             if len(bbox) != 4:
                 continue
@@ -301,12 +306,13 @@ def _extract_digital_text_blocks(fitz_page, table_bboxes):
             if not content or any(_bbox_overlap_ratio(bbox, table_bbox) >= 0.5
                                   for table_bbox in table_bboxes):
                 continue
-            lines.append((bbox, content))
+            lines.append((bbox, content, source_extraction_index))
     if not lines:
         return []
 
     groups = []
-    for bbox, content in sorted(lines, key=lambda item: (item[0][1], item[0][0])):
+    for bbox, content, source_index in sorted(
+            lines, key=lambda item: (item[0][1], item[0][0])):
         best = None
         for group in groups:
             previous = group["last_bbox"]
@@ -323,7 +329,7 @@ def _extract_digital_text_blocks(fitz_page, table_bboxes):
         if best is None:
             groups.append({
                 "index": len(groups), "bbox": list(bbox), "last_bbox": bbox,
-                "lines": [content],
+                "lines": [content], "source_extraction_index": source_index,
             })
             continue
         group = best[1]
@@ -333,8 +339,12 @@ def _extract_digital_text_blocks(fitz_page, table_bboxes):
         ]
         group["last_bbox"] = bbox
         group["lines"].append(content)
+        group["source_extraction_index"] = min(
+            group["source_extraction_index"], source_index
+        )
     return [
-        (tuple(group["bbox"]), "\n".join(group["lines"]))
+        (tuple(group["bbox"]), "\n".join(group["lines"]),
+         group["source_extraction_index"])
         for group in groups
     ]
 
@@ -365,10 +375,13 @@ def _plan_pdf_page_items(blocks, table_records, layout, page_width, page_height,
     being appended after all prose.
     """
     raw_items = []
-    for index, (bbox, content) in enumerate(blocks, start=1):
+    for index, block in enumerate(blocks, start=1):
+        bbox, content = block[:2]
+        source_extraction_index = block[2] if len(block) >= 3 else index
         raw_items.append({
             "kind": "text", "bbox": tuple(bbox) if bbox else None,
-            "content": content.strip(), "source_index": index,
+            "content": content.strip(), "source_index": source_extraction_index,
+            "source_extraction_index": source_extraction_index,
             "element_id": f"{page_id}-text-{index:03d}",
         })
     if not raw_items and fallback_text.strip():
@@ -467,6 +480,10 @@ def _plan_pdf_page_items(blocks, table_records, layout, page_width, page_height,
             "order_confidence": confidence,
             "order_method": method,
         }
+        if item["kind"] == "text" and "source_extraction_index" in item:
+            item["layout"]["source_extraction_index"] = item[
+                "source_extraction_index"
+            ]
     return ordered
 
 
@@ -543,8 +560,9 @@ def _analyze_digital_layout(blocks, page_width: float) -> dict:
     if page_width <= 0:
         return result
     candidates = [
-        (bbox, content) for bbox, content in blocks
-        if bbox is not None and content.strip() and (bbox[2] - bbox[0]) <= page_width * 0.72
+        (block[0], block[1]) for block in blocks
+        if block[0] is not None and block[1].strip()
+        and (block[0][2] - block[0][0]) <= page_width * 0.72
     ]
     if len(candidates) < 4:
         return result

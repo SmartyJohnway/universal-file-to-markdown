@@ -39,6 +39,7 @@ def test_pdf_xycut_plan_orders_columns_and_preserves_spanning_blocks():
     assert [item["layout"]["reading_order"] for item in plan] == list(range(1, 7))
     assert [item["layout"]["column_index"] for item in plan[1:5]] == [1, 1, 2, 2]
     assert all(item["layout"]["order_method"] == "deterministic_xycut_v1" for item in plan)
+    assert [item["layout"]["source_extraction_index"] for item in plan] == [1, 2, 4, 3, 5, 6]
 
 
 def test_pdf_single_column_table_is_inserted_by_bbox_not_appended():
@@ -128,6 +129,9 @@ def test_real_pdf_projection_and_canonical_share_column_major_order(tmp_path):
                 if element.get("parent_id") == "page-0001"]
     contents = [element["content"] for element in children]
     assert contents == ["Report Title", "A1", "A2", "B1", "B2", "Page Footer"]
+    layouts = [element["properties"]["layout"] for element in children]
+    assert all("source_extraction_index" in layout for layout in layouts)
+    assert [layout["source_extraction_index"] for layout in layouts] != list(range(1, 7))
 
 
 def test_pdf_bundle_chunks_follow_canonical_order_and_rerun_deterministically(tmp_path):

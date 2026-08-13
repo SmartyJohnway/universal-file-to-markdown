@@ -19,7 +19,8 @@ Located elements may contain:
       "column_index": 1,
       "layout_zone": "body_left",
       "order_confidence": 0.9,
-      "order_method": "deterministic_xycut_v1"
+      "order_method": "deterministic_xycut_v1",
+      "source_extraction_index": 4
     }
   }
 }
@@ -34,6 +35,13 @@ parent/child hierarchy.
 regions and starts at `1` for detected body columns. `order_confidence`
 describes the deterministic rule's geometric support; it is not OCR confidence
 and is not a probability that the author intended that flow.
+
+For located digital-PDF text, `source_extraction_index` is the one-based
+per-page position of the first contributing text line encountered in PyMuPDF's
+parser traversal. It preserves separate extraction evidence when deterministic
+geometry changes `reading_order`. It is not a visual order, semantic order, or
+claim about author intent; filtered table text can leave intentional gaps, and
+tables or geometry-less fallback text do not declare this field.
 
 Current methods are:
 

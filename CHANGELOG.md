@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 * Column-major XY-cut ordering with full-width header/footer bands and bbox-based table insertion.
 * PPTX reading plans using placeholder roles, layout zones, column flows, group-local ordering, and stable source-order fallbacks.
 * Additive `properties.layout` hints and strong-evidence `properties.associations` for captions, tables, figures, and speaker notes.
+* Per-page PDF `source_extraction_index` evidence that remains distinct from deterministic visual reading order.
 * Cross-element association and sibling reading-order validation in bundle validation.
 
 ### Changed

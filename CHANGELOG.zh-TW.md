@@ -15,6 +15,7 @@
 * 新增 column-major XY-cut、full-width 頁首頁尾 band 與依 bbox 插回表格的排序。
 * PPTX reading plan 現納入 placeholder role、layout zone、column flow、group-local order 與穩定 source-order fallback。
 * 新增 additive `properties.layout` hints，以及 caption、table、figure、speaker note 的強證據 `properties.associations`。
+* 新增每頁 PDF `source_extraction_index` 證據，與 deterministic 視覺閱讀順序分開保存。
 * Bundle validation 新增跨 element association 與 sibling reading-order 驗證。
 
 ### 變更 (Changed)
