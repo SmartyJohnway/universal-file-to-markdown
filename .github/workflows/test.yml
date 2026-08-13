@@ -2,6 +2,10 @@ name: test
 
 on:
   workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   pytest:
@@ -21,4 +25,4 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -q
       - name: Compile Python sources
-        run: python -m py_compile scripts/*.py tests/*.py
+        run: python -m compileall -q scripts tests
