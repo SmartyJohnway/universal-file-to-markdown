@@ -6,7 +6,8 @@ Security fixes are currently applied to the latest release line.
 
 | Version | Supported |
 |---|---|
-| 1.8.x | Yes (development line) |
+| 1.9.x | Yes (development line) |
+| 1.8.x | Yes |
 | 1.7.x | Yes |
 | 1.6.x and earlier | No |
 
@@ -39,6 +40,11 @@ This project processes untrusted files with the privileges of the executing proc
 - never assume successful parsing means a file is safe.
 
 The project does not execute Office macros, expand embedded OLE objects, or intentionally run active document content. Generic parsers and OCR libraries may nevertheless contain upstream vulnerabilities.
+
+Optional Tier-2 processing is disabled by default. Its worker disables Docling
+remote services and external plugins, requires manifested local model files,
+and runs with timeouts, but it is not an OS sandbox. Production deployments
+must still deny worker network access and enforce process/resource isolation.
 
 ## Disclosure process
 

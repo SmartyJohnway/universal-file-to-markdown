@@ -66,6 +66,24 @@ scanned PDFs**. In that case:
    reported `status` honest about which engine actually produced the
    final table.
 
+## v1.9.0 optional candidate adapter
+
+The repository now implements the escalation path as an explicit, disabled-by-
+default subprocess contract for PDF and raster images. `--tier2 auto` is gated
+by allowlisted native uncertainty codes; `--tier2 force` exists for controlled
+qualification. Both require an exact SHA-256 manifest of pre-downloaded model
+artifacts. The built-in Docling worker disables remote services and external
+plugins, sets offline environment flags, applies inner and outer timeouts, and
+writes only to `tier2/candidate/`.
+
+The candidate stores DoclingDocument JSON and Markdown plus adapter/model
+provenance. It never replaces native `document.json`, chunks, or tables. The
+adapter and standalone bundle validator compare native fingerprints and verify
+all candidate hashes. v1.9.0's automated tests use a protocol-compatible
+synthetic worker to prove containment; they do not qualify a particular
+Docling/model version or claim hard-document accuracy. See
+`tier2_adapter_contract.md`.
+
 ## v1.7.3 truthfulness hardening
 
 v1.7.3 remains warning-only for layout intelligence. Digital PDF block geometry can emit `MULTI_COLUMN_LAYOUT_DETECTED`, `READING_ORDER_UNCERTAIN`, and, when tables share the page, `TABLE_TEXT_ASSOCIATION_UNCERTAIN`; it does not claim to have corrected the order. PPTX overlap or independent side-by-side flows emit `VISUAL_FLOW_AMBIGUOUS` while retaining the established top/left projection.
