@@ -12,7 +12,7 @@ Reading order and structural association without breaking document/table/chunk s
 - strong-evidence caption/table/figure and speaker-note/slide relationships;
 - validation of reading-order and association references.
 
-## Current development line: 1.8.1
+## Stable release: 1.8.1
 
 - chunk metadata carries validated layout/association references;
 - related/ancestor element IDs are emitted without copying target content;

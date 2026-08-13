@@ -6,7 +6,10 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows Semantic Versioning where practical.
 
-## [1.8.1] - Unreleased
+## [1.8.1] - 2026-08-13
+
+This stable release integrates the previously unpublished v1.7.3 hardening and
+v1.8.0 reading-order work listed below.
 
 ### Added
 

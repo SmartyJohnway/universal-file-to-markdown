@@ -1,10 +1,10 @@
-# v1.6.0 Release Checklist
+# v1.8.1 Release Checklist
 
 ## Repository
 
 - [ ] `LICENSE` contains Apache License 2.0.
 - [ ] README files identify Apache-2.0.
-- [ ] Changelog files contain final v1.6.0 notes and date.
+- [ ] Changelog files contain final v1.8.1 notes and date.
 - [ ] `CITATION.cff` version and release date are correct.
 - [ ] `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md` are present.
 - [ ] Issue templates, PR template, CODEOWNERS, Dependabot, and release-note configuration are present.
@@ -38,9 +38,9 @@
 
 - [ ] Merge release-preparation PR into `main`.
 - [ ] Confirm exact release commit SHA.
-- [ ] Create annotated tag `v1.6.0` on the verified commit.
+- [ ] Create annotated tag `v1.8.1` on the verified commit.
 - [ ] Run tag-triggered release gate.
-- [ ] Create GitHub Release using `RELEASE_NOTES_v1.6.0.md`.
+- [ ] Create GitHub Release using `RELEASE_NOTES_v1.8.1.md`.
 - [ ] Download and inspect the GitHub source archive.
 - [ ] Verify GitHub displays the Apache-2.0 license and citation metadata.
 - [ ] Verify README links and changelog links.

@@ -1,14 +1,12 @@
 # Project Status
 
-Current development target: `v1.8.1`
-
-Latest published stable release: `v1.7.2`
+Current stable release: `v1.8.1`
 
 Historical unpublished integration milestone: `v1.7.1` (superseded by `v1.7.2`)
 
-Release readiness: `in_development`
+Release readiness: `qualified_pending_tag`
 
-Release status: `unreleased`
+Release status: `stable`
 
 Data schema version: `1.0` (independent from the skill version)
 
