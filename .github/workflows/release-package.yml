@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Verify release files
         run: |
           test -f LICENSE
@@ -22,27 +25,17 @@ jobs:
           test -f CHANGELOG.md
           test -f CHANGELOG.zh-TW.md
           test -f CITATION.cff
-      - name: Build clean skill archive
+      - name: Build and validate canonical release package
         run: |
-          VERSION="${GITHUB_REF_NAME:-manual}"
-          ROOT="universal-file-to-markdown-${VERSION}"
-          mkdir -p "dist/${ROOT}"
-          rsync -a ./ "dist/${ROOT}/" \
-            --exclude '.git' \
-            --exclude '.github' \
-            --exclude '.venv' \
-            --exclude '__pycache__' \
-            --exclude '.pytest_cache' \
-            --exclude 'dist' \
-            --exclude 'private-fixtures' \
-            --exclude 'local-fixtures'
-          cd dist
-          zip -r "${ROOT}.zip" "${ROOT}"
-          sha256sum "${ROOT}.zip" > "${ROOT}.zip.sha256"
+          python scripts/build_skill_package.py --profile release --output dist --verify
+          python scripts/build_skill_package.py --profile agent-skill --output dist --verify
+          python scripts/validate_skill_package.py --profile release "dist/universal-file-to-markdown-$(tr -d '\n' < VERSION)-release.zip"
+          python scripts/validate_skill_package.py --profile agent-skill "dist/universal-file-to-markdown-$(tr -d '\n' < VERSION)-skill.zip"
       - uses: actions/upload-artifact@v7
         with:
-          name: universal-file-to-markdown-release-package
+          name: universal-file-to-markdown-packages
           path: |
             dist/*.zip
             dist/*.sha256
+            dist/*.manifest.json
           if-no-files-found: error
