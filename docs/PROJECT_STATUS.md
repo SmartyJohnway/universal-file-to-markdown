@@ -4,9 +4,11 @@ Current stable release: `v1.8.1`
 
 Historical unpublished integration milestone: `v1.7.1` (superseded by `v1.7.2`)
 
-Release readiness: `qualified_pending_tag`
+Release readiness: `released`
 
-Release status: `stable`
+Release status: `released_stable`
+
+Released tag: `v1.8.1` (`026222ab1b7d6137ab509477e4e02ad961dfa9dd`)
 
 Data schema version: `1.0` (independent from the skill version)
 

@@ -202,7 +202,11 @@ On Windows hosts where the user temp root is inaccessible, pass a unique reposit
 
 The full regression test suite is maintained in the source repository and is not included in the runtime release package or Agent Skill upload ZIP.
 
-GitHub Actions are currently **manual-only** under the repository CI execution policy; run these checks locally or dispatch the documented manual workflows. Release-specific checks are documented in `RELEASING.md` and `RELEASE_CHECKLIST.md`.
+Pull requests to `main` and pushes to `main` run the required GitHub Actions
+validation workflows automatically. The Release gate remains manually
+dispatched for an exact candidate commit, and the package workflow runs for
+`v*` tags. Release-specific checks are documented in `RELEASING.md` and
+`RELEASE_CHECKLIST.md`.
 
 ## Project structure
 

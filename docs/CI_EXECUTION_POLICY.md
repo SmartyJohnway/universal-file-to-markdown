@@ -2,10 +2,9 @@
 
 ## Current phase
 
-The repository is preparing the **v1.8.1 stable release**. Pull requests to
-`main` and pushes to `main` run the required automated validation workflows.
-Developers must still run the complete local validation suite before every
-review handoff.
+The **v1.8.1 stable release** is published. Pull requests to `main` and pushes
+to `main` run the required automated validation workflows. Developers must
+still run the complete local validation suite before every review handoff.
 
 ## Manual validation
 

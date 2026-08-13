@@ -27,7 +27,7 @@ v1.8.0 reading-order work listed below.
 
 * Bundle validation now rejects stale or fabricated chunk context, inconsistent embedding projections, missing context references, and context that exceeds the hard limit.
 
-## [1.8.0] - Unreleased
+## [1.8.0] - Included in v1.8.1 (not separately released)
 
 ### Added
 
@@ -50,7 +50,7 @@ v1.8.0 reading-order work listed below.
 * Narrow page headers and footers are kept outside detected body columns.
 * Geometry-less PPTX group proxies fall back to stable source order without invalid `reading_order` values.
 
-## [1.7.3] - Unreleased
+## [1.7.3] - Included in v1.8.1 (not separately released)
 
 ### Added
 
