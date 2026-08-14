@@ -42,6 +42,7 @@ from common_utils import (
     convert_csv_native,
     convert_json_native,
     convert_eml_native,
+    markdown_link_label,
 )
 from format_detector import resolve_format
 from quality_check import build_report
@@ -153,7 +154,7 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
     # Native OCR libraries can terminate a process by signal.  Probe them in a
     # child before selecting an OCR-capable route so a known-bad backend yields
     # an honest bundle instead of entering the converter blindly.
-    if file_type in ("image", "pdf"):
+    if file_type == "image":
         from native_probe import probe_rapidocr
         native = probe_rapidocr()
         if native.get("status") != "passed":
@@ -263,7 +264,7 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
         for index, att in enumerate(result["attachments"], start=1):
             elements.append({
                 "id": f"email-attachment-{index:04d}", "type": "attachment",
-                "content": f"[{att['original_filename']}](assets/{att['filename']})",
+                "content": f"[{markdown_link_label(att['original_filename'])}](assets/{att['filename']})",
                 "engine": "email_stdlib", "confidence": None,
                 "source_locator": {"format": "eml", "mime_part": f"1.{index}", "section": "attachment", "filename": att["original_filename"]},
                 "properties": {"original_filename": att["original_filename"]},

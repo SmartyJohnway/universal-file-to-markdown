@@ -125,10 +125,10 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
         return result
     if all(c == "scanned" for c in page_classes):
         return _convert_scanned(path, doc, list(range(len(doc))))
-    return _convert_mixed(path, doc, page_classes)
+    return _convert_mixed(path, doc, page_classes, material_rasters)
 
 
-def _convert_mixed(path: str, doc, page_classes) -> dict:
+def _convert_mixed(path: str, doc, page_classes, material_rasters=None) -> dict:
     digital_idx = [i for i, c in enumerate(page_classes) if c == "digital"]
     scanned_idx = [i for i, c in enumerate(page_classes) if c == "scanned"]
 
@@ -173,8 +173,22 @@ def _convert_mixed(path: str, doc, page_classes) -> dict:
     tables = (digital_result.get("tables", []) if digital_result else []) + \
              (scanned_result.get("tables", []) if scanned_result else [])
 
-    return {"markdown": ordered_md, "report": report, "_per_page_md": [pages_md[i] for i in sorted(pages_md)],
+    result = {"markdown": ordered_md, "report": report, "_per_page_md": [pages_md[i] for i in sorted(pages_md)],
             "elements": elements, "tables": tables}
+    material_rasters = material_rasters or {}
+    if material_rasters:
+        raster_pages = sorted(material_rasters)
+        try:
+            raster = _convert_scanned(path, doc, raster_pages)
+            for offset, page_index in enumerate(raster_pages):
+                pages_md[page_index] += "\n\n<!-- material-raster-ocr -->\n" + raster["_per_page_md"][offset]
+            result["markdown"] = "\n\n".join(pages_md[i] for i in sorted(pages_md))
+            result["report"]["ocr_used"] = True
+            result["report"]["hybrid_raster_pages"] = [i + 1 for i in raster_pages]
+            result["report"].setdefault("warnings", []).append({"code": "MIXED_PDF_MATERIAL_RASTER_OCR", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": "Material raster pages were OCR-routed."})
+        except Exception as exc:
+            result["report"].setdefault("warnings", []).append({"code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": f"OCR could not run: {type(exc).__name__}."})
+    return result
 
 
 def _convert_digital(path: str, doc, page_indices) -> dict:

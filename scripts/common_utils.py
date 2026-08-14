@@ -316,8 +316,33 @@ def _json_nesting_depth(value) -> int:
     return maximum
 
 
+def _json_source_depth(text: str) -> int:
+    """Count structural nesting without parsing or recursing into JSON."""
+    depth = maximum = 0
+    quoted = escaped = False
+    for char in text:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+        elif char in "[{":
+            depth += 1; maximum = max(maximum, depth)
+        elif char in "]}":
+            depth = max(0, depth - 1)
+    return maximum
+
+
 def convert_json_native(path: str, encoding_hint: str = None) -> dict:
     text, encoding, ambiguous, candidates = read_text_smart(path, encoding_hint)
+    source_depth = _json_source_depth(text)
+    if source_depth > MAX_JSON_NESTING_DEPTH:
+        return {"limit_exceeded": True, "depth": source_depth, "encoding": encoding,
+                "ambiguous": ambiguous, "candidates": candidates}
     valid = True
     try:
         parsed = json.loads(text)
@@ -390,7 +415,7 @@ def convert_eml_native(path: str) -> dict:
     md = "\n".join(header_lines) + "\n\n---\n\n" + body_text
     if attachments:
         md += "\n\n## Attachments\n\n" + "\n".join(
-            f"- [{item['original_filename']}](assets/{item['filename']})" for item in attachments
+            f"- [{markdown_link_label(item['original_filename'])}](assets/{item['filename']})" for item in attachments
         )
     return {"markdown": md, "attachments": attachments}
 
@@ -406,6 +431,10 @@ def _sanitize_filename(name: str, seen: set) -> str:
         candidate = f"{stem}_{counter}{ext}"
         counter += 1
     return candidate
+
+
+def markdown_link_label(name: str) -> str:
+    return name.replace("\\", "\\\\").replace("\r", " ").replace("\n", " ").replace("[", "\\[").replace("]", "\\]")
 
 
 def _escape_pipe(cell: str) -> str:
