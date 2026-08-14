@@ -12,6 +12,7 @@ OCR_TABLE_POLICY = {
     "max_irregular_row_ratio": 0.25, "high_confidence": 0.80,
 }
 _KEY_VALUE = re.compile(r"^\s*[^:]{1,80}:\s*\S+")
+_SUSPICIOUS_GLUE = re.compile(r"\d[A-Z]{2,}")
 
 
 def _lines(boxes, tolerance=10):
@@ -54,12 +55,15 @@ def assess_ocr_table(boxes, page, engine, candidate_id):
         "numeric_column_ratio": round(numeric, 3), "key_value_pattern_ratio": round(kv_ratio, 3),
         "irregular_row_ratio": round(irregular, 3), "bounding_box_geometry_available": bool(boxes)}
     confidence = max(0.0, min(1.0, .30 + .35 * aligned + .15 * min(column_count / 3, 1) + .10 * min(row_count / 4, 1) + .10 * numeric - .55 * kv_ratio - .35 * irregular))
+    suspicious_glue = any(_SUSPICIOUS_GLUE.search(cell) for row in rows for cell in row if cell)
+    signals["suspicious_glued_token"] = suspicious_glue
     reasons = []
     if not boxes: reasons.append("OCR_TABLE_GEOMETRY_UNAVAILABLE")
     if kv_ratio >= .5: reasons.append("OCR_TABLE_KEY_VALUE_PATTERN")
     if row_count < OCR_TABLE_POLICY["min_rows"]: reasons.append("OCR_TABLE_INSUFFICIENT_ROWS")
     if column_count < OCR_TABLE_POLICY["min_columns"] or aligned < OCR_TABLE_POLICY["min_aligned_row_ratio"]: reasons.append("OCR_TABLE_COLUMN_INCONSISTENT")
     if irregular > OCR_TABLE_POLICY["max_irregular_row_ratio"]: reasons.append("OCR_TABLE_IRREGULAR_ROWS")
+    if suspicious_glue: reasons.append("OCR_TABLE_SUSPICIOUS_GLUED_TOKEN")
     if not rows: reasons.append("OCR_TABLE_EMPTY")
     accepted = not reasons and confidence >= OCR_TABLE_POLICY["min_confidence_with_geometry"]
     if not accepted:

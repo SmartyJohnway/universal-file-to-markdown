@@ -30,8 +30,14 @@ def convert_image(path: str) -> dict:
 
     confidences = [box[2] for box in boxes if box[2] is not None]
     avg_confidence = round(statistics.mean(confidences), 3) if confidences else 0.0
-    table_rows = _cluster_into_table(boxes) if boxes else None
-    table_likelihood = _estimate_table_likelihood(boxes) if boxes and not table_rows else 0.0
+    proposed_table = _cluster_into_table(boxes) if boxes else None
+    candidate = None
+    if proposed_table:
+        from ocr_table import assess_ocr_table
+        candidate = assess_ocr_table(boxes, 1, "tesseract" if fallback_used else "rapidocr_onnxruntime", "ocr-table-candidate-0001")
+        candidate["source_locator"] = {"format": "image", "page_start": 1, "page_end": 1}
+    table_rows = candidate["rows"] if candidate and candidate["decision"] == "accepted" else None
+    table_likelihood = _estimate_table_likelihood(boxes) if boxes and not proposed_table else 0.0
     markdown = _rows_to_markdown(table_rows) if table_rows else _reconstruct_layout(boxes)
     engine = "tesseract" if fallback_used else "rapidocr_onnxruntime"
     engines_used = ["rapidocr_onnxruntime"]
@@ -52,7 +58,7 @@ def convert_image(path: str) -> dict:
 
     low_confidence = bool(confidences and avg_confidence < 0.75)
     report = {
-        "status": "passed_with_warnings" if low_confidence or (glued and not fallback_used)
+        "status": "passed_with_warnings" if low_confidence or (glued and not fallback_used) or (candidate and not table_rows)
                   else "passed",
         "engine": engine,
         "engines_used": engines_used,
@@ -65,6 +71,13 @@ def convert_image(path: str) -> dict:
         "table_regions_detected": 1 if table_rows else 0,
         "table_likelihood": table_likelihood,
     }
+    if candidate:
+        report["ocr_table_candidates"] = [candidate]
+        report["ocr_table_assessment"] = {"candidate_count": 1, "accepted_count": int(bool(table_rows)),
+                                           "rejected_count": int(not table_rows), "fallback_to_text_count": int(not table_rows),
+                                           "low_confidence_count": int(candidate["confidence"] < .60)}
+    if candidate and not table_rows:
+        report.setdefault("warnings", []).append({"code": "OCR_TABLE_RECONSTRUCTION_UNTRUSTED", "message": "OCR text was retained as an advisory region; no canonical table was created.", "reason_codes": candidate["reason_codes"]})
     return {"markdown": markdown, "report": report, "elements": elements, "tables": tables}
 
 
