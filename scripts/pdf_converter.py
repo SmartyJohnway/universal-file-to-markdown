@@ -74,12 +74,53 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
     if all(c == "digital" for c in page_classes):
         result = _convert_digital(path, doc, list(range(len(doc))))
         if material_rasters:
+            raster_pages = sorted(material_rasters)
+            try:
+                raster_result = _convert_scanned(path, doc, raster_pages)
+            except Exception as exc:
+                raster_result = None
+                result["report"].setdefault("warnings", []).append({
+                    "code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
+                    "pages": [index + 1 for index in raster_pages], "regions": material_rasters,
+                    "message": f"Material embedded raster regions require OCR or human review; OCR could not run: {type(exc).__name__}.",
+                })
+            if raster_result:
+                for offset, page_index in enumerate(raster_pages):
+                    result["_per_page_md"][page_index] += "\n\n<!-- material-raster-ocr -->\n" + raster_result["_per_page_md"][offset]
+                result["markdown"] = "\n\n".join(result["_per_page_md"])
+                # OCR uses page-local IDs that collide with the native page model.
+                # Keep the native page as parent and namespace only the overlay children.
+                table_id_map = {}
+                overlay_tables = []
+                for table in raster_result.get("tables", []):
+                    cloned = dict(table)
+                    table_id_map[table["id"]] = table["id"] + "-raster"
+                    cloned["id"] = table_id_map[table["id"]]
+                    overlay_tables.append(cloned)
+                overlay_elements = []
+                for element in raster_result.get("elements", []):
+                    if element.get("type") == "page":
+                        continue
+                    cloned = dict(element)
+                    cloned["id"] = element["id"] + "-raster"
+                    cloned["parent_id"] = f"page-{element.get('page', 1):04d}"
+                    if cloned.get("table_id") in table_id_map:
+                        cloned["table_id"] = table_id_map[cloned["table_id"]]
+                    overlay_elements.append(cloned)
+                result["elements"].extend(overlay_elements)
+                result["tables"].extend(overlay_tables)
+                result["report"]["engine"] = "hybrid(pdfplumber+rapidocr)"
+                result["report"]["ocr_used"] = True
+                result["report"]["hybrid_raster_pages"] = [index + 1 for index in raster_pages]
+                for key in ("ocr_avg_confidence", "ocr_low_confidence_pages", "glued_word_pages", "tesseract_fallback_pages", "engine_per_page", "ocr_table_candidates", "ocr_table_assessment"):
+                    if key in raster_result["report"]:
+                        result["report"][key] = raster_result["report"][key]
             result["report"]["status"] = "passed_with_warnings"
             result["report"].setdefault("warnings", []).append({
-                "code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
+                "code": "MIXED_PDF_MATERIAL_RASTER_OCR" if raster_result else "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
                 "pages": [index + 1 for index in material_rasters],
                 "regions": material_rasters,
-                "message": "Material embedded raster regions were detected on digital-text pages and require OCR or human review before trusted use.",
+                "message": "Material embedded raster regions were OCR-routed alongside native page text." if raster_result else "Material embedded raster regions require OCR or human review before trusted use.",
             })
         return result
     if all(c == "scanned" for c in page_classes):

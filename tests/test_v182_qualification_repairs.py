@@ -24,7 +24,8 @@ def test_json_nesting_limit_has_stable_failure_reason(tmp_path):
         value = {"a": value}
     source = tmp_path / "deep.json"
     source.write_text(json.dumps(value), encoding="utf-8")
-    report = router.convert(str(source), str(tmp_path / "bundle"))
+    bundle = tmp_path / "bundle"
+    report = router.convert(str(source), str(bundle))
     assert report["status"] == "failed"
     assert report["reason"] == "JSON_NESTING_LIMIT_EXCEEDED"
     assert report["maximum_depth"] > report["configured_limit"]
@@ -51,16 +52,21 @@ def test_email_attachment_is_visible_in_readable_projection_and_chunk_has_source
 
 def test_digital_pdf_with_material_raster_is_not_silent_success(tmp_path):
     import fitz
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
 
     image = tmp_path / "scan.png"
-    Image.new("RGB", (600, 800), "white").save(image)
+    raster = Image.new("RGB", (600, 800), "white")
+    ImageDraw.Draw(raster).text((40, 80), "PUMP TAG: P-204", fill="black", font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36))
+    raster.save(image)
     source = tmp_path / "hybrid.pdf"
     pdf = fitz.open()
     page = pdf.new_page()
     page.insert_text((72, 50), "Scanned page below")
     page.insert_image(fitz.Rect(40, 80, 555, 760), filename=str(image))
     pdf.save(source)
-    report = router.convert(str(source), str(tmp_path / "bundle"))
+    bundle = tmp_path / "bundle"
+    report = router.convert(str(source), str(bundle))
     assert report["status"] == "passed_with_warnings"
-    assert "EMBEDDED_RASTER_TEXT_UNEXTRACTED" in [warning["code"] for warning in report["warnings"]]
+    assert report["details"]["ocr_used"] is True
+    assert "MIXED_PDF_MATERIAL_RASTER_OCR" in [warning["code"] for warning in report["warnings"]]
+    assert "P-204" in (bundle / "document.md").read_text(encoding="utf-8")
