@@ -37,6 +37,21 @@ MEDIUM_TOKEN_MIN_COUNT = 2
 COLUMN_TOLERANCE_PX = 20
 MIN_ROWS_FOR_TABLE = 3
 MIN_COLS_FOR_TABLE = 2
+MATERIAL_RASTER_AREA_RATIO = 0.20
+
+
+def _material_raster_regions(page):
+    """Return embedded image rectangles large enough to affect page meaning."""
+    page_area = float(page.rect.width * page.rect.height)
+    if not page_area:
+        return []
+    regions = []
+    for image in page.get_images(full=True):
+        for rect in page.get_image_rects(image[0]):
+            ratio = float(rect.width * rect.height) / page_area
+            if ratio >= MATERIAL_RASTER_AREA_RATIO:
+                regions.append({"bbox": list(rect), "area_ratio": round(ratio, 3)})
+    return regions
 
 
 def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
@@ -47,12 +62,26 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
         return {"markdown": "", "report": {"status": "failed", "reason": "password_protected"}}
 
     page_classes = []
+    material_rasters = {}
     for i in range(len(doc)):
         text = doc[i].get_text("text").strip()
         page_classes.append("digital" if len(text) >= 1 else "scanned")
+        if text:
+            regions = _material_raster_regions(doc[i])
+            if regions:
+                material_rasters[i] = regions
 
     if all(c == "digital" for c in page_classes):
-        return _convert_digital(path, doc, list(range(len(doc))))
+        result = _convert_digital(path, doc, list(range(len(doc))))
+        if material_rasters:
+            result["report"]["status"] = "passed_with_warnings"
+            result["report"].setdefault("warnings", []).append({
+                "code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
+                "pages": [index + 1 for index in material_rasters],
+                "regions": material_rasters,
+                "message": "Material embedded raster regions were detected on digital-text pages and require OCR or human review before trusted use.",
+            })
+        return result
     if all(c == "scanned" for c in page_classes):
         return _convert_scanned(path, doc, list(range(len(doc))))
     return _convert_mixed(path, doc, page_classes)

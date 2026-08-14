@@ -47,3 +47,20 @@ def test_email_attachment_is_visible_in_readable_projection_and_chunk_has_source
     assert "[report.txt](assets/report.txt)" in (bundle / "document.md").read_text(encoding="utf-8")
     chunks = [json.loads(line) for line in (bundle / "chunks.jsonl").read_text(encoding="utf-8").splitlines()]
     assert chunks and all(chunk["source_file"] == "message.eml" for chunk in chunks)
+
+
+def test_digital_pdf_with_material_raster_is_not_silent_success(tmp_path):
+    import fitz
+    from PIL import Image
+
+    image = tmp_path / "scan.png"
+    Image.new("RGB", (600, 800), "white").save(image)
+    source = tmp_path / "hybrid.pdf"
+    pdf = fitz.open()
+    page = pdf.new_page()
+    page.insert_text((72, 50), "Scanned page below")
+    page.insert_image(fitz.Rect(40, 80, 555, 760), filename=str(image))
+    pdf.save(source)
+    report = router.convert(str(source), str(tmp_path / "bundle"))
+    assert report["status"] == "passed_with_warnings"
+    assert "EMBEDDED_RASTER_TEXT_UNEXTRACTED" in [warning["code"] for warning in report["warnings"]]
