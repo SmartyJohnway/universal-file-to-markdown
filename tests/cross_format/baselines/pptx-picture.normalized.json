@@ -195,7 +195,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "pptx_picture.pptx",
-    "source_sha256": "9b6b080b5b613da55841f7eb38c93ec3f9f640b8915dddcfd3e7566d00db9924"
+    "source_sha256": "49141409122731c8b0d3a42df485d871bd1ec873e4a258dbf8b3cda243953216"
   },
   "chunks": [
     {
@@ -271,7 +271,7 @@
         "slide_number": 1,
         "source_file": "pptx_picture.pptx"
       },
-      "source_sha256": "9b6b080b5b613da55841f7eb38c93ec3f9f640b8915dddcfd3e7566d00db9924",
+      "source_sha256": "49141409122731c8b0d3a42df485d871bd1ec873e4a258dbf8b3cda243953216",
       "table_ids": [],
       "text": "![Picture 1](assets/slide-0001-shape-0002-image.png)",
       "unit_element_id": "slide-0001"
@@ -281,13 +281,13 @@
   "assets": [
     {
       "path": "assets/slide-0001-shape-0002-image.png",
-      "sha256": "77845f63cbd1ecb93e10fbaff7e657044d25d59f0586905c9bdbddeb2c477309"
+      "sha256": "4e27e1f355325927f676ffdd5258b33f812edf7296b072e4d2a6075c0498fdf5"
     }
   ],
   "manifest_contract": {
     "status": "passed",
     "file_type": "pptx",
-    "source_sha256": "9b6b080b5b613da55841f7eb38c93ec3f9f640b8915dddcfd3e7566d00db9924"
+    "source_sha256": "49141409122731c8b0d3a42df485d871bd1ec873e4a258dbf8b3cda243953216"
   },
   "report_contract": {
     "status": "passed",

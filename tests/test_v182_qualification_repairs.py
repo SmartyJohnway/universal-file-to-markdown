@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import router
+from common_utils import markdown_link_label
 
 
 def test_irregular_csv_preserves_extra_field_and_warns(tmp_path):
@@ -29,6 +30,19 @@ def test_json_nesting_limit_has_stable_failure_reason(tmp_path):
     assert report["status"] == "failed"
     assert report["reason"] == "JSON_NESTING_LIMIT_EXCEEDED"
     assert report["maximum_depth"] > report["configured_limit"]
+    persisted = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    assert persisted["reason"] == "JSON_NESTING_LIMIT_EXCEEDED"
+
+
+def test_json_extreme_nesting_is_rejected_before_json_loads_recurses(tmp_path):
+    source = tmp_path / "very-deep.json"
+    source.write_text('{"a":' * 10_000 + '"leaf"' + '}' * 10_000, encoding="utf-8")
+    bundle = tmp_path / "bundle"
+    router.convert(str(source), str(bundle))
+    persisted = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    assert persisted["status"] == "failed"
+    assert persisted["reason"] == "JSON_NESTING_LIMIT_EXCEEDED"
+    assert persisted["maximum_depth"] == 10_000
 
 
 def test_email_attachment_is_visible_in_readable_projection_and_chunk_has_source_file(tmp_path):
@@ -48,6 +62,11 @@ def test_email_attachment_is_visible_in_readable_projection_and_chunk_has_source
     assert "[report.txt](assets/report.txt)" in (bundle / "document.md").read_text(encoding="utf-8")
     chunks = [json.loads(line) for line in (bundle / "chunks.jsonl").read_text(encoding="utf-8").splitlines()]
     assert chunks and all(chunk["source_file"] == "message.eml" for chunk in chunks)
+
+
+def test_email_attachment_name_cannot_inject_markdown_structure():
+    label = markdown_link_label("bad](https://attacker.invalid)\n# heading.txt")
+    assert label == "bad\\](https://attacker.invalid) # heading.txt"
 
 
 def test_digital_pdf_with_material_raster_is_not_silent_success(tmp_path):
@@ -70,6 +89,29 @@ def test_digital_pdf_with_material_raster_is_not_silent_success(tmp_path):
     assert report["details"]["ocr_used"] is True
     assert "MIXED_PDF_MATERIAL_RASTER_OCR" in [warning["code"] for warning in report["warnings"]]
     assert "P-204" in (bundle / "document.md").read_text(encoding="utf-8")
+
+
+def test_true_mixed_pdf_ocrs_only_material_raster_region(tmp_path):
+    import fitz
+    from PIL import Image, ImageDraw, ImageFont
+
+    image = tmp_path / "scan.png"
+    raster = Image.new("RGB", (600, 500), "white")
+    ImageDraw.Draw(raster).text((40, 80), "PUMP TAG: P-204", fill="black", font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36))
+    raster.save(image)
+    source = tmp_path / "true-mixed.pdf"; pdf = fitz.open()
+    scanned = pdf.new_page(); scanned.insert_image(fitz.Rect(30, 30, 565, 800), filename=str(image))
+    hybrid = pdf.new_page(); hybrid.insert_text((72, 50), "Native heading must appear once")
+    hybrid.insert_image(fitz.Rect(40, 100, 555, 650), filename=str(image))
+    pdf.save(source)
+    bundle = tmp_path / "bundle"
+    router.convert(str(source), str(bundle))
+    report = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    markdown = (bundle / "document.md").read_text(encoding="utf-8")
+    assert report["details"]["ocr_used"] is True
+    assert report["details"]["hybrid_raster_pages"] == [2]
+    assert markdown.count("Native heading must appear once") == 1
+    assert markdown.count("P-204") >= 2
 
 
 def test_nested_docx_table_is_explicitly_delimited_and_warned(tmp_path):

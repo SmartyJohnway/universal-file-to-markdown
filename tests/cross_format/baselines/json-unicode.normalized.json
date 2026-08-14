@@ -1,6 +1,6 @@
 {
   "normalization_schema_version": "1.0",
-  "document_markdown": "```json\n{\n  \"¶W∫Ÿ\": \"¡c≈È§§§Â\",\n  \"items\": [\n    \"£\\",\n    \"∏ÍÆ∆\"\n  ]\n}\n```\n",
+  "document_markdown": "```json\n{\n  \"ÂêçÁ®±\": \"ÁπÅÈ´î‰∏≠Êñá\",\n  \"items\": [\n    \"Œ±\",\n    \"Ë≥áÊñô\"\n  ]\n}\n```\n",
   "document": {
     "content_element_count": 1,
     "element_count": 2,
@@ -61,7 +61,7 @@
         "child_ids": [],
         "children": [],
         "confidence": null,
-        "content": "```json\n{\n  \"¶W∫Ÿ\": \"¡c≈È§§§Â\",\n  \"items\": [\n    \"£\\",\n    \"∏ÍÆ∆\"\n  ]\n}\n```\n",
+        "content": "```json\n{\n  \"ÂêçÁ®±\": \"ÁπÅÈ´î‰∏≠Êñá\",\n  \"items\": [\n    \"Œ±\",\n    \"Ë≥áÊñô\"\n  ]\n}\n```\n",
         "content_format": "markdown",
         "engine": "json_native",
         "heading_path": [],
@@ -129,7 +129,7 @@
         "json-block-0001"
       ],
       "embedding_char_count": 66,
-      "embedding_text": "```json\n{\n  \"¶W∫Ÿ\": \"¡c≈È§§§Â\",\n  \"items\": [\n    \"£\\",\n    \"∏ÍÆ∆\"\n  ]\n}\n```",
+      "embedding_text": "```json\n{\n  \"ÂêçÁ®±\": \"ÁπÅÈ´î‰∏≠Êñá\",\n  \"items\": [\n    \"Œ±\",\n    \"Ë≥áÊñô\"\n  ]\n}\n```",
       "heading_path": [],
       "layout_order_methods": [],
       "layout_region_ids": [],
@@ -155,7 +155,7 @@
       },
       "source_sha256": "20ff6f19aa06ea7151f7716fe1482600bced44530b9549da07734a2da28f3835",
       "table_ids": [],
-      "text": "```json\n{\n  \"¶W∫Ÿ\": \"¡c≈È§§§Â\",\n  \"items\": [\n    \"£\\",\n    \"∏ÍÆ∆\"\n  ]\n}\n```",
+      "text": "```json\n{\n  \"ÂêçÁ®±\": \"ÁπÅÈ´î‰∏≠Êñá\",\n  \"items\": [\n    \"Œ±\",\n    \"Ë≥áÊñô\"\n  ]\n}\n```",
       "unit_element_id": null
     }
   ],

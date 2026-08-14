@@ -76,7 +76,7 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
         if material_rasters:
             raster_pages = sorted(material_rasters)
             try:
-                raster_result = _convert_scanned(path, doc, raster_pages)
+                raster_result = _convert_scanned(path, doc, raster_pages, material_rasters)
             except Exception as exc:
                 raster_result = None
                 result["report"].setdefault("warnings", []).append({
@@ -85,30 +85,7 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
                     "message": f"Material embedded raster regions require OCR or human review; OCR could not run: {type(exc).__name__}.",
                 })
             if raster_result:
-                for offset, page_index in enumerate(raster_pages):
-                    result["_per_page_md"][page_index] += "\n\n<!-- material-raster-ocr -->\n" + raster_result["_per_page_md"][offset]
-                result["markdown"] = "\n\n".join(result["_per_page_md"])
-                # OCR uses page-local IDs that collide with the native page model.
-                # Keep the native page as parent and namespace only the overlay children.
-                table_id_map = {}
-                overlay_tables = []
-                for table in raster_result.get("tables", []):
-                    cloned = dict(table)
-                    table_id_map[table["id"]] = table["id"] + "-raster"
-                    cloned["id"] = table_id_map[table["id"]]
-                    overlay_tables.append(cloned)
-                overlay_elements = []
-                for element in raster_result.get("elements", []):
-                    if element.get("type") == "page":
-                        continue
-                    cloned = dict(element)
-                    cloned["id"] = element["id"] + "-raster"
-                    cloned["parent_id"] = f"page-{element.get('page', 1):04d}"
-                    if cloned.get("table_id") in table_id_map:
-                        cloned["table_id"] = table_id_map[cloned["table_id"]]
-                    overlay_elements.append(cloned)
-                result["elements"].extend(overlay_elements)
-                result["tables"].extend(overlay_tables)
+                _append_raster_overlay(result, raster_result, raster_pages)
                 result["report"]["engine"] = "hybrid(pdfplumber+rapidocr)"
                 result["report"]["ocr_used"] = True
                 result["report"]["hybrid_raster_pages"] = [index + 1 for index in raster_pages]
@@ -179,16 +156,42 @@ def _convert_mixed(path: str, doc, page_classes, material_rasters=None) -> dict:
     if material_rasters:
         raster_pages = sorted(material_rasters)
         try:
-            raster = _convert_scanned(path, doc, raster_pages)
-            for offset, page_index in enumerate(raster_pages):
-                pages_md[page_index] += "\n\n<!-- material-raster-ocr -->\n" + raster["_per_page_md"][offset]
-            result["markdown"] = "\n\n".join(pages_md[i] for i in sorted(pages_md))
+            raster = _convert_scanned(path, doc, raster_pages, material_rasters)
+            _append_raster_overlay(result, raster, raster_pages)
             result["report"]["ocr_used"] = True
             result["report"]["hybrid_raster_pages"] = [i + 1 for i in raster_pages]
             result["report"].setdefault("warnings", []).append({"code": "MIXED_PDF_MATERIAL_RASTER_OCR", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": "Material raster pages were OCR-routed."})
         except Exception as exc:
             result["report"].setdefault("warnings", []).append({"code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": f"OCR could not run: {type(exc).__name__}."})
     return result
+
+
+def _append_raster_overlay(result: dict, raster_result: dict, raster_pages: list[int]) -> None:
+    """Attach OCR from embedded raster *regions*, keeping native page text unique."""
+    page_markdown = result["_per_page_md"]
+    # The native result may be a subset of pages (a genuinely mixed PDF), so
+    # select each page by its page marker rather than assuming list offsets.
+    for offset, page_index in enumerate(raster_pages):
+        marker = f"<!-- page: {page_index + 1} -->"
+        for index, markdown in enumerate(page_markdown):
+            if markdown.startswith(marker):
+                page_markdown[index] += "\n\n<!-- material-raster-ocr -->\n" + raster_result["_per_page_md"][offset]
+                break
+    result["markdown"] = "\n\n".join(page_markdown)
+    table_id_map, overlay_tables = {}, []
+    for table in raster_result.get("tables", []):
+        cloned = dict(table); table_id_map[table["id"]] = table["id"] + "-raster"
+        cloned["id"] = table_id_map[table["id"]]; overlay_tables.append(cloned)
+    overlay_elements = []
+    for element in raster_result.get("elements", []):
+        if element.get("type") == "page":
+            continue
+        cloned = dict(element); cloned["id"] = element["id"] + "-raster"
+        cloned["parent_id"] = f"page-{element.get('page', 1):04d}"
+        if cloned.get("table_id") in table_id_map:
+            cloned["table_id"] = table_id_map[cloned["table_id"]]
+        overlay_elements.append(cloned)
+    result["elements"].extend(overlay_elements); result["tables"].extend(overlay_tables)
 
 
 def _convert_digital(path: str, doc, page_indices) -> dict:
@@ -701,7 +704,7 @@ def _bbox_overlap_ratio(a, b):
     return intersection / area
 
 
-def _convert_scanned(path: str, doc, page_indices) -> dict:
+def _convert_scanned(path: str, doc, page_indices, clip_regions=None) -> dict:
     try:
         from rapidocr_onnxruntime import RapidOCR
     except ImportError:
@@ -728,7 +731,12 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
     for i in page_indices:
         page = doc[i]
         page_id = f"page-{i + 1:04d}"
-        pix = page.get_pixmap(dpi=200)
+        clip = None
+        if clip_regions and i in clip_regions:
+            boxes_to_crop = [region["bbox"] for region in clip_regions[i]]
+            clip = (min(box[0] for box in boxes_to_crop), min(box[1] for box in boxes_to_crop),
+                    max(box[2] for box in boxes_to_crop), max(box[3] for box in boxes_to_crop))
+        pix = page.get_pixmap(dpi=200, clip=clip)
         img_bytes = pix.tobytes("png")
 
         result, _ = engine(img_bytes)

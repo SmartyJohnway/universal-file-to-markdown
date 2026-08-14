@@ -1,6 +1,6 @@
 {
   "normalization_schema_version": "1.0",
-  "document_markdown": "<!-- source_encoding: big5 -->\n| ¦WºÙ | ¼Æ¶q |\n| --- | --- |\n| ¿ûºŞ | 10 |\n",
+  "document_markdown": "<!-- source_encoding: big5 -->\n| åç¨± | æ•¸é‡ |\n| --- | --- |\n| é‹¼ç®¡ | 10 |\n",
   "document": {
     "content_element_count": 1,
     "element_count": 2,
@@ -61,7 +61,7 @@
         "child_ids": [],
         "children": [],
         "confidence": null,
-        "content": "<!-- source_encoding: big5 -->\n| ¦WºÙ | ¼Æ¶q |\n| --- | --- |\n| ¿ûºŞ | 10 |\n",
+        "content": "<!-- source_encoding: big5 -->\n| åç¨± | æ•¸é‡ |\n| --- | --- |\n| é‹¼ç®¡ | 10 |\n",
         "content_format": "markdown",
         "engine": "csv_native",
         "heading_path": [],
@@ -130,7 +130,7 @@
         "csv-table-0001"
       ],
       "embedding_char_count": 68,
-      "embedding_text": "<!-- source_encoding: big5 -->\n| ¦WºÙ | ¼Æ¶q |\n| --- | --- |\n| ¿ûºŞ | 10 |",
+      "embedding_text": "<!-- source_encoding: big5 -->\n| åç¨± | æ•¸é‡ |\n| --- | --- |\n| é‹¼ç®¡ | 10 |",
       "heading_path": [],
       "layout_order_methods": [],
       "layout_region_ids": [],
@@ -159,7 +159,7 @@
       "table_ids": [
         "table-0001"
       ],
-      "text": "<!-- source_encoding: big5 -->\n| ¦WºÙ | ¼Æ¶q |\n| --- | --- |\n| ¿ûºŞ | 10 |",
+      "text": "<!-- source_encoding: big5 -->\n| åç¨± | æ•¸é‡ |\n| --- | --- |\n| é‹¼ç®¡ | 10 |",
       "unit_element_id": null
     }
   ],
@@ -175,7 +175,7 @@
           "row": 0,
           "rowspan": 1,
           "source_locator": null,
-          "value": "¦WºÙ"
+          "value": "åç¨±"
         },
         {
           "colspan": 1,
@@ -185,7 +185,7 @@
           "row": 0,
           "rowspan": 1,
           "source_locator": null,
-          "value": "¼Æ¶q"
+          "value": "æ•¸é‡"
         },
         {
           "colspan": 1,
@@ -195,7 +195,7 @@
           "row": 1,
           "rowspan": 1,
           "source_locator": null,
-          "value": "¿ûºŞ"
+          "value": "é‹¼ç®¡"
         },
         {
           "colspan": 1,
@@ -216,11 +216,11 @@
       "engine": "csv_native",
       "grid": [
         [
-          "¦WºÙ",
-          "¼Æ¶q"
+          "åç¨±",
+          "æ•¸é‡"
         ],
         [
-          "¿ûºŞ",
+          "é‹¼ç®¡",
           "10"
         ]
       ],

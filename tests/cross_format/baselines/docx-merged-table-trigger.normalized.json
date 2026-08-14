@@ -163,7 +163,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "docx_horizontal_merge.docx",
-    "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c"
+    "source_sha256": "232cedacbef41fd68fc87378dbc640b585bd0fbf8aa4d7c88e264cb48348d2ae"
   },
   "chunks": [
     {
@@ -201,14 +201,14 @@
       "sheet_name": null,
       "slide_end": null,
       "slide_start": null,
-      "source_file": null,
+      "source_file": "docx_horizontal_merge.docx",
       "source_locator": {
         "element_end": 2,
         "element_start": 1,
         "format": "docx",
         "section_index": 0
       },
-      "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c",
+      "source_sha256": "232cedacbef41fd68fc87378dbc640b585bd0fbf8aa4d7c88e264cb48348d2ae",
       "table_ids": [
         "table-0001"
       ],
@@ -285,7 +285,7 @@
   "manifest_contract": {
     "status": "passed",
     "file_type": "docx",
-    "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c"
+    "source_sha256": "232cedacbef41fd68fc87378dbc640b585bd0fbf8aa4d7c88e264cb48348d2ae"
   },
   "report_contract": {
     "status": "passed",
@@ -315,7 +315,7 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "3eaaae678f0f3ce9235a98624f37a9047085864051c17f70f5ab328b8708961f",
+      "canonical_bundle_fingerprint": "f71f1dca355ef56b60bd22310bc6f9494ff14de5fd58d216de6df683d0c66083",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -338,11 +338,11 @@
       "reason_codes": [
         "MERGED_TABLE_GEOMETRY_PRESENT"
       ],
-      "request_id": "ai-review-request-0685e574306d1a2c",
+      "request_id": "ai-review-request-232cedacbef41fd6",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
-      "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c",
+      "skill_version": "1.8.2",
+      "source_sha256": "232cedacbef41fd68fc87378dbc640b585bd0fbf8aa4d7c88e264cb48348d2ae",
       "targets": [
         {
           "canonical": {

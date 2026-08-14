@@ -1,6 +1,6 @@
 {
   "normalization_schema_version": "1.0",
-  "document_markdown": "<!-- page: 1 -->\n\nOCRSAMPLE12345\nSCANNEDDOCUMENT",
+  "document_markdown": "<!-- page: 1 -->\n\nOCRSAMPLE12345\nSCANNED DOCUMENT",
   "document": {
     "content_element_count": 2,
     "element_count": 3,
@@ -64,7 +64,7 @@
         "children": [
           "page-0001-text-001"
         ],
-        "confidence": 0.994,
+        "confidence": 0.982,
         "content": "<!-- page: 1 -->",
         "content_format": "markdown",
         "engine": "rapidocr",
@@ -113,8 +113,8 @@
       {
         "child_ids": [],
         "children": [],
-        "confidence": 0.994,
-        "content": "OCRSAMPLE12345\nSCANNEDDOCUMENT",
+        "confidence": 0.982,
+        "content": "OCRSAMPLE12345\nSCANNED DOCUMENT",
         "content_format": "markdown",
         "engine": "rapidocr",
         "heading_path": [],
@@ -163,14 +163,14 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "pdf_ocr_text.pdf",
-    "source_sha256": "8816c1df56fa3c70d2e0fd0eec79d370cfb57e1fbdd8a3fd5ad8e8099f05fac8"
+    "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1"
   },
   "chunks": [
     {
       "ancestor_element_ids": [
         "page-0001"
       ],
-      "char_count": 30,
+      "char_count": 31,
       "chunk_id": "chunk-00001",
       "chunk_index": 1,
       "column_indexes": [],
@@ -185,8 +185,8 @@
       "element_ids": [
         "page-0001-text-001"
       ],
-      "embedding_char_count": 83,
-      "embedding_text": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\nOCRSAMPLE12345\nSCANNEDDOCUMENT",
+      "embedding_char_count": 84,
+      "embedding_text": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\nOCRSAMPLE12345\nSCANNED DOCUMENT",
       "heading_path": [
         "Page 1"
       ],
@@ -214,9 +214,9 @@
         "page_start": 1,
         "source_file": "pdf_ocr_text.pdf"
       },
-      "source_sha256": "8816c1df56fa3c70d2e0fd0eec79d370cfb57e1fbdd8a3fd5ad8e8099f05fac8",
+      "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1",
       "table_ids": [],
-      "text": "OCRSAMPLE12345\nSCANNEDDOCUMENT",
+      "text": "OCRSAMPLE12345\nSCANNED DOCUMENT",
       "unit_element_id": "page-0001"
     }
   ],
@@ -225,7 +225,7 @@
   "manifest_contract": {
     "status": "passed_with_warnings",
     "file_type": "pdf",
-    "source_sha256": "8816c1df56fa3c70d2e0fd0eec79d370cfb57e1fbdd8a3fd5ad8e8099f05fac8"
+    "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1"
   },
   "report_contract": {
     "status": "passed_with_warnings",
@@ -288,7 +288,7 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "3516245e2c4af698243504f808e217e176bf92573ab38d98a3cc9dbe9051c761",
+      "canonical_bundle_fingerprint": "c912798ffa1cd578d1ec5b20ef418acd6b6c1b9e8b18876bee8c8c0be53b95a0",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -318,35 +318,39 @@
         "OCR_TABLE_FALLBACK_TO_TEXT",
         "OCR_TABLE_STRUCTURE_UNVERIFIED"
       ],
-      "request_id": "ai-review-request-8816c1df56fa3c70",
+      "request_id": "ai-review-request-a3e33f0dcb091bf2",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
-      "source_sha256": "8816c1df56fa3c70d2e0fd0eec79d370cfb57e1fbdd8a3fd5ad8e8099f05fac8",
+      "skill_version": "1.8.2",
+      "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1",
       "targets": [
         {
           "allowed_outcomes": [
             "needs_human_review",
-            "no_action"
+            "no_change"
           ],
           "canonical": {
             "candidate_id": "ocr-table-candidate-0001",
             "confidence": 0.0,
             "decision": "fallback_to_text",
-            "raw_text": "OCRSAMPLE12345\nSCANNEDDOCUMENT",
+            "raw_text": "OCRSAMPLE12345\nSCANNED DOCUMENT",
             "signals": {
               "aligned_row_ratio": 0.0,
+              "assigned_token_count": 0,
               "bounding_box_geometry_available": true,
               "column_count": 0,
               "consistent_column_ratio": 0.0,
               "irregular_row_ratio": 1.0,
               "key_value_pattern_ratio": 0.0,
               "numeric_column_ratio": 0.0,
-              "row_count": 0
+              "orphan_token_count": 0,
+              "row_count": 0,
+              "source_token_count": 2,
+              "suspicious_glued_token": false
             }
           },
           "canonical_mutation_allowed": false,
-          "faithful_markdown": "OCRSAMPLE12345\nSCANNEDDOCUMENT",
+          "faithful_markdown": "OCRSAMPLE12345\nSCANNED DOCUMENT",
           "projection_write_allowed": false,
           "reason_codes": [
             "OCR_TABLE_INSUFFICIENT_ROWS",

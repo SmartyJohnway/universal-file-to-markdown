@@ -111,7 +111,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "docx_basic.docx",
-    "source_sha256": "897e11ee9286688ea239028bd2ccad3d26753bcd8b72bcc7369ea40bf96c0fc3"
+    "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6"
   },
   "chunks": [
     {
@@ -156,7 +156,7 @@
         "section_index": 0,
         "source_file": "docx_basic.docx"
       },
-      "source_sha256": "897e11ee9286688ea239028bd2ccad3d26753bcd8b72bcc7369ea40bf96c0fc3",
+      "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6",
       "table_ids": [],
       "text": "**bold*** italic*",
       "unit_element_id": null
@@ -167,7 +167,7 @@
   "manifest_contract": {
     "status": "passed",
     "file_type": "docx",
-    "source_sha256": "897e11ee9286688ea239028bd2ccad3d26753bcd8b72bcc7369ea40bf96c0fc3"
+    "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6"
   },
   "report_contract": {
     "status": "passed",

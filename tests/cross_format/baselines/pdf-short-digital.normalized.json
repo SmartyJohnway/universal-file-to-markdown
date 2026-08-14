@@ -137,7 +137,8 @@
             "order_method": "deterministic_geometry_v1",
             "reading_order": 1,
             "region_id": "page-0001-region-01",
-            "region_type": "body"
+            "region_type": "body",
+            "source_extraction_index": 1
           }
         },
         "source_locator": {

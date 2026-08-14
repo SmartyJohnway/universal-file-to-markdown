@@ -1,6 +1,6 @@
 {
   "normalization_schema_version": "1.0",
-  "document_markdown": "<!-- source_encoding: big5 -->\n| ÕÅÎ° | ±±¾©ÊÐ | GB18030 |\n| --- | --- | --- |\n| ÀîÄÈ | ÉÏº£ÊÐ | 100 |\n",
+  "document_markdown": "<!-- source_encoding: big5 -->\n| æ¡²å¸¡ | æŽ§å„”åºˆ | GB18030 |\n| --- | --- | --- |\n| ç‡ é¥‘ | å¥»æ¼†åºˆ | 100 |\n",
   "document": {
     "content_element_count": 1,
     "element_count": 2,
@@ -61,7 +61,7 @@
         "child_ids": [],
         "children": [],
         "confidence": null,
-        "content": "<!-- source_encoding: big5 -->\n| ÕÅÎ° | ±±¾©ÊÐ | GB18030 |\n| --- | --- | --- |\n| ÀîÄÈ | ÉÏº£ÊÐ | 100 |\n",
+        "content": "<!-- source_encoding: big5 -->\n| æ¡²å¸¡ | æŽ§å„”åºˆ | GB18030 |\n| --- | --- | --- |\n| ç‡ é¥‘ | å¥»æ¼†åºˆ | 100 |\n",
         "content_format": "markdown",
         "engine": "csv_native",
         "heading_path": [],
@@ -130,7 +130,7 @@
         "csv-table-0001"
       ],
       "embedding_char_count": 92,
-      "embedding_text": "<!-- source_encoding: big5 -->\n| ÕÅÎ° | ±±¾©ÊÐ | GB18030 |\n| --- | --- | --- |\n| ÀîÄÈ | ÉÏº£ÊÐ | 100 |",
+      "embedding_text": "<!-- source_encoding: big5 -->\n| æ¡²å¸¡ | æŽ§å„”åºˆ | GB18030 |\n| --- | --- | --- |\n| ç‡ é¥‘ | å¥»æ¼†åºˆ | 100 |",
       "heading_path": [],
       "layout_order_methods": [],
       "layout_region_ids": [],
@@ -159,7 +159,7 @@
       "table_ids": [
         "table-0001"
       ],
-      "text": "<!-- source_encoding: big5 -->\n| ÕÅÎ° | ±±¾©ÊÐ | GB18030 |\n| --- | --- | --- |\n| ÀîÄÈ | ÉÏº£ÊÐ | 100 |",
+      "text": "<!-- source_encoding: big5 -->\n| æ¡²å¸¡ | æŽ§å„”åºˆ | GB18030 |\n| --- | --- | --- |\n| ç‡ é¥‘ | å¥»æ¼†åºˆ | 100 |",
       "unit_element_id": null
     }
   ],
@@ -175,7 +175,7 @@
           "row": 0,
           "rowspan": 1,
           "source_locator": null,
-          "value": "ÕÅÎ°"
+          "value": "æ¡²å¸¡"
         },
         {
           "colspan": 1,
@@ -185,7 +185,7 @@
           "row": 0,
           "rowspan": 1,
           "source_locator": null,
-          "value": "±±¾©ÊÐ"
+          "value": "æŽ§å„”åºˆ"
         },
         {
           "colspan": 1,
@@ -205,7 +205,7 @@
           "row": 1,
           "rowspan": 1,
           "source_locator": null,
-          "value": "ÀîÄÈ"
+          "value": "ç‡ é¥‘"
         },
         {
           "colspan": 1,
@@ -215,7 +215,7 @@
           "row": 1,
           "rowspan": 1,
           "source_locator": null,
-          "value": "ÉÏº£ÊÐ"
+          "value": "å¥»æ¼†åºˆ"
         },
         {
           "colspan": 1,
@@ -236,13 +236,13 @@
       "engine": "csv_native",
       "grid": [
         [
-          "ÕÅÎ°",
-          "±±¾©ÊÐ",
+          "æ¡²å¸¡",
+          "æŽ§å„”åºˆ",
           "GB18030"
         ],
         [
-          "ÀîÄÈ",
-          "ÉÏº£ÊÐ",
+          "ç‡ é¥‘",
+          "å¥»æ¼†åºˆ",
           "100"
         ]
       ],

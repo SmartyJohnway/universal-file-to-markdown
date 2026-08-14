@@ -10,6 +10,9 @@ OCR_TABLE_POLICY = {
     "min_columns": 2, "min_rows": 3, "min_aligned_row_ratio": 0.75,
     "min_confidence_with_geometry": 0.60,
     "max_irregular_row_ratio": 0.25, "high_confidence": 0.80,
+    # A token far from every established column is evidence that fitting it
+    # into the nearest cell would silently lose table structure.
+    "max_column_assignment_distance": 28,
 }
 _KEY_VALUE = re.compile(r"^\s*[^:]{1,80}:\s*\S+")
 _SUSPICIOUS_GLUE = re.compile(r"\d[A-Z]{2,}")
@@ -38,12 +41,17 @@ def assess_ocr_table(boxes, page, engine, candidate_id):
     bins = [statistics.mean(cluster) for cluster in clusters if len(cluster) >= OCR_TABLE_POLICY["min_rows"]]
     rows = []
     hits = []
+    orphan_tokens = []
+    assigned_tokens = 0
     if len(bins) >= 2:
         for line in lines:
             row = [""] * len(bins); used = set()
             for _, x, text in line:
                 col = min(range(len(bins)), key=lambda n: abs(bins[n] - x))
-                row[col] = (row[col] + " " + text).strip(); used.add(col)
+                if abs(bins[col] - x) > OCR_TABLE_POLICY["max_column_assignment_distance"]:
+                    orphan_tokens.append(text)
+                    continue
+                row[col] = (row[col] + " " + text).strip(); used.add(col); assigned_tokens += 1
             rows.append(row); hits.append(len(used))
     column_count = len(bins)
     row_count = len(rows)
@@ -53,7 +61,9 @@ def assess_ocr_table(boxes, page, engine, candidate_id):
     signals = {"row_count": row_count, "column_count": column_count,
         "aligned_row_ratio": round(aligned, 3), "consistent_column_ratio": round(aligned, 3),
         "numeric_column_ratio": round(numeric, 3), "key_value_pattern_ratio": round(kv_ratio, 3),
-        "irregular_row_ratio": round(irregular, 3), "bounding_box_geometry_available": bool(boxes)}
+        "irregular_row_ratio": round(irregular, 3), "bounding_box_geometry_available": bool(boxes),
+        "source_token_count": sum(len(line) for line in lines),
+        "assigned_token_count": assigned_tokens, "orphan_token_count": len(orphan_tokens)}
     confidence = max(0.0, min(1.0, .30 + .35 * aligned + .15 * min(column_count / 3, 1) + .10 * min(row_count / 4, 1) + .10 * numeric - .55 * kv_ratio - .35 * irregular))
     suspicious_glue = any(_SUSPICIOUS_GLUE.search(cell) for row in rows for cell in row if cell)
     signals["suspicious_glued_token"] = suspicious_glue
@@ -63,6 +73,7 @@ def assess_ocr_table(boxes, page, engine, candidate_id):
     if row_count < OCR_TABLE_POLICY["min_rows"]: reasons.append("OCR_TABLE_INSUFFICIENT_ROWS")
     if column_count < OCR_TABLE_POLICY["min_columns"] or aligned < OCR_TABLE_POLICY["min_aligned_row_ratio"]: reasons.append("OCR_TABLE_COLUMN_INCONSISTENT")
     if irregular > OCR_TABLE_POLICY["max_irregular_row_ratio"]: reasons.append("OCR_TABLE_IRREGULAR_ROWS")
+    if orphan_tokens: reasons.append("OCR_TABLE_ORPHAN_TOKEN")
     if suspicious_glue: reasons.append("OCR_TABLE_SUSPICIOUS_GLUED_TOKEN")
     if not rows: reasons.append("OCR_TABLE_EMPTY")
     accepted = not reasons and confidence >= OCR_TABLE_POLICY["min_confidence_with_geometry"]

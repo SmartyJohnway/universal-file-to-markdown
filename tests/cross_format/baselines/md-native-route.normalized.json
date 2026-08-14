@@ -113,7 +113,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "sample.md",
-    "source_sha256": "4d06eae8c830cedbbf06a44ce20492342256218887d47830c09927fe7a80e330"
+    "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04"
   },
   "chunks": [
     {
@@ -157,7 +157,7 @@
         "line_start": 1,
         "source_file": "sample.md"
       },
-      "source_sha256": "4d06eae8c830cedbbf06a44ce20492342256218887d47830c09927fe7a80e330",
+      "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04",
       "table_ids": [],
       "text": "# Native Markdown Route\n\n- Item 1\n- Item 2\n\nParagraph text here.",
       "unit_element_id": null
@@ -168,7 +168,7 @@
   "manifest_contract": {
     "status": "passed",
     "file_type": "markdown",
-    "source_sha256": "4d06eae8c830cedbbf06a44ce20492342256218887d47830c09927fe7a80e330"
+    "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04"
   },
   "report_contract": {
     "status": "passed",

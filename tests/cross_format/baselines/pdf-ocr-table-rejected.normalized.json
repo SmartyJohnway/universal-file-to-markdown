@@ -64,7 +64,7 @@
         "children": [
           "page-0001-text-001"
         ],
-        "confidence": 0.994,
+        "confidence": 0.991,
         "content": "<!-- page: 1 -->",
         "content_format": "markdown",
         "engine": "rapidocr",
@@ -113,7 +113,7 @@
       {
         "child_ids": [],
         "children": [],
-        "confidence": 0.994,
+        "confidence": 0.991,
         "content": "MODELABC-100\nVOLTAGE480V",
         "content_format": "markdown",
         "engine": "rapidocr",
@@ -163,7 +163,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "pdf_ocr_table_rejected.pdf",
-    "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7"
+    "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a"
   },
   "chunks": [
     {
@@ -214,7 +214,7 @@
         "page_start": 1,
         "source_file": "pdf_ocr_table_rejected.pdf"
       },
-      "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7",
+      "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a",
       "table_ids": [],
       "text": "MODELABC-100\nVOLTAGE480V",
       "unit_element_id": "page-0001"
@@ -225,7 +225,7 @@
   "manifest_contract": {
     "status": "passed_with_warnings",
     "file_type": "pdf",
-    "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7"
+    "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a"
   },
   "report_contract": {
     "status": "passed_with_warnings",
@@ -281,7 +281,7 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "86c4df1289143d3f4b0c4e7a8163de84cc23d905543288da4087fdca8540a916",
+      "canonical_bundle_fingerprint": "8ef09bf94b0cf6abf9f6f6145542f9ce2ecb4ab97175ad7dcc944d8db0146c60",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -311,16 +311,16 @@
         "OCR_TABLE_FALLBACK_TO_TEXT",
         "OCR_TABLE_STRUCTURE_UNVERIFIED"
       ],
-      "request_id": "ai-review-request-f3857fa8771a7827",
+      "request_id": "ai-review-request-5dadb0248888b97f",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
-      "source_sha256": "f3857fa8771a7827ba57e1ee1da9c032d20bf6d4096831a78dcd5e9e587a61e7",
+      "skill_version": "1.8.2",
+      "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a",
       "targets": [
         {
           "allowed_outcomes": [
             "needs_human_review",
-            "no_action"
+            "no_change"
           ],
           "canonical": {
             "candidate_id": "ocr-table-candidate-0001",
@@ -329,13 +329,17 @@
             "raw_text": "MODELABC-100\nVOLTAGE480V",
             "signals": {
               "aligned_row_ratio": 0.0,
+              "assigned_token_count": 0,
               "bounding_box_geometry_available": true,
               "column_count": 0,
               "consistent_column_ratio": 0.0,
               "irregular_row_ratio": 1.0,
               "key_value_pattern_ratio": 0.0,
               "numeric_column_ratio": 0.0,
-              "row_count": 0
+              "orphan_token_count": 0,
+              "row_count": 0,
+              "source_token_count": 2,
+              "suspicious_glued_token": false
             }
           },
           "canonical_mutation_allowed": false,

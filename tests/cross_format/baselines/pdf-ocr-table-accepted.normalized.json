@@ -164,7 +164,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "pdf_ocr_table_accepted.pdf",
-    "source_sha256": "fb9890f5859babc697d12603f509b98a215a6e5b317331ff82f751a70b7ba269"
+    "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019"
   },
   "chunks": [
     {
@@ -215,7 +215,7 @@
         "page_start": 1,
         "source_file": "pdf_ocr_table_accepted.pdf"
       },
-      "source_sha256": "fb9890f5859babc697d12603f509b98a215a6e5b317331ff82f751a70b7ba269",
+      "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019",
       "table_ids": [
         "table-ocr-p0001-0001"
       ],
@@ -342,13 +342,17 @@
         "origin": "ocr_table_candidate",
         "signals": {
           "aligned_row_ratio": 1.0,
+          "assigned_token_count": 8,
           "bounding_box_geometry_available": true,
           "column_count": 2,
           "consistent_column_ratio": 1.0,
           "irregular_row_ratio": 0.0,
           "key_value_pattern_ratio": 0.0,
           "numeric_column_ratio": 0.0,
-          "row_count": 4
+          "orphan_token_count": 0,
+          "row_count": 4,
+          "source_token_count": 8,
+          "suspicious_glued_token": false
         }
       },
       "schema_version": "1.0",
@@ -366,7 +370,7 @@
   "manifest_contract": {
     "status": "passed_with_warnings",
     "file_type": "pdf",
-    "source_sha256": "fb9890f5859babc697d12603f509b98a215a6e5b317331ff82f751a70b7ba269"
+    "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019"
   },
   "report_contract": {
     "status": "passed_with_warnings",

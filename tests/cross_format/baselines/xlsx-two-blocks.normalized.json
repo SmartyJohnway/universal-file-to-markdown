@@ -222,7 +222,7 @@
     "root_element_id": "document-root",
     "schema_version": "1.0",
     "source_file": "xlsx_two_blocks.xlsx",
-    "source_sha256": "3b650f214432e528c0efe78c887050c574907069034ea002f46c4b2bd4a24912"
+    "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d"
   },
   "chunks": [
     {
@@ -266,7 +266,7 @@
       "sheet_name": null,
       "slide_end": null,
       "slide_start": null,
-      "source_file": null,
+      "source_file": "xlsx_two_blocks.xlsx",
       "source_locators": [
         {
           "cell_range": "A1:B2",
@@ -283,7 +283,7 @@
           "source_file": "xlsx_two_blocks.xlsx"
         }
       ],
-      "source_sha256": "3b650f214432e528c0efe78c887050c574907069034ea002f46c4b2bd4a24912",
+      "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d",
       "table_ids": [
         "table-s001-b001",
         "table-s001-b002"
@@ -446,7 +446,7 @@
   "manifest_contract": {
     "status": "passed",
     "file_type": "xlsx",
-    "source_sha256": "3b650f214432e528c0efe78c887050c574907069034ea002f46c4b2bd4a24912"
+    "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d"
   },
   "report_contract": {
     "status": "passed",
