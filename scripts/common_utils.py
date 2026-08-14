@@ -266,11 +266,18 @@ def convert_csv_native(path: str, encoding_hint: str = None) -> dict:
     text, encoding, ambiguous, candidates = read_text_smart(path, encoding_hint)
     sample = text[:4096]
     try:
-        dialect = csv.Sniffer().sniff(sample)
+        # Never allow record terminators to become a dialect delimiter.  In
+        # particular, unconstrained sniffing can select ``\r`` for CRLF CSV
+        # files containing quoted multiline fields, silently turning every
+        # logical record into a one-column row.
+        dialect = csv.Sniffer().sniff(sample, delimiters=",\t;|")
         delimiter = dialect.delimiter
     except csv.Error:
         delimiter = ","
-    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+    # ``newline=\"\"`` is the CSV module's newline-preserving mode.  Quoted
+    # multiline fields must retain CRLF rather than have it normalized before
+    # parsing.
+    reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter)
     rows = list(reader)
     if not rows:
         markdown = f"<!-- source_encoding: {encoding} -->\n"

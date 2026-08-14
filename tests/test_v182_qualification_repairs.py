@@ -19,6 +19,58 @@ def test_irregular_csv_preserves_extra_field_and_warns(tmp_path):
     assert "__extra_1" in markdown and "extra" in markdown
 
 
+def test_crlf_csv_uses_comma_delimiter(tmp_path):
+    source = tmp_path / "crlf.csv"
+    source.write_bytes(b"name,note\r\nalpha,ordinary\r\nbeta,final\r\n")
+    bundle = tmp_path / "bundle"
+
+    report = router.convert(str(source), str(bundle))
+    persisted = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
+
+    assert report["status"] == "passed"
+    assert persisted["details"]["max_column_count"] == 2
+    assert "| alpha | ordinary |" in (bundle / "document.md").read_text(encoding="utf-8")
+
+
+def test_crlf_quoted_multiline_csv_preserves_extra_columns_and_warning(tmp_path):
+    source = tmp_path / "crlf-multiline.csv"
+    source.write_bytes(
+        b'name,note\r\nalpha,"line 1\r\nline 2"\r\nbeta,=SUM(1,1),EXTRA-A,EXTRA-B\r\n'
+    )
+    bundle = tmp_path / "bundle"
+
+    report = router.convert(str(source), str(bundle))
+    persisted = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    markdown = (bundle / "document.md").read_text(encoding="utf-8")
+
+    assert report["status"] == "passed_with_warnings"
+    assert persisted["details"]["max_column_count"] == 5
+    assert "CSV_INCONSISTENT_COLUMN_COUNT" in [warning["code"] for warning in persisted["warnings"]]
+    assert all(label in markdown for label in ("__extra_1", "__extra_2", "__extra_3", "EXTRA-A", "EXTRA-B"))
+    assert "line 1\n<br>line 2" in markdown
+
+
+def test_lf_quoted_multiline_csv_matches_crlf_canonical_grid(tmp_path):
+    crlf_source = tmp_path / "crlf.csv"
+    lf_source = tmp_path / "lf.csv"
+    crlf_source.write_bytes(
+        b'name,note\r\nalpha,"line 1\r\nline 2"\r\nbeta,=SUM(1,1),EXTRA-A,EXTRA-B\r\n'
+    )
+    lf_source.write_text(
+        'name,note\nalpha,"line 1\nline 2"\nbeta,=SUM(1,1),EXTRA-A,EXTRA-B\n', encoding="utf-8"
+    )
+    crlf_bundle, lf_bundle = tmp_path / "crlf-bundle", tmp_path / "lf-bundle"
+
+    router.convert(str(crlf_source), str(crlf_bundle))
+    router.convert(str(lf_source), str(lf_bundle))
+    crlf_report = json.loads((crlf_bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    lf_report = json.loads((lf_bundle / "conversion-report.json").read_text(encoding="utf-8"))
+
+    assert crlf_report["details"]["max_column_count"] == lf_report["details"]["max_column_count"] == 5
+    assert crlf_report["warnings"] == lf_report["warnings"]
+    assert crlf_report["status"] == lf_report["status"] == "passed_with_warnings"
+
+
 def test_json_nesting_limit_has_stable_failure_reason(tmp_path):
     value = "leaf"
     for _ in range(1100):
