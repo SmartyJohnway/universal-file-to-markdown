@@ -278,18 +278,42 @@ def convert_csv_native(path: str, encoding_hint: str = None) -> dict:
                 "candidates": candidates, "rows": []}
 
     header, body = rows[0], rows[1:]
+    max_width = max(len(row) for row in rows)
+    original_header_width = len(header)
+    if max_width > original_header_width:
+        header = header + [f"__extra_{index}" for index in range(1, max_width - original_header_width + 1)]
     lines = ["| " + " | ".join(_escape_pipe(c) for c in header) + " |",
              "| " + " | ".join(["---"] * len(header)) + " |"]
     padded_rows = [header]
     for row in body:
         row = row + [""] * (len(header) - len(row))
-        row = row[:len(header)]
         padded_rows.append(row)
         lines.append("| " + " | ".join(_escape_pipe(c) for c in row) + " |")
     note = f"<!-- source_encoding: {encoding} -->\n"
     markdown = note + "\n".join(lines) + "\n"
+    widths = [len(row) for row in rows]
+    warnings = []
+    if len(set(widths)) > 1:
+        warnings.append({"code": "CSV_INCONSISTENT_COLUMN_COUNT", "message": "Rows have inconsistent field counts; extra fields were preserved in deterministic __extra_N columns.", "row_widths": widths, "max_column_count": max_width})
     return {"markdown": markdown, "encoding": encoding, "ambiguous": ambiguous,
-            "candidates": candidates, "rows": padded_rows}
+            "candidates": candidates, "rows": padded_rows, "warnings": warnings,
+            "row_count": len(rows), "max_column_count": max_width}
+
+
+MAX_JSON_NESTING_DEPTH = 1000
+
+
+def _json_nesting_depth(value) -> int:
+    maximum = 0
+    pending = [(value, 1)]
+    while pending:
+        node, depth = pending.pop()
+        maximum = max(maximum, depth)
+        if isinstance(node, dict):
+            pending.extend((child, depth + 1) for child in node.values())
+        elif isinstance(node, list):
+            pending.extend((child, depth + 1) for child in node)
+    return maximum
 
 
 def convert_json_native(path: str, encoding_hint: str = None) -> dict:
@@ -297,12 +321,16 @@ def convert_json_native(path: str, encoding_hint: str = None) -> dict:
     valid = True
     try:
         parsed = json.loads(text)
+        depth = _json_nesting_depth(parsed)
+        if depth > MAX_JSON_NESTING_DEPTH:
+            return {"limit_exceeded": True, "depth": depth, "encoding": encoding,
+                    "ambiguous": ambiguous, "candidates": candidates}
         pretty = json.dumps(parsed, indent=2, ensure_ascii=False)
     except json.JSONDecodeError:
         valid = False
         pretty = text  # not valid JSON; show as-is rather than fail
     return {"markdown": "```json\n" + pretty + "\n```\n", "encoding": encoding,
-            "ambiguous": ambiguous, "candidates": candidates, "valid": valid}
+            "ambiguous": ambiguous, "candidates": candidates, "valid": valid, "limit_exceeded": False}
 
 
 def convert_eml_native(path: str) -> dict:
@@ -360,6 +388,10 @@ def convert_eml_native(path: str) -> dict:
         body_text += "\n\n<!-- rendered from text/html part; no text/plain alternative was present -->"
 
     md = "\n".join(header_lines) + "\n\n---\n\n" + body_text
+    if attachments:
+        md += "\n\n## Attachments\n\n" + "\n".join(
+            f"- [{item['original_filename']}](assets/{item['filename']})" for item in attachments
+        )
     return {"markdown": md, "attachments": attachments}
 
 

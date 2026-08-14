@@ -320,10 +320,10 @@ def _build_context_prefix(heading_path, provenance, text: str) -> tuple[str, boo
     return prefix, len(selected) != len(lines)
 
 
-def build_chunks(markdown: str, elements: list, sha256: str) -> list:
+def build_chunks(markdown: str, elements: list, sha256: str, source_file: str = None) -> list:
     if not elements:
         source_parts = _split_markdown(markdown)
-        return [_chunk(i, [], [], part, sha256, 1, len(source_parts))
+        return [_chunk(i, [], [], part, sha256, 1, len(source_parts), source_file=source_file)
                 for i, part in enumerate(source_parts, start=1)]
 
     by_id = {el.get("id"): el for el in elements if el.get("id")}
@@ -335,14 +335,14 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
     ]
     if not content_elements:
         source_parts = _split_markdown(markdown)
-        return [_chunk(i, [], [], part, sha256, 1, len(source_parts))
+        return [_chunk(i, [], [], part, sha256, 1, len(source_parts), source_file=source_file)
                 for i, part in enumerate(source_parts, start=1)]
 
     chunks, pending, pending_text, pending_heading = [], [], "", None
     def emit_pending():
         if pending:
             provenance = build_chunk_provenance(pending, by_id)
-            chunks.append(_chunk(len(chunks) + 1, pending_heading, [e["id"] for e in pending], pending_text, sha256, 1, 1, provenance))
+            chunks.append(_chunk(len(chunks) + 1, pending_heading, [e["id"] for e in pending], pending_text, sha256, 1, 1, provenance, source_file))
     for element in content_elements:
         parts = _split_markdown(element.get("content", ""))
         heading_path = list(element.get("heading_path") or []) or _ancestor_labels(element, by_id)
@@ -357,13 +357,13 @@ def build_chunks(markdown: str, elements: list, sha256: str) -> list:
                 emit_pending(); pending, pending_text, pending_heading = [], "", None
         else:
             for part_index, part in enumerate(parts, start=1):
-                chunks.append(_chunk(len(chunks) + 1, heading_path, [element["id"]], part, sha256, part_index, len(parts), build_chunk_provenance([element], by_id)))
+                chunks.append(_chunk(len(chunks) + 1, heading_path, [element["id"]], part, sha256, part_index, len(parts), build_chunk_provenance([element], by_id), source_file))
     emit_pending()
     return chunks
 
 
 def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_count,
-           provenance=None):
+           provenance=None, source_file=None):
     provenance = provenance or {"locator_precision": "unknown"}
     locator = provenance.get("source_locator") or {}
     page = locator.get("page_start", locator.get("page"))
@@ -385,7 +385,7 @@ def _chunk(counter, heading_path, element_ids, text, sha256, part_index, part_co
         "part_index": part_index,
         "part_count": part_count,
         "chunk_index": counter,
-        "source_file": locator.get("source_file"),
+        "source_file": locator.get("source_file") or source_file,
         "page_start": page,
         "page_end": locator.get("page_end", page),
         "sheet_name": locator.get("sheet_name", locator.get("sheet")),

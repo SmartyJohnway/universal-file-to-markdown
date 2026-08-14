@@ -199,12 +199,15 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
         csv_result = convert_csv_native(input_path, encoding_hint)
         markdown = csv_result["markdown"]
         report = {
-            "status": "passed",
+            "status": "passed_with_warnings" if csv_result.get("warnings") else "passed",
             "engine": "csv_native",
             "encoding_used": csv_result["encoding"],
             "encoding_ambiguous": csv_result["ambiguous"],
             "encoding_candidates": csv_result["candidates"],
             "encoding_user_selected": bool(encoding_hint),
+            "warnings": csv_result.get("warnings", []),
+            "row_count": csv_result.get("row_count", 0),
+            "max_column_count": csv_result.get("max_column_count", 0),
         }
         if csv_result.get("rows"):
             tables = [{"id": "table-0001", "rows": csv_result["rows"], "context": "csv", "source_locator": {"format": "csv", "row_start": 1, "row_end": len(csv_result["rows"])}}]
@@ -216,6 +219,11 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
 
     elif file_type == "json":
         json_result = convert_json_native(input_path, encoding_hint)
+        if json_result.get("limit_exceeded"):
+            return _write_bundle(output_dir, original_path, file_type, sha256, "", {
+                "status": "failed", "reason": "JSON_NESTING_LIMIT_EXCEEDED",
+                "maximum_depth": json_result["depth"], "configured_limit": 1000,
+            }, fmt_info)
         markdown = json_result["markdown"]
         report = {"status": "passed", "engine": "json_native",
                   "json_valid": json_result["valid"],
@@ -355,7 +363,8 @@ def _write_bundle(output_dir, original_path, file_type, sha256, markdown, conver
         with open(os.path.join(output_dir, "document.json"), "w", encoding="utf-8") as f:
             json.dump(doc_json, f, indent=2, ensure_ascii=False)
 
-        chunks = build_chunks(markdown, doc_json["elements"], sha256)
+        chunks = build_chunks(markdown, doc_json["elements"], sha256,
+                              source_file=os.path.basename(original_path))
         structure = full_report.get("details", {}).get("html_structure")
         if structure:
             cm = structure["canonical_metrics"]; cm["chunks_total"] = len(chunks); cm["chunks_with_heading_path"] = sum(bool(c.get("heading_path")) for c in chunks)
