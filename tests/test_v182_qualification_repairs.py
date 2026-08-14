@@ -70,3 +70,18 @@ def test_digital_pdf_with_material_raster_is_not_silent_success(tmp_path):
     assert report["details"]["ocr_used"] is True
     assert "MIXED_PDF_MATERIAL_RASTER_OCR" in [warning["code"] for warning in report["warnings"]]
     assert "P-204" in (bundle / "document.md").read_text(encoding="utf-8")
+
+
+def test_nested_docx_table_is_explicitly_delimited_and_warned(tmp_path):
+    from docx import Document
+    source = tmp_path / "nested.docx"
+    document = Document(); cell = document.add_table(rows=1, cols=1).cell(0, 0)
+    nested = cell.add_table(rows=2, cols=2)
+    for row in range(2):
+        for column in range(2): nested.cell(row, column).text = f"N{row}{column}"
+    document.save(source)
+    bundle = tmp_path / "bundle"
+    report = router.convert(str(source), str(bundle))
+    assert report["status"] == "passed_with_warnings"
+    assert "DOCX_NESTED_TABLE_FLATTENED" in [warning["code"] for warning in report["warnings"]]
+    assert "Nested table: N00 \\| N01 \\| N10 \\| N11" in (bundle / "document.md").read_text(encoding="utf-8")
