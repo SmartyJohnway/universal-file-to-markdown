@@ -109,8 +109,7 @@
     "file_type": "json",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "unicode.json",
-    "source_sha256": "20ff6f19aa06ea7151f7716fe1482600bced44530b9549da07734a2da28f3835"
+    "source_file": "unicode.json"
   },
   "chunks": [
     {
@@ -153,7 +152,6 @@
         "json_path": "$",
         "source_file": "unicode.json"
       },
-      "source_sha256": "20ff6f19aa06ea7151f7716fe1482600bced44530b9549da07734a2da28f3835",
       "table_ids": [],
       "text": "```json\n{\n  \"名稱\": \"繁體中文\",\n  \"items\": [\n    \"α\",\n    \"資料\"\n  ]\n}\n```",
       "unit_element_id": null
@@ -163,8 +161,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "json",
-    "source_sha256": "20ff6f19aa06ea7151f7716fe1482600bced44530b9549da07734a2da28f3835"
+    "file_type": "json"
   },
   "report_contract": {
     "status": "passed",

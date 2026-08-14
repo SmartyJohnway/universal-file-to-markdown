@@ -110,8 +110,7 @@
     "file_type": "csv",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "big5.csv",
-    "source_sha256": "ec68ccf0061b200e8fa4247d36c6ed91e3a79fca9f40a4f579b626a34c3506fc"
+    "source_file": "big5.csv"
   },
   "chunks": [
     {
@@ -155,7 +154,6 @@
         "row_start": 1,
         "source_file": "big5.csv"
       },
-      "source_sha256": "ec68ccf0061b200e8fa4247d36c6ed91e3a79fca9f40a4f579b626a34c3506fc",
       "table_ids": [
         "table-0001"
       ],
@@ -243,8 +241,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "csv",
-    "source_sha256": "ec68ccf0061b200e8fa4247d36c6ed91e3a79fca9f40a4f579b626a34c3506fc"
+    "file_type": "csv"
   },
   "report_contract": {
     "status": "passed_with_warnings",

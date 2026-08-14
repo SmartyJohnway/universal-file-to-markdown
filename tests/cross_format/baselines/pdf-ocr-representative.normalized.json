@@ -162,8 +162,7 @@
     "file_type": "pdf",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "pdf_ocr_text.pdf",
-    "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1"
+    "source_file": "pdf_ocr_text.pdf"
   },
   "chunks": [
     {
@@ -214,7 +213,6 @@
         "page_start": 1,
         "source_file": "pdf_ocr_text.pdf"
       },
-      "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1",
       "table_ids": [],
       "text": "OCRSAMPLE12345\nSCANNED DOCUMENT",
       "unit_element_id": "page-0001"
@@ -224,8 +222,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "pdf",
-    "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1"
+    "file_type": "pdf"
   },
   "report_contract": {
     "status": "passed_with_warnings",
@@ -288,7 +285,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "c912798ffa1cd578d1ec5b20ef418acd6b6c1b9e8b18876bee8c8c0be53b95a0",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -318,11 +314,9 @@
         "OCR_TABLE_FALLBACK_TO_TEXT",
         "OCR_TABLE_STRUCTURE_UNVERIFIED"
       ],
-      "request_id": "ai-review-request-a3e33f0dcb091bf2",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
       "skill_version": "1.8.2",
-      "source_sha256": "a3e33f0dcb091bf2bd18ce06b65389fdaa85e48f630099858589fabe395c2be1",
       "targets": [
         {
           "allowed_outcomes": [

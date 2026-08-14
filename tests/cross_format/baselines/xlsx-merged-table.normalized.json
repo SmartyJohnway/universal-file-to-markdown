@@ -167,8 +167,7 @@
     "file_type": "xlsx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "xlsx_merged.xlsx",
-    "source_sha256": "235f8aaf8425985eaec3a905b5741b30b8cd1a0539e3fee3ece949a11c4edd22"
+    "source_file": "xlsx_merged.xlsx"
   },
   "chunks": [
     {
@@ -219,7 +218,6 @@
         "sheet_name": "Sheet",
         "source_file": "xlsx_merged.xlsx"
       },
-      "source_sha256": "235f8aaf8425985eaec3a905b5741b30b8cd1a0539e3fee3ece949a11c4edd22",
       "table_ids": [
         "table-s001-b001"
       ],
@@ -296,8 +294,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "xlsx",
-    "source_sha256": "235f8aaf8425985eaec3a905b5741b30b8cd1a0539e3fee3ece949a11c4edd22"
+    "file_type": "xlsx"
   },
   "report_contract": {
     "status": "passed",
@@ -327,7 +324,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "810b50ff5b9441d0a0962a12505a2e4aadbe160a0efe9ff5d47bd3e802b34df7",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -350,11 +346,9 @@
       "reason_codes": [
         "MERGED_TABLE_GEOMETRY_PRESENT"
       ],
-      "request_id": "ai-review-request-235f8aaf8425985e",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
       "skill_version": "1.8.2",
-      "source_sha256": "235f8aaf8425985eaec3a905b5741b30b8cd1a0539e3fee3ece949a11c4edd22",
       "targets": [
         {
           "canonical": {

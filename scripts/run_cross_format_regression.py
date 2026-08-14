@@ -352,8 +352,15 @@ def main(args):
         results.append(result)
         print(f"[cross-format] finished {case['case_id']}: {result['status']}", file=sys.stderr, flush=True)
     baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text(encoding='utf-8')) if baseline_path.exists() else {}
+    baseline_profile=env['ocr_engine_profile']
+    baseline_is_qualified=baseline_profile == 'rapidocr-only'
     baseline_mismatches=[]
     for result in results:
+        # OCR fallback changes visible text and engine provenance.  It must
+        # receive its own reviewed baseline rather than borrowing RapidOCR's.
+        if not baseline_is_qualified and result.get('format') == 'pdf':
+            result['status']='failed'; result['reason_codes'].append('OCR_ENGINE_PROFILE_BASELINE_UNQUALIFIED')
+            continue
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
         expected=baseline.get(result['case_id'])
         snapshot=baseline_dir/(result['case_id']+'.normalized.json')
@@ -378,7 +385,7 @@ def main(args):
     for r in results: formats[r['format']][r['status']]+=1
     def has_rerun_mismatch(result): return bool({'CROSS_FORMAT_NONDETERMINISTIC_RERUN','WORKFLOW_NONDETERMINISTIC_RERUN'} & set(result.get('reason_codes',[])))
     rerun_mismatches=sum(has_rerun_mismatch(r) for r in results)
-    summary={'schema_version':'1.0','task':f'REPRODUCIBLE-CROSS-FORMAT-REGRESSION-{SKILL_VERSION.upper()}','profile':args.profile,'environment_profile':env['profile'],'format_case_count':len(format_cases),'workflow_case_count':len(workflow_cases),'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING','TABLE_INDEX_MALFORMED')) for r in results),'rerun_mismatches':rerun_mismatches,'baseline_mismatches':len(baseline_mismatches),'workflow_failures':sum(r.get('format')=='workflow' and r['status']=='failed' for r in results),'normalized_determinism_status':'passed' if not rerun_mismatches else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
+    summary={'schema_version':'1.0','task':f'REPRODUCIBLE-CROSS-FORMAT-REGRESSION-{SKILL_VERSION.upper()}','profile':args.profile,'environment_profile':env['profile'],'ocr_engine_profile':baseline_profile,'ocr_engine_profile_baseline_qualified':baseline_is_qualified,'format_case_count':len(format_cases),'workflow_case_count':len(workflow_cases),'case_count':len(results),'passed':counts['passed'],'failed':counts['failed'],'skipped':counts['skipped'],'formats':{k:dict(v) for k,v in formats.items()},'bundle_validation_failures':sum(any('BUNDLE_VALIDATION' in x for x in r.get('reason_codes',[])) for r in results),'unexpected_warning_cases':sum('UNEXPECTED_WARNING' in r.get('reason_codes',[]) for r in results),'chunk_limit_violations':sum('CHUNK_LIMIT' in r.get('reason_codes',[]) for r in results),'reference_errors':sum(any(x in r.get('reason_codes',[]) for x in ('REFERENCE_ERROR','ELEMENT_ID_INVALID','LOCATOR_MISSING','TABLE_INDEX_MALFORMED')) for r in results),'rerun_mismatches':rerun_mismatches,'baseline_mismatches':len(baseline_mismatches),'workflow_failures':sum(r.get('format')=='workflow' and r['status']=='failed' for r in results),'normalized_determinism_status':'passed' if not rerun_mismatches else 'failed','validation_status':'passed' if not counts['failed'] else 'failed','cases':results}
     public_results=[{k:v for k,v in result.items() if k!='normalized_snapshot'} for result in results]
     summary['cases']=public_results
     (output/'cross-format-regression-cases.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in public_results));(output/'artifact-fingerprints.json').write_text(json.dumps({r['case_id']:r.get('fingerprints',[]) for r in results},indent=2)+'\n');(output/'cross-format-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2));return 1 if counts['failed'] else 0

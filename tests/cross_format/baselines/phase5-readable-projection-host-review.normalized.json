@@ -618,8 +618,7 @@
     },
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "complex_tables.html",
-    "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b"
+    "source_file": "complex_tables.html"
   },
   "chunks": [
     {
@@ -668,7 +667,6 @@
         "format": "html",
         "source_file": "complex_tables.html"
       },
-      "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b",
       "table_ids": [],
       "text": "See [rules](https://example.test/rules).",
       "unit_element_id": null
@@ -728,7 +726,6 @@
         "format": "html",
         "source_file": "complex_tables.html"
       },
-      "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b",
       "table_ids": [],
       "text": "- nested",
       "unit_element_id": null
@@ -797,7 +794,6 @@
           "source_file": "complex_tables.html"
         }
       ],
-      "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b",
       "table_ids": [
         "table-html-0001",
         "table-html-0002"
@@ -1009,8 +1005,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "html",
-    "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b"
+    "file_type": "html"
   },
   "report_contract": {
     "status": "passed",
@@ -1040,7 +1035,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "2e3cfd7e5ac5e3c111e72ff2e13b35bf6a04014715e00fd0f6f03c32cc24b23b",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -1064,11 +1058,9 @@
         "MERGED_TABLE_GEOMETRY_PRESENT",
         "HTML_MERGED_TABLE_COMPLEX"
       ],
-      "request_id": "ai-review-request-913cdc51f7157c08",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
       "skill_version": "1.8.2",
-      "source_sha256": "913cdc51f7157c084cf4e5ecde09ccf3049ce25b1d20395c214780b86d7c233b",
       "targets": [
         {
           "canonical": {

@@ -192,8 +192,7 @@
     "file_type": "pdf",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "digital.pdf",
-    "source_sha256": "814efef4f2ef0597cc4a00524104218ea4393c53585fc4ef42d3ab902bf34d5c"
+    "source_file": "digital.pdf"
   },
   "chunks": [
     {
@@ -267,7 +266,6 @@
         "page_start": 1,
         "source_file": "digital.pdf"
       },
-      "source_sha256": "814efef4f2ef0597cc4a00524104218ea4393c53585fc4ef42d3ab902bf34d5c",
       "table_ids": [],
       "text": "Digital PDF Test 123",
       "unit_element_id": "page-0001"
@@ -277,8 +275,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "pdf",
-    "source_sha256": "814efef4f2ef0597cc4a00524104218ea4393c53585fc4ef42d3ab902bf34d5c"
+    "file_type": "pdf"
   },
   "report_contract": {
     "status": "passed",

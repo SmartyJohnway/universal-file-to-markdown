@@ -13,12 +13,17 @@ from pathlib import Path
 
 VOLATILE_KEYS = {"converted_at", "generated_at", "started_at", "finished_at",
                  "duration", "duration_ms", "output_dir", "output_path", "hostname"}
+# These values prove input lineage inside an individual bundle, but cannot be
+# used to compare semantics of programmatically generated OOXML fixtures:
+# equivalent ZIP containers can legitimately have distinct byte hashes.
+PROVENANCE_ONLY_KEYS = {"source_sha256", "canonical_bundle_fingerprint", "request_id"}
 OCR_TOLERANCE = {"field": "confidence", "comparison": "numeric_tolerance", "absolute_tolerance": 0.000001}
 
 def _text(value): return value.replace("\r\n", "\n").replace("\r", "\n") if isinstance(value, str) else value
 def _normal(value, bundle=None):
     if isinstance(value, dict):
-        return {key: _normal(val, bundle) for key, val in sorted(value.items()) if key not in VOLATILE_KEYS}
+        return {key: _normal(val, bundle) for key, val in sorted(value.items())
+                if key not in VOLATILE_KEYS | PROVENANCE_ONLY_KEYS}
     if isinstance(value, list): return [_normal(item, bundle) for item in value]
     if isinstance(value, str):
         value = _text(value)
@@ -45,7 +50,7 @@ def normalize_bundle(bundle):
     manifest = _normal(_load_json(bundle / "manifest.json", {}), bundle)
     return {"normalization_schema_version":"1.0", "document_markdown": _text((bundle / "document.md").read_text(encoding="utf-8")) if (bundle / "document.md").exists() else "",
             "document": _normal(_load_json(bundle / "document.json", {}), bundle), "chunks": chunks, "tables": tables, "assets": assets,
-            "manifest_contract": {k: manifest.get(k) for k in ("status", "file_type", "source_sha256") if k in manifest},
+            "manifest_contract": {k: manifest.get(k) for k in ("status", "file_type") if k in manifest},
             "report_contract": {k: report.get(k) for k in ("status", "engine", "warnings", "bundle_validation", "bundle_validation_status", "ai_review_status", "readable_projection_status") if k in report},
             "ai_artifacts": {name: _normal(_load_json(bundle / name, {}), bundle) for name in ("ai-review-request.json", "ai-review.json") if (bundle / name).exists()},
             "readable_projection": _text((bundle / "document-readable.md").read_text(encoding="utf-8")) if (bundle / "document-readable.md").exists() else None}

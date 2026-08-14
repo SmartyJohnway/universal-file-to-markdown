@@ -162,8 +162,7 @@
     "file_type": "pdf",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "pdf_ocr_table_rejected.pdf",
-    "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a"
+    "source_file": "pdf_ocr_table_rejected.pdf"
   },
   "chunks": [
     {
@@ -214,7 +213,6 @@
         "page_start": 1,
         "source_file": "pdf_ocr_table_rejected.pdf"
       },
-      "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a",
       "table_ids": [],
       "text": "MODELABC-100\nVOLTAGE480V",
       "unit_element_id": "page-0001"
@@ -224,8 +222,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "pdf",
-    "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a"
+    "file_type": "pdf"
   },
   "report_contract": {
     "status": "passed_with_warnings",
@@ -281,7 +278,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "8ef09bf94b0cf6abf9f6f6145542f9ce2ecb4ab97175ad7dcc944d8db0146c60",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -311,11 +307,9 @@
         "OCR_TABLE_FALLBACK_TO_TEXT",
         "OCR_TABLE_STRUCTURE_UNVERIFIED"
       ],
-      "request_id": "ai-review-request-5dadb0248888b97f",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
       "skill_version": "1.8.2",
-      "source_sha256": "5dadb0248888b97fadc591c91a0719c1634a5c231b31d6541060947e429c987a",
       "targets": [
         {
           "allowed_outcomes": [

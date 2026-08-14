@@ -110,8 +110,7 @@
     "file_type": "docx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "docx_basic.docx",
-    "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6"
+    "source_file": "docx_basic.docx"
   },
   "chunks": [
     {
@@ -156,7 +155,6 @@
         "section_index": 0,
         "source_file": "docx_basic.docx"
       },
-      "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6",
       "table_ids": [],
       "text": "**bold*** italic*",
       "unit_element_id": null
@@ -166,8 +164,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "docx",
-    "source_sha256": "907a3297bf47f4df971af2edbd76d0ee4e43aefc470efda197c7c41d247d30a6"
+    "file_type": "docx"
   },
   "report_contract": {
     "status": "passed",

@@ -163,8 +163,7 @@
     "file_type": "pdf",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "pdf_ocr_table_accepted.pdf",
-    "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019"
+    "source_file": "pdf_ocr_table_accepted.pdf"
   },
   "chunks": [
     {
@@ -215,7 +214,6 @@
         "page_start": 1,
         "source_file": "pdf_ocr_table_accepted.pdf"
       },
-      "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019",
       "table_ids": [
         "table-ocr-p0001-0001"
       ],
@@ -369,8 +367,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "pdf",
-    "source_sha256": "4cb6eaf5c7144facda89df0f24817b9c77c4054ee57974b45bda0129147ad019"
+    "file_type": "pdf"
   },
   "report_contract": {
     "status": "passed_with_warnings",

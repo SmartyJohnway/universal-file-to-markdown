@@ -112,8 +112,7 @@
     "file_type": "text",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "sample.txt",
-    "source_sha256": "f20ea20f48837216b7fa203189429730f7c7e94a75cdce7dc45b4d8dd824667d"
+    "source_file": "sample.txt"
   },
   "chunks": [
     {
@@ -157,7 +156,6 @@
         "line_start": 1,
         "source_file": "sample.txt"
       },
-      "source_sha256": "f20ea20f48837216b7fa203189429730f7c7e94a75cdce7dc45b4d8dd824667d",
       "table_ids": [],
       "text": "Title: Native Text Route\nLine 1: Plain text content\nLine 2: System log entry",
       "unit_element_id": null
@@ -167,8 +165,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "text",
-    "source_sha256": "f20ea20f48837216b7fa203189429730f7c7e94a75cdce7dc45b4d8dd824667d"
+    "file_type": "text"
   },
   "report_contract": {
     "status": "passed",

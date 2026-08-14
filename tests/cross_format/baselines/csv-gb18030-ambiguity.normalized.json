@@ -110,8 +110,7 @@
     "file_type": "csv",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "gb18030.csv",
-    "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d"
+    "source_file": "gb18030.csv"
   },
   "chunks": [
     {
@@ -155,7 +154,6 @@
         "row_start": 1,
         "source_file": "gb18030.csv"
       },
-      "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d",
       "table_ids": [
         "table-0001"
       ],
@@ -265,8 +263,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "csv",
-    "source_sha256": "fafafdfdcfc30f8fef3f7c3eee565e3471e3eb20bf7736805b8ff3a6ac69842d"
+    "file_type": "csv"
   },
   "report_contract": {
     "status": "passed_with_warnings",

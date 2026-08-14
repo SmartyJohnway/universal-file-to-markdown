@@ -112,8 +112,7 @@
     "file_type": "markdown",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "sample.md",
-    "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04"
+    "source_file": "sample.md"
   },
   "chunks": [
     {
@@ -157,7 +156,6 @@
         "line_start": 1,
         "source_file": "sample.md"
       },
-      "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04",
       "table_ids": [],
       "text": "# Native Markdown Route\n\n- Item 1\n- Item 2\n\nParagraph text here.",
       "unit_element_id": null
@@ -167,8 +165,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "markdown",
-    "source_sha256": "77c3407068640dcd8d85f22acef92b9e91eb3aa73af0d328c41a03b34f3ccd04"
+    "file_type": "markdown"
   },
   "report_contract": {
     "status": "passed",

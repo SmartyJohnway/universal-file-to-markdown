@@ -221,8 +221,7 @@
     "file_type": "xlsx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "xlsx_two_blocks.xlsx",
-    "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d"
+    "source_file": "xlsx_two_blocks.xlsx"
   },
   "chunks": [
     {
@@ -283,7 +282,6 @@
           "source_file": "xlsx_two_blocks.xlsx"
         }
       ],
-      "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d",
       "table_ids": [
         "table-s001-b001",
         "table-s001-b002"
@@ -445,8 +443,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "xlsx",
-    "source_sha256": "7e730059e1b91460afe052f678f5e3aa326c4d053f96e18d8c949dc34aa01b2d"
+    "file_type": "xlsx"
   },
   "report_contract": {
     "status": "passed",

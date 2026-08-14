@@ -167,8 +167,7 @@
     "file_type": "xlsx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "xlsx_formula.xlsx",
-    "source_sha256": "4b4d47b1560bd9e16dfeb4d3a2f1865e6748dfbd51433355f3c49699fad797b3"
+    "source_file": "xlsx_formula.xlsx"
   },
   "chunks": [
     {
@@ -219,7 +218,6 @@
         "sheet_name": "Sheet",
         "source_file": "xlsx_formula.xlsx"
       },
-      "source_sha256": "4b4d47b1560bd9e16dfeb4d3a2f1865e6748dfbd51433355f3c49699fad797b3",
       "table_ids": [
         "table-s001-b001"
       ],
@@ -363,8 +361,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed_with_warnings",
-    "file_type": "xlsx",
-    "source_sha256": "4b4d47b1560bd9e16dfeb4d3a2f1865e6748dfbd51433355f3c49699fad797b3"
+    "file_type": "xlsx"
   },
   "report_contract": {
     "status": "passed_with_warnings",

@@ -194,8 +194,7 @@
     "file_type": "pptx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "pptx_table.pptx",
-    "source_sha256": "e23f2089e49edb398f014992334cd65f60a48e762136db225b01af5900dbc8d0"
+    "source_file": "pptx_table.pptx"
   },
   "chunks": [
     {
@@ -269,7 +268,6 @@
         "slide_number": 1,
         "source_file": "pptx_table.pptx"
       },
-      "source_sha256": "e23f2089e49edb398f014992334cd65f60a48e762136db225b01af5900dbc8d0",
       "table_ids": [
         "table-0001"
       ],
@@ -353,8 +351,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "pptx",
-    "source_sha256": "e23f2089e49edb398f014992334cd65f60a48e762136db225b01af5900dbc8d0"
+    "file_type": "pptx"
   },
   "report_contract": {
     "status": "passed",
@@ -384,7 +381,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "94f75bee819deace25453870f47dfe3ea9fd2b45cdf239c29121a6dc98c7fd23",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -407,11 +403,9 @@
       "reason_codes": [
         "MERGED_TABLE_GEOMETRY_PRESENT"
       ],
-      "request_id": "ai-review-request-e23f2089e49edb39",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
       "skill_version": "1.8.2",
-      "source_sha256": "e23f2089e49edb398f014992334cd65f60a48e762136db225b01af5900dbc8d0",
       "targets": [
         {
           "canonical": {

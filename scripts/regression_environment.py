@@ -17,6 +17,8 @@ def environment_manifest(profile="core-no-pandoc"):
         except importlib.metadata.PackageNotFoundError: installed=None; imported="failed"; satisfied=False
         status="declared" if satisfied else "unavailable"
         dependencies[name]={"declared":declared,"installed":installed,"requirement_satisfied":satisfied,"import_status":imported,"status":status}
-    result={"schema_version":"1.0","python":{"version":platform.python_version(),"implementation":platform.python_implementation()},"platform":{"system":platform.system(),"machine":platform.machine()},"profile":profile,"dependencies":dependencies,"system_tools":{name:{"available":bool(shutil.which(name))} for name in ("pandoc","tesseract")}}
+    tools={name:{"available":bool(shutil.which(name))} for name in ("pandoc","tesseract")}
+    result={"schema_version":"1.0","python":{"version":platform.python_version(),"implementation":platform.python_implementation()},"platform":{"system":platform.system(),"machine":platform.machine()},"profile":profile,"dependencies":dependencies,"system_tools":tools,
+            "ocr_engine_profile":"rapidocr+tesseract-fallback" if tools["tesseract"]["available"] else "rapidocr-only"}
     result["system_tools"]["libGL.so.1"]={"available":bool(shutil.which("ldconfig")) and "libGL.so.1" in __import__("subprocess").run(["ldconfig","-p"],capture_output=True,text=True).stdout}
     result["environment_fingerprint"]=hashlib.sha256(stable_bytes(result)).hexdigest(); return result
