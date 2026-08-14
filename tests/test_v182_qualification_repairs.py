@@ -127,3 +127,21 @@ def test_nested_docx_table_is_explicitly_delimited_and_warned(tmp_path):
     assert report["status"] == "passed_with_warnings"
     assert "DOCX_NESTED_TABLE_FLATTENED" in [warning["code"] for warning in report["warnings"]]
     assert "Nested table: N00 \\| N01 \\| N10 \\| N11" in (bundle / "document.md").read_text(encoding="utf-8")
+
+
+def test_nested_docx_table_preserves_outer_cell_text_in_document_order(tmp_path):
+    from docx import Document
+
+    source = tmp_path / "nested-with-outer-text.docx"
+    document = Document(); cell = document.add_table(rows=1, cols=1).cell(0, 0)
+    cell.text = "OUTER-INTRO"
+    nested = cell.add_table(rows=1, cols=2)
+    nested.cell(0, 0).text = "INNER-A"; nested.cell(0, 1).text = "INNER-B"
+    cell.add_paragraph("OUTER-TAIL")
+    document.save(source)
+    bundle = tmp_path / "bundle"
+    router.convert(str(source), str(bundle))
+    markdown = (bundle / "document.md").read_text(encoding="utf-8")
+    assert "OUTER-INTRO" in markdown and "OUTER-TAIL" in markdown
+    assert "Nested table: INNER-A \\| INNER-B" in markdown
+    assert markdown.index("OUTER-INTRO") < markdown.index("Nested table") < markdown.index("OUTER-TAIL")

@@ -379,18 +379,8 @@ def _render_table(table: Table) -> tuple:
                 if vm is not None:
                     v_merge_val = vm.get(qn("w:val")) or "continue"
 
-            nested_tables = tc.findall(".//" + qn("w:tbl"))
-            if nested_tables:
-                nested_tables_found += len(nested_tables)
-                nested_cells = []
-                for nested in nested_tables:
-                    for nested_tc in nested.iter(qn("w:tc")):
-                        value = "".join(node.text or "" for node in nested_tc.iter(qn("w:t"))).strip()
-                        if value:
-                            nested_cells.append(value)
-                cell_text = "[Nested table: " + " | ".join(nested_cells) + "]"
-            else:
-                cell_text = "".join(node.text or "" for node in tc.iter(qn("w:t"))).strip()
+            cell_text, nested_count = _render_cell_content_in_order(tc)
+            nested_tables_found += nested_count
 
             if v_merge_val == "continue" and col_cursor in open_vmerge:
                 anchor_row = open_vmerge[col_cursor]
@@ -452,6 +442,30 @@ def _render_table(table: Table) -> tuple:
         html.append("</tr>")
     html.append("</table>")
     return "\n".join(html), merges_found, raw_grid, cells, nested_tables_found
+
+
+def _render_cell_content_in_order(tc) -> tuple[str, int]:
+    """Flatten nested tables without discarding surrounding cell paragraphs.
+
+    OOXML cell children are ordered paragraphs/tables.  Iterating every
+    ``w:t`` below a nested table used to replace the whole cell and silently
+    lose paragraphs before and after it.
+    """
+    parts, nested_count = [], 0
+    for child in tc:
+        if child.tag == qn("w:p"):
+            text = "".join(node.text or "" for node in child.iter(qn("w:t"))).strip()
+            if text:
+                parts.append(text)
+        elif child.tag == qn("w:tbl"):
+            nested_count += 1
+            values = []
+            for nested_tc in child.iter(qn("w:tc")):
+                value = "".join(node.text or "" for node in nested_tc.iter(qn("w:t"))).strip()
+                if value:
+                    values.append(value)
+            parts.append("[Nested table: " + " | ".join(values) + "]")
+    return "\n\n".join(parts), nested_count
 
 
 def _html_escape(s: str) -> str:
