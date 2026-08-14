@@ -150,6 +150,18 @@ def _convert_inner(input_path: str, original_path: str, output_dir: str, assets_
 
     elements, tables = [], []
 
+    # Native OCR libraries can terminate a process by signal.  Probe them in a
+    # child before selecting an OCR-capable route so a known-bad backend yields
+    # an honest bundle instead of entering the converter blindly.
+    if file_type in ("image", "pdf"):
+        from native_probe import probe_rapidocr
+        native = probe_rapidocr()
+        if native.get("status") != "passed":
+            reason = "OCR_NATIVE_BACKEND_CRASHED" if native.get("reason") == "native_dependency_crash" else "OCR_NATIVE_BACKEND_UNAVAILABLE"
+            return _write_bundle(output_dir, original_path, file_type, sha256, "", {
+                "status": "failed", "reason": reason, "native_probe": native,
+            }, fmt_info)
+
     if file_type == "html":
         try:
             from html_structure import extract_html
