@@ -13,7 +13,7 @@ def test_irregular_csv_preserves_extra_field_and_warns(tmp_path):
     source.write_text("a,b,c\ntwo,columns,but_file_has_more,extra\nshort,row\n", encoding="utf-8")
     bundle = tmp_path / "bundle"
     report = router.convert(str(source), str(bundle))
-    markdown = (bundle / "document.md").read_text(encoding="utf-8")
+    markdown = (bundle / "document.md").read_bytes().decode("utf-8")
     assert report["status"] == "passed_with_warnings"
     assert "CSV_INCONSISTENT_COLUMN_COUNT" in [warning["code"] for warning in report["warnings"]]
     assert "__extra_1" in markdown and "extra" in markdown
@@ -41,13 +41,17 @@ def test_crlf_quoted_multiline_csv_preserves_extra_columns_and_warning(tmp_path)
 
     report = router.convert(str(source), str(bundle))
     persisted = json.loads((bundle / "conversion-report.json").read_text(encoding="utf-8"))
-    markdown = (bundle / "document.md").read_text(encoding="utf-8")
+    markdown = (bundle / "document.md").read_bytes().decode("utf-8")
 
     assert report["status"] == "passed_with_warnings"
     assert persisted["details"]["max_column_count"] == 5
     assert "CSV_INCONSISTENT_COLUMN_COUNT" in [warning["code"] for warning in persisted["warnings"]]
     assert all(label in markdown for label in ("__extra_1", "__extra_2", "__extra_3", "EXTRA-A", "EXTRA-B"))
-    assert "line 1\n<br>line 2" in markdown
+    assert "| alpha | line 1<br>line 2 |  |  |  |" in markdown
+    assert "line 1\r<br>line 2" not in markdown
+    assert "line 1\n<br>line 2" not in markdown
+    table = json.loads((bundle / "tables" / "table-0001.json").read_text(encoding="utf-8"))
+    assert table["dimensions"] == {"rows": 3, "columns": 5}
 
 
 def test_lf_quoted_multiline_csv_matches_crlf_canonical_grid(tmp_path):
@@ -65,10 +69,20 @@ def test_lf_quoted_multiline_csv_matches_crlf_canonical_grid(tmp_path):
     router.convert(str(lf_source), str(lf_bundle))
     crlf_report = json.loads((crlf_bundle / "conversion-report.json").read_text(encoding="utf-8"))
     lf_report = json.loads((lf_bundle / "conversion-report.json").read_text(encoding="utf-8"))
+    crlf_table = json.loads((crlf_bundle / "tables" / "table-0001.json").read_text(encoding="utf-8"))
+    lf_table = json.loads((lf_bundle / "tables" / "table-0001.json").read_text(encoding="utf-8"))
+
+    def normalized_grid(table):
+        return [
+            (cell["row"], cell["column"], cell["value"].replace("\r\n", "\n").replace("\r", "\n"))
+            for cell in table["cells"]
+        ]
 
     assert crlf_report["details"]["max_column_count"] == lf_report["details"]["max_column_count"] == 5
     assert crlf_report["warnings"] == lf_report["warnings"]
     assert crlf_report["status"] == lf_report["status"] == "passed_with_warnings"
+    assert crlf_table["dimensions"] == lf_table["dimensions"] == {"rows": 3, "columns": 5}
+    assert normalized_grid(crlf_table) == normalized_grid(lf_table)
 
 
 def test_json_nesting_limit_has_stable_failure_reason(tmp_path):

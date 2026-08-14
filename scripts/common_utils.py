@@ -445,7 +445,13 @@ def markdown_link_label(name: str) -> str:
 
 
 def _escape_pipe(cell: str) -> str:
-    return str(cell).replace("|", "\\|").replace("\n", "<br>")
+    return (
+        str(cell)
+        .replace("|", "\\|")
+        .replace("\r\n", "<br>")
+        .replace("\r", "<br>")
+        .replace("\n", "<br>")
+    )
 
 # ---------------------------------------------------------------------------
 # Bundle asset paths
