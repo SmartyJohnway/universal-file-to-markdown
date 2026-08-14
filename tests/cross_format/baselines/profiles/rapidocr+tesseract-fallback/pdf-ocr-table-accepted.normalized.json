@@ -1,0 +1,398 @@
+{
+  "normalization_schema_version": "1.0",
+  "document_markdown": "<!-- page: 1 -->\n\n| ITEM | QUANTITY |\n| --- | --- |\n| MOTOR | TWO |\n| PUMP | FOUR |\n| VALVE | TWELVE |",
+  "document": {
+    "content_element_count": 2,
+    "element_count": 3,
+    "elements": [
+      {
+        "child_ids": [
+          "page-0001"
+        ],
+        "children": [
+          "page-0001"
+        ],
+        "confidence": null,
+        "content": "",
+        "content_format": "markdown",
+        "engine": "rapidocr_onnxruntime",
+        "heading_path": [],
+        "id": "document-root",
+        "locator_precision": "unknown",
+        "ordinal": 0,
+        "parent_id": null,
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": null,
+          "page_end": null,
+          "page_start": null,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": "pdf_ocr_table_accepted.pdf",
+          "table_index": null
+        },
+        "type": "document",
+        "warnings": []
+      },
+      {
+        "child_ids": [
+          "page-0001-table-001"
+        ],
+        "children": [
+          "page-0001-table-001"
+        ],
+        "confidence": 0.995,
+        "content": "<!-- page: 1 -->",
+        "content_format": "markdown",
+        "engine": "rapidocr",
+        "heading_path": [],
+        "id": "page-0001",
+        "locator_precision": "derived",
+        "ordinal": 1,
+        "page": 1,
+        "parent_id": "document-root",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": 1,
+          "page_end": 1,
+          "page_start": 1,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "type": "page",
+        "warnings": []
+      },
+      {
+        "child_ids": [],
+        "children": [],
+        "confidence": 0.995,
+        "content": "| ITEM | QUANTITY |\n| --- | --- |\n| MOTOR | TWO |\n| PUMP | FOUR |\n| VALVE | TWELVE |",
+        "content_format": "markdown",
+        "engine": "rapidocr",
+        "heading_path": [],
+        "id": "page-0001-table-001",
+        "locator_precision": "derived",
+        "ordinal": 2,
+        "parent_id": "page-0001",
+        "properties": {},
+        "source_locator": {
+          "anchor_cell": null,
+          "bbox": null,
+          "bboxes": null,
+          "cell_range": null,
+          "element_end": null,
+          "element_id": null,
+          "element_index": null,
+          "element_start": null,
+          "filename": null,
+          "format": "pdf",
+          "json_path": null,
+          "mime_part": null,
+          "page": 1,
+          "page_end": 1,
+          "page_start": 1,
+          "part": null,
+          "relationship_id": null,
+          "row_end": null,
+          "row_start": null,
+          "section": null,
+          "section_index": null,
+          "shape_id": null,
+          "shape_ids": null,
+          "shape_name": null,
+          "sheet": null,
+          "sheet_name": null,
+          "slide": null,
+          "slide_number": null,
+          "source_file": null,
+          "table_index": null
+        },
+        "table_id": "table-ocr-p0001-0001",
+        "type": "table",
+        "warnings": []
+      }
+    ],
+    "file_type": "pdf",
+    "root_element_id": "document-root",
+    "schema_version": "1.0",
+    "source_file": "pdf_ocr_table_accepted.pdf"
+  },
+  "chunks": [
+    {
+      "ancestor_element_ids": [
+        "page-0001"
+      ],
+      "char_count": 84,
+      "chunk_id": "chunk-00001",
+      "chunk_index": 1,
+      "column_indexes": [],
+      "consumer_contract_version": "1.0",
+      "context_char_count": 53,
+      "context_element_ids": [
+        "page-0001"
+      ],
+      "context_policy": "source_text_priority_v1",
+      "context_prefix": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\n",
+      "context_truncated": false,
+      "element_ids": [
+        "page-0001-table-001"
+      ],
+      "embedding_char_count": 137,
+      "embedding_text": "[heading_path: Page 1]\n[unit_element_id: page-0001]\n\n| ITEM | QUANTITY |\n| --- | --- |\n| MOTOR | TWO |\n| PUMP | FOUR |\n| VALVE | TWELVE |",
+      "heading_path": [
+        "Page 1"
+      ],
+      "layout_order_methods": [],
+      "layout_region_ids": [],
+      "layout_zones": [],
+      "locator_precision": "derived",
+      "page_end": 1,
+      "page_start": 1,
+      "part_count": 1,
+      "part_index": 1,
+      "related_element_ids": [],
+      "relation_types": [],
+      "relationships": [],
+      "schema_version": "1.0",
+      "section_element_id": null,
+      "sheet_name": null,
+      "slide_end": null,
+      "slide_start": null,
+      "source_file": "pdf_ocr_table_accepted.pdf",
+      "source_locator": {
+        "format": "pdf",
+        "page": 1,
+        "page_end": 1,
+        "page_start": 1,
+        "source_file": "pdf_ocr_table_accepted.pdf"
+      },
+      "table_ids": [
+        "table-ocr-p0001-0001"
+      ],
+      "text": "| ITEM | QUANTITY |\n| --- | --- |\n| MOTOR | TWO |\n| PUMP | FOUR |\n| VALVE | TWELVE |",
+      "unit_element_id": "page-0001"
+    }
+  ],
+  "tables": [
+    {
+      "cell_blocks": [],
+      "cells": [
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "ITEM"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": true,
+          "row": 0,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "QUANTITY"
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "MOTOR"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 1,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "TWO"
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "PUMP"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 2,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "FOUR"
+        },
+        {
+          "colspan": 1,
+          "column": 0,
+          "confidence": null,
+          "is_header": false,
+          "row": 3,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "VALVE"
+        },
+        {
+          "colspan": 1,
+          "column": 1,
+          "confidence": null,
+          "is_header": false,
+          "row": 3,
+          "rowspan": 1,
+          "source_locator": null,
+          "value": "TWELVE"
+        }
+      ],
+      "confidence": 0.85,
+      "dimensions": {
+        "columns": 2,
+        "rows": 4
+      },
+      "engine": "rapidocr",
+      "grid": [
+        [
+          "ITEM",
+          "QUANTITY"
+        ],
+        [
+          "MOTOR",
+          "TWO"
+        ],
+        [
+          "PUMP",
+          "FOUR"
+        ],
+        [
+          "VALVE",
+          "TWELVE"
+        ]
+      ],
+      "id": "table-ocr-p0001-0001",
+      "merged_cells": [],
+      "merged_cells_flattened_in_csv": false,
+      "merged_cells_present": false,
+      "properties": {
+        "candidate_id": "ocr-table-candidate-0001",
+        "decision": "accepted",
+        "origin": "ocr_table_candidate",
+        "signals": {
+          "aligned_row_ratio": 1.0,
+          "assigned_token_count": 8,
+          "bounding_box_geometry_available": true,
+          "column_count": 2,
+          "consistent_column_ratio": 1.0,
+          "irregular_row_ratio": 0.0,
+          "key_value_pattern_ratio": 0.0,
+          "numeric_column_ratio": 0.0,
+          "orphan_token_count": 0,
+          "row_count": 4,
+          "source_token_count": 8,
+          "suspicious_glued_token": false
+        }
+      },
+      "schema_version": "1.0",
+      "source_dimensions": null,
+      "source_format": "pdf",
+      "source_locator": {
+        "context": "pdf_scanned_page_1",
+        "format": "pdf",
+        "page_end": 1,
+        "page_start": 1
+      }
+    }
+  ],
+  "assets": [],
+  "manifest_contract": {
+    "status": "passed_with_warnings",
+    "file_type": "pdf"
+  },
+  "report_contract": {
+    "status": "passed_with_warnings",
+    "engine": "rapidocr_onnxruntime",
+    "warnings": [
+      {
+        "code": "TABLE_STRUCTURE_HEURISTIC",
+        "message": "A column-aligned pattern was detected and rendered as a table via x-coordinate clustering (not a trained table-structure model). Spot-check column alignment, especially for merged/spanning cells.",
+        "regions": 1
+      }
+    ],
+    "bundle_validation": {
+      "counts": {
+        "chunks": 1,
+        "elements": 3,
+        "tables": 1
+      },
+      "errors": [],
+      "status": "passed",
+      "warnings": []
+    },
+    "bundle_validation_status": "passed",
+    "ai_review_status": "not_provided",
+    "readable_projection_status": "not_generated"
+  },
+  "ai_artifacts": {},
+  "readable_projection": null
+}

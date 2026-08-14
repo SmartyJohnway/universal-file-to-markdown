@@ -351,9 +351,13 @@ def main(args):
         result=run_case(case,output,args.reruns,args.keep_bundles) if 'format' in case else run_workflow_case(case,output,args.reruns,args.keep_bundles)
         results.append(result)
         print(f"[cross-format] finished {case['case_id']}: {result['status']}", file=sys.stderr, flush=True)
-    baseline_dir=Path(args.baseline_dir); baseline_path=baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text(encoding='utf-8')) if baseline_path.exists() else {}
+    baseline_dir=Path(args.baseline_dir)
     baseline_profile=env['ocr_engine_profile']
-    baseline_is_qualified=baseline_profile == 'rapidocr-only'
+    has_pdf_cases=any(case.get('format') == 'pdf' for case in cases)
+    effective_baseline_profile = baseline_profile if has_pdf_cases else 'rapidocr-only'
+    profile_baseline_dir = baseline_dir if effective_baseline_profile == 'rapidocr-only' else baseline_dir/'profiles'/effective_baseline_profile
+    baseline_path=profile_baseline_dir/'fingerprints.json'; baseline=json.loads(baseline_path.read_text(encoding='utf-8')) if baseline_path.exists() else {}
+    baseline_is_qualified=effective_baseline_profile == 'rapidocr-only' or baseline_path.exists() or args.update_baseline
     baseline_mismatches=[]
     for result in results:
         # OCR fallback changes visible text and engine provenance.  It must
@@ -363,7 +367,7 @@ def main(args):
             continue
         current=result.get('fingerprints',[{}])[0].get('bundle_fingerprint')
         expected=baseline.get(result['case_id'])
-        snapshot=baseline_dir/(result['case_id']+'.normalized.json')
+        snapshot=profile_baseline_dir/(result['case_id']+'.normalized.json')
         baseline_changed=expected and expected != current
         # A fingerprint can differ solely because an OCR confidence moved within
         # the declared tolerance; snapshots make that distinction auditable.
@@ -380,7 +384,7 @@ def main(args):
         baseline_path.parent.mkdir(parents=True,exist_ok=True)
         report={'old':baseline,'new':merged,'changed':[key for key in updated if baseline.get(key)!=updated[key]],'preserved':[key for key in baseline if key not in updated]}
         (output/'baseline-update-report.json').write_text(json.dumps(report,indent=2)+'\n'); baseline_path.write_text(json.dumps(merged,indent=2)+'\n')
-        for result in results: (baseline_dir/(result['case_id']+'.normalized.json')).write_text(json.dumps(result['normalized_snapshot'],ensure_ascii=False,indent=2)+'\n')
+        for result in results: (profile_baseline_dir/(result['case_id']+'.normalized.json')).write_text(json.dumps(result['normalized_snapshot'],ensure_ascii=False,indent=2)+'\n')
     counts=Counter(r['status'] for r in results); formats=defaultdict(lambda:Counter())
     for r in results: formats[r['format']][r['status']]+=1
     def has_rerun_mismatch(result): return bool({'CROSS_FORMAT_NONDETERMINISTIC_RERUN','WORKFLOW_NONDETERMINISTIC_RERUN'} & set(result.get('reason_codes',[])))
