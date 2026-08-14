@@ -6,6 +6,14 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
+## [1.8.2] - 未發布
+
+### 修正 (Fixed)
+
+* 防止不可信 OCR 表格成為 canonical 資料，並 OCR 處理 hybrid PDF 的 material raster 區域。
+* 保留不規則 CSV 欄位、揭露 DOCX 巢狀表格扁平化、顯示 EML 附件，並提供穩定 JSON 巢狀限制失敗。
+* 填入 chunk 來源檔名，並在 OCR native probe 失敗時 fail-closed。
+
 ## [1.8.1] - 2026-08-13
 
 此 stable release 整合下方列出的未發布 v1.7.3 hardening 與 v1.8.0

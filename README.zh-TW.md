@@ -152,7 +152,9 @@ python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 
 ## Canonical contracts
 
-目前 stable release：`1.8.1`
+目前開發目標：`1.8.2`
+
+最新已發布 stable release：`1.8.1`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
 

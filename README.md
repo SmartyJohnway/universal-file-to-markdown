@@ -152,7 +152,9 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current stable release: `1.8.1`
+Current development target: `1.8.2`
+
+Latest published stable release: `1.8.1`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
 

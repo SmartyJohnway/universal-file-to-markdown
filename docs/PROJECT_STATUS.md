@@ -1,12 +1,14 @@
 # Project Status
 
-Current stable release: `v1.8.1`
+Current development target: `v1.8.2`
+
+Latest published stable release: `v1.8.1`
 
 Historical unpublished integration milestone: `v1.7.1` (superseded by `v1.7.2`)
 
-Release readiness: `released`
+Release readiness: `in_development`
 
-Release status: `released_stable`
+Release status: `development`
 
 Released tag: `v1.8.1` (`026222ab1b7d6137ab509477e4e02ad961dfa9dd`)
 
