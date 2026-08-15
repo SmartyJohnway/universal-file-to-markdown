@@ -1,16 +1,16 @@
 # Project Status
 
-Current release candidate: `v1.8.2`
+Current stable release: `v1.8.2`
 
-Latest published stable release: `v1.8.1`
+Latest published stable release: `v1.8.2`
 
 Historical unpublished integration milestone: `v1.7.1` (superseded by `v1.7.2`)
 
-Release readiness: `release_candidate`
+Release readiness: `released`
 
-Release status: `candidate`
+Release status: `stable`
 
-Released tag: `v1.8.1` (`026222ab1b7d6137ab509477e4e02ad961dfa9dd`)
+Released tag: `v1.8.2`
 
 Data schema version: `1.0` (independent from the skill version)
 
@@ -20,4 +20,5 @@ License: Apache-2.0
 
 Release readiness requires required dependency preflight, full tests, source
 compilation, required CI, and completion of the release process. A release
-candidate is not a tag or GitHub Release. See `RELEASING.md` for that process.
+release record is complete only after the final `main` commit is tagged and its
+GitHub Release package workflow succeeds. See `RELEASING.md` for that process.

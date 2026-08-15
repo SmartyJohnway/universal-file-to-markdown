@@ -152,9 +152,9 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current release candidate: `1.8.2`
+Current stable release: `1.8.2`
 
-Latest published stable release: `1.8.1`
+Latest published stable release: `1.8.2`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
 
@@ -194,8 +194,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.1-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.1-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.2-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.2-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

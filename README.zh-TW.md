@@ -152,9 +152,9 @@ python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 
 ## Canonical contracts
 
-目前 release candidate：`1.8.2`
+目前 stable release：`1.8.2`
 
-最新已發布 stable release：`1.8.1`
+最新已發布 stable release：`1.8.2`
 
 `v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
 
@@ -192,8 +192,8 @@ python scripts/check_release_consistency.py
 python scripts/check_markdown_links.py
 python scripts/build_skill_package.py --profile release --output dist --verify
 python scripts/build_skill_package.py --profile agent-skill --output dist --verify
-python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.1-release.zip
-python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.1-skill.zip
+python scripts/validate_skill_package.py --profile release dist/universal-file-to-markdown-1.8.2-release.zip
+python scripts/validate_skill_package.py --profile agent-skill dist/universal-file-to-markdown-1.8.2-skill.zip
 python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```

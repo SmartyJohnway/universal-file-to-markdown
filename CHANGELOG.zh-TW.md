@@ -6,7 +6,7 @@
 
 格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本編號在實務可行範圍內遵循 Semantic Versioning。
 
-## [1.8.2] - 未發布
+## [1.8.2] - 2026-08-15
 
 ### 修正 (Fixed)
 
