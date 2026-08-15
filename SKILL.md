@@ -1,7 +1,7 @@
 ---
 name: universal-file-to-markdown
 version: 1.8.2
-release_status: development
+release_status: candidate
 description: >
   Convert PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON,
   EML, and supported markup into traceable Markdown and validated
@@ -100,7 +100,7 @@ OOXML first, then rerun.
 Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version:
 
 ```text
-skill_version: 1.8.2 (development)
+skill_version: 1.8.2 (candidate)
 published_stable_version: 1.8.1
 document/table/chunk schema_version: 1.0
 ```

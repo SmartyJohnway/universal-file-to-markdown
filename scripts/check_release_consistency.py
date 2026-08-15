@@ -59,23 +59,25 @@ def validate_release_consistency(root: Path) -> list[str]:
 
     readme = _text(root, "README.md")
     readme_zh = _text(root, "README.zh-TW.md")
-    expected = (
-        {"README_CURRENT_VERSION_MISMATCH": f"Current stable release: `{version}`"}
-        if release_status == "stable" else {
-            "README_CURRENT_VERSION_MISMATCH": f"Current development target: `{version}`",
-            "README_STABLE_VERSION_MISMATCH": f"Latest published stable release: `{published}`",
-        }
-    )
+    current_release_phrase = {
+        "development": f"Current development target: `{version}`",
+        "candidate": f"Current release candidate: `{version}`",
+        "stable": f"Current stable release: `{version}`",
+    }[release_status]
+    expected = {"README_CURRENT_VERSION_MISMATCH": current_release_phrase}
+    if release_status != "stable":
+        expected["README_STABLE_VERSION_MISMATCH"] = f"Latest published stable release: `{published}`"
     for code, phrase in expected.items():
         if phrase not in readme:
             failures.append(code)
-    expected_zh = (
-        {"README_ZH_CURRENT_VERSION_MISMATCH": f"目前 stable release：`{version}`"}
-        if release_status == "stable" else {
-            "README_ZH_CURRENT_VERSION_MISMATCH": f"目前開發目標：`{version}`",
-            "README_ZH_STABLE_VERSION_MISMATCH": f"最新已發布 stable release：`{published}`",
-        }
-    )
+    current_release_phrase_zh = {
+        "development": f"目前開發目標：`{version}`",
+        "candidate": f"目前 release candidate：`{version}`",
+        "stable": f"目前 stable release：`{version}`",
+    }[release_status]
+    expected_zh = {"README_ZH_CURRENT_VERSION_MISMATCH": current_release_phrase_zh}
+    if release_status != "stable":
+        expected_zh["README_ZH_STABLE_VERSION_MISMATCH"] = f"最新已發布 stable release：`{published}`"
     for code, phrase in expected_zh.items():
         if phrase not in readme_zh:
             failures.append(code)
@@ -84,15 +86,21 @@ def validate_release_consistency(root: Path) -> list[str]:
             failures.append(f"ADJACENT_DUPLICATE_HEADING:{name}:{heading}")
 
     project_status = _text(root, "docs/PROJECT_STATUS.md")
-    project_status_current = (
-        f"Current stable release: `v{version}`"
-        if release_status == "stable" else f"Current development target: `v{version}`"
-    )
+    project_status_current = {
+        "development": f"Current development target: `v{version}`",
+        "candidate": f"Current release candidate: `v{version}`",
+        "stable": f"Current stable release: `v{version}`",
+    }[release_status]
     if project_status_current not in project_status:
         failures.append("PROJECT_STATUS_CURRENT_VERSION_MISMATCH")
     if (release_status != "stable"
             and f"Latest published stable release: `v{published}`" not in project_status):
         failures.append("PROJECT_STATUS_STABLE_VERSION_MISMATCH")
+    expected_readiness = {"development": "in_development", "candidate": "release_candidate", "stable": "released"}[release_status]
+    if f"Release readiness: `{expected_readiness}`" not in project_status:
+        failures.append("PROJECT_STATUS_READINESS_MISMATCH")
+    if f"Release status: `{release_status}`" not in project_status:
+        failures.append("PROJECT_STATUS_RELEASE_STATUS_MISMATCH")
 
     citation = _text(root, "CITATION.cff")
     if _match(r"^version:\s*(\S+)\s*$", citation) != published:
@@ -108,10 +116,11 @@ def validate_release_consistency(root: Path) -> list[str]:
     if f"## [{version}]" not in _text(root, "CHANGELOG.zh-TW.md"):
         failures.append("CHANGELOG_ZH_VERSION_MISSING")
     versioning = _text(root, "VERSIONING.md")
-    versioning_current = (
-        f"`{version}` is the latest published stable skill version"
-        if release_status == "stable" else f"`{version}` is the current development version"
-    )
+    versioning_current = {
+        "development": f"`{version}` is the current development version",
+        "candidate": f"`{version}` is the current release candidate",
+        "stable": f"`{version}` is the latest published stable skill version",
+    }[release_status]
     if versioning_current not in versioning:
         failures.append("VERSIONING_CURRENT_VERSION_MISMATCH")
     if f"`{published}` is the latest published stable skill version" not in versioning:

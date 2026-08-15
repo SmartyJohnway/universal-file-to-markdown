@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 * Block untrusted OCR table reconstruction from becoming canonical data and OCR material raster regions on hybrid PDF pages.
 * Preserve irregular CSV fields, disclose nested DOCX table flattening, expose EML attachments, and add stable JSON nesting failures.
 * Populate chunk source filenames and fail closed when the OCR native probe fails.
+* Preserve CRLF quoted multiline CSV fields without allowing delimiter sniffing or Markdown projection to split a logical table row.
 
 ## [1.8.1] - 2026-08-13
 

@@ -13,6 +13,7 @@
 * 防止不可信 OCR 表格成為 canonical 資料，並 OCR 處理 hybrid PDF 的 material raster 區域。
 * 保留不規則 CSV 欄位、揭露 DOCX 巢狀表格扁平化、顯示 EML 附件，並提供穩定 JSON 巢狀限制失敗。
 * 填入 chunk 來源檔名，並在 OCR native probe 失敗時 fail-closed。
+* 保留 CRLF quoted multiline CSV 欄位，避免 delimiter sniffing 或 Markdown projection 拆開一個 logical table row。
 
 ## [1.8.1] - 2026-08-13
 

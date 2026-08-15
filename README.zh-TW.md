@@ -22,7 +22,7 @@
 - [支援政策](SUPPORT.md)
 - [治理方式](GOVERNANCE.md)
 - [發布流程](RELEASING.md)
-- [發布檢查清單](RELEASE_CHECKLIST.md)
+- [v1.8.2 發行檢查清單](RELEASE_CHECKLIST_v1.8.2.md)
 - [授權說明](docs/LICENSING.md)
 
 ## 主要特色
@@ -152,7 +152,7 @@ python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
 
 ## Canonical contracts
 
-目前開發目標：`1.8.2`
+目前 release candidate：`1.8.2`
 
 最新已發布 stable release：`1.8.1`
 
