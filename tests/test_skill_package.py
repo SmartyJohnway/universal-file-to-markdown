@@ -34,6 +34,8 @@ def test_release_package_build_is_reproducible_and_valid(tmp_path):
         prefix = f"universal-file-to-markdown-{first['skill_version']}/"
         assert prefix + 'VERSION' in names and prefix + 'SKILL.md' in names
         assert prefix + 'CITATION.cff' in names
+        assert prefix + 'RELEASE_CHECKLIST_v1.8.2.md' in names
+        assert prefix + 'RELEASE_NOTES_v1.8.2.md' in names
         assert any(n.startswith(prefix + 'schemas/') for n in names)
         assert all(not any(x in n for x in ('.venv/', '.qualification/', '__pycache__/', '.git/', 'dist/')) for n in names)
     assert validate(a, profile='release')['status'] == 'passed'
@@ -218,4 +220,3 @@ def test_agent_skill_standalone_validation_in_isolated_dir(tmp_path):
     # Validate agent-skill archive in isolated directory without repo manifests
     res_val = validate(archive, profile='agent-skill', root=pkg_root)
     assert res_val['status'] == 'passed'
-
