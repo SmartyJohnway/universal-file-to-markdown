@@ -1,8 +1,5 @@
 # Universal File to Markdown v1.8.2
 
-> Draft release notes. Finalize the release date and links only after the exact
-> `main` commit has passed the Release gate.
-
 ## Highlights
 
 - Makes CSV conversion safer for irregular rows and CRLF quoted multiline cells:
