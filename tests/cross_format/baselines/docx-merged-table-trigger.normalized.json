@@ -162,8 +162,7 @@
     "file_type": "docx",
     "root_element_id": "document-root",
     "schema_version": "1.0",
-    "source_file": "docx_horizontal_merge.docx",
-    "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c"
+    "source_file": "docx_horizontal_merge.docx"
   },
   "chunks": [
     {
@@ -201,14 +200,13 @@
       "sheet_name": null,
       "slide_end": null,
       "slide_start": null,
-      "source_file": null,
+      "source_file": "docx_horizontal_merge.docx",
       "source_locator": {
         "element_end": 2,
         "element_start": 1,
         "format": "docx",
         "section_index": 0
       },
-      "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c",
       "table_ids": [
         "table-0001"
       ],
@@ -284,8 +282,7 @@
   "assets": [],
   "manifest_contract": {
     "status": "passed",
-    "file_type": "docx",
-    "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c"
+    "file_type": "docx"
   },
   "report_contract": {
     "status": "passed",
@@ -315,7 +312,6 @@
         "render_table_cell_links",
         "render_table_cell_lists"
       ],
-      "canonical_bundle_fingerprint": "3eaaae678f0f3ce9235a98624f37a9047085864051c17f70f5ab328b8708961f",
       "instructions": {
         "do_not_modify_canonical": true,
         "preserve_facts": true,
@@ -338,11 +334,9 @@
       "reason_codes": [
         "MERGED_TABLE_GEOMETRY_PRESENT"
       ],
-      "request_id": "ai-review-request-0685e574306d1a2c",
       "review_scope": "readable_projection_only",
       "schema_version": "1.0",
-      "skill_version": "1.8.1",
-      "source_sha256": "0685e574306d1a2cd3e727ae1ccb59113827d8c5dfdeb4b93dc31d63cae9cf2c",
+      "skill_version": "1.8.2",
       "targets": [
         {
           "canonical": {

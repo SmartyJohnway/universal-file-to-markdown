@@ -116,6 +116,18 @@ if spec is not None:
         result["error_message"] = str(exc)
 print(json.dumps(result))
 '''
+_RAPIDOCR_FUNCTIONAL = r'''import json
+try:
+    import numpy as np
+    from rapidocr_onnxruntime import RapidOCR
+    image = np.full((24, 96, 3), 255, dtype=np.uint8)
+    result, _ = RapidOCR()(image)
+    assert result is None or isinstance(result, list)
+    print(json.dumps({"ok": True}))
+except Exception as exc:
+    print(json.dumps({"ok": False, "error_message": str(exc)}))
+    raise
+'''
 
 
 def _child_failure(base: dict, completed: subprocess.CompletedProcess[str], timed_out: bool, duration_ms: int, functional: bool = False) -> dict:
@@ -163,7 +175,7 @@ def probe_rapidocr(
     python_executable: str = sys.executable,
     timeout_seconds: float = DEFAULT_NATIVE_PROBE_TIMEOUT_SECONDS,
 ) -> dict:
-    """Import RapidOCR and OpenCV in the child to expose missing native libraries."""
+    """Qualify import, model construction, and one OCR inference in a child."""
     completed, timed_out, duration = _run_child([python_executable, "-c", _RAPIDOCR_IMPORT], timeout_seconds)
     empty = {"package": "rapidocr-onnxruntime", "module": "rapidocr_onnxruntime", "version": None, "module_discovered": False}
     if timed_out or completed.returncode not in (0, None):
@@ -176,4 +188,8 @@ def probe_rapidocr(
         return _result(base, status="failed", import_status="module_not_found", functional_status="not_run", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="module_not_found")
     if payload.get("error_message"):
         return _result(base, status="failed", import_status="import_error", functional_status="not_run", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration, reason="import_error")
-    return _result(base, status="passed", import_status="passed", functional_status="not_applicable", return_code=0, signal=None, timed_out=False, stdout=completed.stdout, stderr=completed.stderr, duration_ms=duration)
+    functional, timed_out, functional_duration = _run_child([python_executable, "-c", _RAPIDOCR_FUNCTIONAL], timeout_seconds)
+    total = duration + functional_duration
+    if timed_out or functional.returncode != 0:
+        return _child_failure(base, functional, timed_out, total, functional=True)
+    return _result(base, status="passed", import_status="passed", functional_status="passed", return_code=0, signal=None, timed_out=False, stdout=functional.stdout, stderr=functional.stderr, duration_ms=total)

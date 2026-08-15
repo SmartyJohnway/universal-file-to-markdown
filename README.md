@@ -22,7 +22,7 @@ The project is designed for environments where conversion must remain transparen
 - [Support policy](SUPPORT.md)
 - [Governance](GOVERNANCE.md)
 - [Release process](RELEASING.md)
-- [Release checklist](RELEASE_CHECKLIST.md)
+- [v1.8.2 release checklist](RELEASE_CHECKLIST_v1.8.2.md)
 - [Licensing guide](docs/LICENSING.md)
 
 ## Highlights
@@ -152,7 +152,9 @@ Typical warnings include unavailable formula results, ambiguous encoding, low OC
 
 ## Canonical contracts
 
-Current stable release: `1.8.1`
+Current release candidate: `1.8.2`
+
+Latest published stable release: `1.8.1`
 
 `v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
 

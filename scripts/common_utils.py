@@ -266,11 +266,18 @@ def convert_csv_native(path: str, encoding_hint: str = None) -> dict:
     text, encoding, ambiguous, candidates = read_text_smart(path, encoding_hint)
     sample = text[:4096]
     try:
-        dialect = csv.Sniffer().sniff(sample)
+        # Never allow record terminators to become a dialect delimiter.  In
+        # particular, unconstrained sniffing can select ``\r`` for CRLF CSV
+        # files containing quoted multiline fields, silently turning every
+        # logical record into a one-column row.
+        dialect = csv.Sniffer().sniff(sample, delimiters=",\t;|")
         delimiter = dialect.delimiter
     except csv.Error:
         delimiter = ","
-    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+    # ``newline=\"\"`` is the CSV module's newline-preserving mode.  Quoted
+    # multiline fields must retain CRLF rather than have it normalized before
+    # parsing.
+    reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter)
     rows = list(reader)
     if not rows:
         markdown = f"<!-- source_encoding: {encoding} -->\n"
@@ -278,31 +285,84 @@ def convert_csv_native(path: str, encoding_hint: str = None) -> dict:
                 "candidates": candidates, "rows": []}
 
     header, body = rows[0], rows[1:]
+    max_width = max(len(row) for row in rows)
+    original_header_width = len(header)
+    if max_width > original_header_width:
+        header = header + [f"__extra_{index}" for index in range(1, max_width - original_header_width + 1)]
     lines = ["| " + " | ".join(_escape_pipe(c) for c in header) + " |",
              "| " + " | ".join(["---"] * len(header)) + " |"]
     padded_rows = [header]
     for row in body:
         row = row + [""] * (len(header) - len(row))
-        row = row[:len(header)]
         padded_rows.append(row)
         lines.append("| " + " | ".join(_escape_pipe(c) for c in row) + " |")
     note = f"<!-- source_encoding: {encoding} -->\n"
     markdown = note + "\n".join(lines) + "\n"
+    widths = [len(row) for row in rows]
+    warnings = []
+    if len(set(widths)) > 1:
+        warnings.append({"code": "CSV_INCONSISTENT_COLUMN_COUNT", "message": "Rows have inconsistent field counts; extra fields were preserved in deterministic __extra_N columns.", "row_widths": widths, "max_column_count": max_width})
     return {"markdown": markdown, "encoding": encoding, "ambiguous": ambiguous,
-            "candidates": candidates, "rows": padded_rows}
+            "candidates": candidates, "rows": padded_rows, "warnings": warnings,
+            "row_count": len(rows), "max_column_count": max_width}
+
+
+MAX_JSON_NESTING_DEPTH = 1000
+
+
+def _json_nesting_depth(value) -> int:
+    maximum = 0
+    pending = [(value, 1)]
+    while pending:
+        node, depth = pending.pop()
+        maximum = max(maximum, depth)
+        if isinstance(node, dict):
+            pending.extend((child, depth + 1) for child in node.values())
+        elif isinstance(node, list):
+            pending.extend((child, depth + 1) for child in node)
+    return maximum
+
+
+def _json_source_depth(text: str) -> int:
+    """Count structural nesting without parsing or recursing into JSON."""
+    depth = maximum = 0
+    quoted = escaped = False
+    for char in text:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+        elif char in "[{":
+            depth += 1; maximum = max(maximum, depth)
+        elif char in "]}":
+            depth = max(0, depth - 1)
+    return maximum
 
 
 def convert_json_native(path: str, encoding_hint: str = None) -> dict:
     text, encoding, ambiguous, candidates = read_text_smart(path, encoding_hint)
+    source_depth = _json_source_depth(text)
+    if source_depth > MAX_JSON_NESTING_DEPTH:
+        return {"limit_exceeded": True, "depth": source_depth, "encoding": encoding,
+                "ambiguous": ambiguous, "candidates": candidates}
     valid = True
     try:
         parsed = json.loads(text)
+        depth = _json_nesting_depth(parsed)
+        if depth > MAX_JSON_NESTING_DEPTH:
+            return {"limit_exceeded": True, "depth": depth, "encoding": encoding,
+                    "ambiguous": ambiguous, "candidates": candidates}
         pretty = json.dumps(parsed, indent=2, ensure_ascii=False)
     except json.JSONDecodeError:
         valid = False
         pretty = text  # not valid JSON; show as-is rather than fail
     return {"markdown": "```json\n" + pretty + "\n```\n", "encoding": encoding,
-            "ambiguous": ambiguous, "candidates": candidates, "valid": valid}
+            "ambiguous": ambiguous, "candidates": candidates, "valid": valid, "limit_exceeded": False}
 
 
 def convert_eml_native(path: str) -> dict:
@@ -360,6 +420,10 @@ def convert_eml_native(path: str) -> dict:
         body_text += "\n\n<!-- rendered from text/html part; no text/plain alternative was present -->"
 
     md = "\n".join(header_lines) + "\n\n---\n\n" + body_text
+    if attachments:
+        md += "\n\n## Attachments\n\n" + "\n".join(
+            f"- [{markdown_link_label(item['original_filename'])}](assets/{item['filename']})" for item in attachments
+        )
     return {"markdown": md, "attachments": attachments}
 
 
@@ -376,8 +440,18 @@ def _sanitize_filename(name: str, seen: set) -> str:
     return candidate
 
 
+def markdown_link_label(name: str) -> str:
+    return name.replace("\\", "\\\\").replace("\r", " ").replace("\n", " ").replace("[", "\\[").replace("]", "\\]")
+
+
 def _escape_pipe(cell: str) -> str:
-    return str(cell).replace("|", "\\|").replace("\n", "<br>")
+    return (
+        str(cell)
+        .replace("|", "\\|")
+        .replace("\r\n", "<br>")
+        .replace("\r", "<br>")
+        .replace("\n", "<br>")
+    )
 
 # ---------------------------------------------------------------------------
 # Bundle asset paths

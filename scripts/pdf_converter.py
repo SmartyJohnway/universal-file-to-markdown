@@ -37,6 +37,21 @@ MEDIUM_TOKEN_MIN_COUNT = 2
 COLUMN_TOLERANCE_PX = 20
 MIN_ROWS_FOR_TABLE = 3
 MIN_COLS_FOR_TABLE = 2
+MATERIAL_RASTER_AREA_RATIO = 0.20
+
+
+def _material_raster_regions(page):
+    """Return embedded image rectangles large enough to affect page meaning."""
+    page_area = float(page.rect.width * page.rect.height)
+    if not page_area:
+        return []
+    regions = []
+    for image in page.get_images(full=True):
+        for rect in page.get_image_rects(image[0]):
+            ratio = float(rect.width * rect.height) / page_area
+            if ratio >= MATERIAL_RASTER_AREA_RATIO:
+                regions.append({"bbox": list(rect), "area_ratio": round(ratio, 3)})
+    return regions
 
 
 def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
@@ -47,18 +62,50 @@ def convert_pdf(path: str, ocr_lang_hint: str = "auto") -> dict:
         return {"markdown": "", "report": {"status": "failed", "reason": "password_protected"}}
 
     page_classes = []
+    material_rasters = {}
     for i in range(len(doc)):
         text = doc[i].get_text("text").strip()
         page_classes.append("digital" if len(text) >= 1 else "scanned")
+        if text:
+            regions = _material_raster_regions(doc[i])
+            if regions:
+                material_rasters[i] = regions
 
     if all(c == "digital" for c in page_classes):
-        return _convert_digital(path, doc, list(range(len(doc))))
+        result = _convert_digital(path, doc, list(range(len(doc))))
+        if material_rasters:
+            raster_pages = sorted(material_rasters)
+            try:
+                raster_result = _convert_scanned(path, doc, raster_pages, material_rasters)
+            except Exception as exc:
+                raster_result = None
+                result["report"].setdefault("warnings", []).append({
+                    "code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
+                    "pages": [index + 1 for index in raster_pages], "regions": material_rasters,
+                    "message": f"Material embedded raster regions require OCR or human review; OCR could not run: {type(exc).__name__}.",
+                })
+            if raster_result:
+                _append_raster_overlay(result, raster_result, raster_pages)
+                result["report"]["engine"] = "hybrid(pdfplumber+rapidocr)"
+                result["report"]["ocr_used"] = True
+                result["report"]["hybrid_raster_pages"] = [index + 1 for index in raster_pages]
+                for key in ("ocr_avg_confidence", "ocr_low_confidence_pages", "glued_word_pages", "tesseract_fallback_pages", "engine_per_page", "ocr_table_candidates", "ocr_table_assessment"):
+                    if key in raster_result["report"]:
+                        result["report"][key] = raster_result["report"][key]
+            result["report"]["status"] = "passed_with_warnings"
+            result["report"].setdefault("warnings", []).append({
+                "code": "MIXED_PDF_MATERIAL_RASTER_OCR" if raster_result else "EMBEDDED_RASTER_TEXT_UNEXTRACTED",
+                "pages": [index + 1 for index in material_rasters],
+                "regions": material_rasters,
+                "message": "Material embedded raster regions were OCR-routed alongside native page text." if raster_result else "Material embedded raster regions require OCR or human review before trusted use.",
+            })
+        return result
     if all(c == "scanned" for c in page_classes):
         return _convert_scanned(path, doc, list(range(len(doc))))
-    return _convert_mixed(path, doc, page_classes)
+    return _convert_mixed(path, doc, page_classes, material_rasters)
 
 
-def _convert_mixed(path: str, doc, page_classes) -> dict:
+def _convert_mixed(path: str, doc, page_classes, material_rasters=None) -> dict:
     digital_idx = [i for i, c in enumerate(page_classes) if c == "digital"]
     scanned_idx = [i for i, c in enumerate(page_classes) if c == "scanned"]
 
@@ -103,8 +150,48 @@ def _convert_mixed(path: str, doc, page_classes) -> dict:
     tables = (digital_result.get("tables", []) if digital_result else []) + \
              (scanned_result.get("tables", []) if scanned_result else [])
 
-    return {"markdown": ordered_md, "report": report, "_per_page_md": [pages_md[i] for i in sorted(pages_md)],
+    result = {"markdown": ordered_md, "report": report, "_per_page_md": [pages_md[i] for i in sorted(pages_md)],
             "elements": elements, "tables": tables}
+    material_rasters = material_rasters or {}
+    if material_rasters:
+        raster_pages = sorted(material_rasters)
+        try:
+            raster = _convert_scanned(path, doc, raster_pages, material_rasters)
+            _append_raster_overlay(result, raster, raster_pages)
+            result["report"]["ocr_used"] = True
+            result["report"]["hybrid_raster_pages"] = [i + 1 for i in raster_pages]
+            result["report"].setdefault("warnings", []).append({"code": "MIXED_PDF_MATERIAL_RASTER_OCR", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": "Material raster pages were OCR-routed."})
+        except Exception as exc:
+            result["report"].setdefault("warnings", []).append({"code": "EMBEDDED_RASTER_TEXT_UNEXTRACTED", "pages": [i + 1 for i in raster_pages], "regions": material_rasters, "message": f"OCR could not run: {type(exc).__name__}."})
+    return result
+
+
+def _append_raster_overlay(result: dict, raster_result: dict, raster_pages: list[int]) -> None:
+    """Attach OCR from embedded raster *regions*, keeping native page text unique."""
+    page_markdown = result["_per_page_md"]
+    # The native result may be a subset of pages (a genuinely mixed PDF), so
+    # select each page by its page marker rather than assuming list offsets.
+    for offset, page_index in enumerate(raster_pages):
+        marker = f"<!-- page: {page_index + 1} -->"
+        for index, markdown in enumerate(page_markdown):
+            if markdown.startswith(marker):
+                page_markdown[index] += "\n\n<!-- material-raster-ocr -->\n" + raster_result["_per_page_md"][offset]
+                break
+    result["markdown"] = "\n\n".join(page_markdown)
+    table_id_map, overlay_tables = {}, []
+    for table in raster_result.get("tables", []):
+        cloned = dict(table); table_id_map[table["id"]] = table["id"] + "-raster"
+        cloned["id"] = table_id_map[table["id"]]; overlay_tables.append(cloned)
+    overlay_elements = []
+    for element in raster_result.get("elements", []):
+        if element.get("type") == "page":
+            continue
+        cloned = dict(element); cloned["id"] = element["id"] + "-raster"
+        cloned["parent_id"] = f"page-{element.get('page', 1):04d}"
+        if cloned.get("table_id") in table_id_map:
+            cloned["table_id"] = table_id_map[cloned["table_id"]]
+        overlay_elements.append(cloned)
+    result["elements"].extend(overlay_elements); result["tables"].extend(overlay_tables)
 
 
 def _convert_digital(path: str, doc, page_indices) -> dict:
@@ -617,7 +704,7 @@ def _bbox_overlap_ratio(a, b):
     return intersection / area
 
 
-def _convert_scanned(path: str, doc, page_indices) -> dict:
+def _convert_scanned(path: str, doc, page_indices, clip_regions=None) -> dict:
     try:
         from rapidocr_onnxruntime import RapidOCR
     except ImportError:
@@ -644,7 +731,12 @@ def _convert_scanned(path: str, doc, page_indices) -> dict:
     for i in page_indices:
         page = doc[i]
         page_id = f"page-{i + 1:04d}"
-        pix = page.get_pixmap(dpi=200)
+        clip = None
+        if clip_regions and i in clip_regions:
+            boxes_to_crop = [region["bbox"] for region in clip_regions[i]]
+            clip = (min(box[0] for box in boxes_to_crop), min(box[1] for box in boxes_to_crop),
+                    max(box[2] for box in boxes_to_crop), max(box[3] for box in boxes_to_crop))
+        pix = page.get_pixmap(dpi=200, clip=clip)
         img_bytes = pix.tobytes("png")
 
         result, _ = engine(img_bytes)

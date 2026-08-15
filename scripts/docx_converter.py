@@ -58,6 +58,7 @@ def convert_docx(path: str, assets_dir: str = None) -> dict:
     tables_out = []
     table_count = 0
     merged_cells_found = 0
+    nested_tables_found = 0
     image_count = 0
     heading_stack = []
 
@@ -103,9 +104,10 @@ def convert_docx(path: str, assets_dir: str = None) -> dict:
                 })
         elif isinstance(child, CT_Tbl):
             table = Table(child, doc)
-            table_md, merges, grid, cells = _render_table(table)
+            table_md, merges, grid, cells, nested_here = _render_table(table)
             table_count += 1
             merged_cells_found += merges
+            nested_tables_found += nested_here
             el_counter += 1
             blocks.append(table_md)
             elements.append({
@@ -144,12 +146,17 @@ def convert_docx(path: str, assets_dir: str = None) -> dict:
     report = {
         "tables_found": table_count,
         "merged_cells_found": merged_cells_found,
+        "nested_tables_found": nested_tables_found,
         "media_extracted": len(media_saved),
         "images_anchored_inline": image_count,
         "footnotes_found": len([k for k in footnotes if k not in (-1, 0)]),
         "endnotes_found": len([k for k in endnotes if k not in (-1, 0)]),
         "metadata": metadata,
     }
+    if nested_tables_found:
+        report["status"] = "passed_with_warnings"
+        report["warnings"] = [{"code": "DOCX_NESTED_TABLE_FLATTENED", "count": nested_tables_found,
+                               "message": "Nested DOCX tables were projected with explicit cell separators; review before structural use."}]
     return {"markdown": "\n\n".join(blocks), "report": report,
             "elements": elements, "tables": tables_out}
 
@@ -345,12 +352,13 @@ def _render_table(table: Table) -> tuple:
     rows_xml = tbl.findall(qn("w:tr"))
     grid_cols = len(tbl.findall(qn("w:tblGrid") + "/" + qn("w:gridCol")))
     if grid_cols == 0 or not rows_xml:
-        return "", 0, None, None
+        return "", 0, None, None, 0
 
     cell_grid = [[None] * grid_cols for _ in rows_xml]
     open_vmerge = {}
     merges_found = 0
     any_span = False
+    nested_tables_found = 0
 
     for r_idx, tr in enumerate(rows_xml):
         col_cursor = 0
@@ -371,7 +379,8 @@ def _render_table(table: Table) -> tuple:
                 if vm is not None:
                     v_merge_val = vm.get(qn("w:val")) or "continue"
 
-            cell_text = "".join(node.text or "" for node in tc.iter(qn("w:t"))).strip()
+            cell_text, nested_count = _render_cell_content_in_order(tc)
+            nested_tables_found += nested_count
 
             if v_merge_val == "continue" and col_cursor in open_vmerge:
                 anchor_row = open_vmerge[col_cursor]
@@ -411,7 +420,7 @@ def _render_table(table: Table) -> tuple:
                  "| " + " | ".join(["---"] * grid_cols) + " |"]
         for r in range(1, len(rows_xml)):
             lines.append("| " + " | ".join(_esc(cell_grid[r][c][1]) for c in range(grid_cols)) + " |")
-        return "\n".join(lines), merges_found, raw_grid, None
+        return "\n".join(lines), merges_found, raw_grid, None, nested_tables_found
 
     html = ["<table>"]
     cells = []
@@ -432,7 +441,31 @@ def _render_table(table: Table) -> tuple:
                           "rowspan": rowspan, "colspan": colspan})
         html.append("</tr>")
     html.append("</table>")
-    return "\n".join(html), merges_found, raw_grid, cells
+    return "\n".join(html), merges_found, raw_grid, cells, nested_tables_found
+
+
+def _render_cell_content_in_order(tc) -> tuple[str, int]:
+    """Flatten nested tables without discarding surrounding cell paragraphs.
+
+    OOXML cell children are ordered paragraphs/tables.  Iterating every
+    ``w:t`` below a nested table used to replace the whole cell and silently
+    lose paragraphs before and after it.
+    """
+    parts, nested_count = [], 0
+    for child in tc:
+        if child.tag == qn("w:p"):
+            text = "".join(node.text or "" for node in child.iter(qn("w:t"))).strip()
+            if text:
+                parts.append(text)
+        elif child.tag == qn("w:tbl"):
+            nested_count += 1
+            values = []
+            for nested_tc in child.iter(qn("w:tc")):
+                value = "".join(node.text or "" for node in nested_tc.iter(qn("w:t"))).strip()
+                if value:
+                    values.append(value)
+            parts.append("[Nested table: " + " | ".join(values) + "]")
+    return "\n\n".join(parts), nested_count
 
 
 def _html_escape(s: str) -> str:

@@ -25,7 +25,7 @@ def build_report(source_path: str, file_type: str, converter_report: dict, markd
             "status": "failed",
             "reason": converter_report.get("reason", "unknown"),
         }
-        for key in ("error_type", "error_message"):
+        for key in ("error_type", "error_message", "maximum_depth", "configured_limit"):
             if converter_report.get(key) is not None:
                 failed[key] = converter_report[key]
         return failed
