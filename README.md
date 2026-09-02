@@ -1,5 +1,7 @@
 # Universal File to Markdown
 
+[![vskill VERIFIED](https://verified-skill.com/api/v1/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown/badge)](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown)
+
 [繁體中文](README.zh-TW.md) · [Changelog](CHANGELOG.md)
 
 Evidence-first, fidelity-oriented document extraction skill for AI agents. It extracts supported files into Markdown and a schema-validated bundle while prioritizing source correctness, content completeness, traceability, and AI handoff.
