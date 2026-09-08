@@ -1,194 +1,247 @@
 # Universal File to Markdown
 
 [![vskill VERIFIED](https://verified-skill.com/api/v1/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown/badge)](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown)
+[![Latest Release](https://img.shields.io/github/v/release/SmartyJohnway/universal-file-to-markdown?color=blue)](https://github.com/SmartyJohnway/universal-file-to-markdown/releases/latest)
+[![CI Tests](https://github.com/SmartyJohnway/universal-file-to-markdown/actions/workflows/test.yml/badge.svg)](https://github.com/SmartyJohnway/universal-file-to-markdown/actions/workflows/test.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python: 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](requirements.txt)
 
-[繁體中文](README.zh-TW.md) · [Changelog](CHANGELOG.md)
+[繁體中文](README.zh-TW.md) · [Changelog](CHANGELOG.md) · [Releases](https://github.com/SmartyJohnway/universal-file-to-markdown/releases)
 
-Evidence-first, fidelity-oriented document extraction skill for AI agents. It extracts supported files into Markdown and a schema-validated bundle while prioritizing source correctness, content completeness, traceability, and AI handoff.
+Convert PDF, scanned documents, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON, EML and Pandoc markup into Markdown plus validated, traceable bundles for AI agents, RAG, and downstream automation.
 
-The project is designed for environments where conversion must remain transparent and traceable. It does not treat `document.md` alone as proof of success: every run also produces a quality report, source manifest, canonical elements, bounded chunks, table assets, and validation results.
+> **Not just Markdown. Know whether the conversion can be trusted.**
 
-## Documentation
+*Local-first · Validation-backed · Source-traceable · Failure-aware*
 
-- [English README](README.md)
-- [繁體中文 README](README.zh-TW.md)
-- [English changelog](CHANGELOG.md)
-- [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
-- [AI skill operating contract](SKILL.md)
-- [Versioning](VERSIONING.md)
-- [Format capability matrix](references/capability_matrix.md)
-- [Engine notes and escalation guidance](references/engine_notes.md)
-- [Chunk consumer contract](references/chunk_consumer_contract.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Support policy](SUPPORT.md)
-- [Governance](GOVERNANCE.md)
-- [Release process](RELEASING.md)
-- [v1.8.2 release checklist](RELEASE_CHECKLIST_v1.8.2.md)
-- [Licensing guide](docs/LICENSING.md)
+---
 
-## Highlights
+## Quick Start
 
-- Converts PDF, scanned images, DOCX, XLSX/XLSM, PPTX, CSV/TSV, JSON, EML, and Pandoc-supported markup.
-- Uses lightweight structural parsers and offline OCR; no PyTorch runtime or external model download is required.
-- Handles Traditional Chinese Big5/CP950 encoding candidates explicitly.
-- Preserves merged Office tables with rowspan/colspan-aware HTML output.
-- Routes mixed digital/scanned PDF pages independently.
-- Produces canonical hierarchical elements with page, sheet, slide, shape, table, and bounding-box locators where available.
-- Applies deterministic column/role-aware PDF and PPTX reading plans and records additive layout hints on canonical elements.
-- Links captions and speaker notes only when prefix, geometry, or OOXML relationships provide strong evidence.
-- Emits RAG chunks plus a validated ID-only consumer context projection; both source and embedding views have a hard maximum of 2,000 characters.
-- Detects unsupported or uncertain content instead of silently reporting success.
-- Validates schemas, hierarchy, chunk references, table dimensions, assets, and bundle consistency.
+### 1. Install as an Agent Skill
 
-## Supported formats
+Universal File to Markdown is published and source-verified on **vSkill**:
 
-| Input | Primary engine | Canonical granularity | Notes |
+```bash
+npx vskill@latest install smartyjohnway/universal-file-to-markdown/universal-file-to-markdown
+```
+
+- [View on vSkill](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown)
+- [View Live Verification & Security Report](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown/security)
+
+### 2. Run Locally
+
+Requires Python 3.10–3.12 (primary qualified runtime: Python 3.11).
+
+```bash
+git clone https://github.com/SmartyJohnway/universal-file-to-markdown.git
+cd universal-file-to-markdown
+
+python -m venv .venv
+source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+python -m pip install -r requirements.txt
+python scripts/capability_probe.py --json
+
+# Convert a file
+python scripts/router.py path/to/document.pdf --output ./output_bundle
+
+# Validate bundle integrity
+python scripts/validate_bundle.py ./output_bundle
+```
+
+---
+
+## Why Universal File to Markdown?
+
+Most document converters generate a standalone `.md` file and stop there. If tables collapse, OCR misrecognizes text, or character encodings produce mojibake, consumers have no automated way to know.
+
+Universal File to Markdown approaches document conversion as an **auditable, evidence-first pipeline**:
+
+| What you need | Standard Markdown Converter | Universal File to Markdown |
+|---|---|---|
+| **Primary Output** | Plain `document.md` | `document.md` plus schema-validated canonical bundle |
+| **Trust & Confidence** | Assumed success unless process crashes | `conversion-report.json` with explicit `passed` / `passed_with_warnings` / `failed` status |
+| **Source Provenance** | None | Bounding boxes, page numbers, sheet names, slide numbers, and shape locators |
+| **RAG & Agent Ingestion** | Ad-hoc text splitting | Bounded RAG chunks (≤2,000 chars) with hierarchical context and ancestor IDs |
+| **Complex Tables** | Merged cells flattened or corrupted | Preserves merge geometry with HTML `rowspan`/`colspan` plus CSV assets |
+| **Failure Disclosure** | Silent loss or garbage text | Explicit warnings, ambiguity candidates, and unextracted structure disclosures |
+
+---
+
+## Failure-aware by Design
+
+The project never treats `document.md` alone as proof of conversion success. When content is ambiguous or unsupported, the system discloses uncertainty explicitly:
+
+| Condition | Converter Behavior |
+|---|---|
+| **Ambiguous text encoding** | Discloses all plausible candidates and scores (e.g. Big5 vs CP950); annotates Markdown and warns downstream consumers. |
+| **Low OCR confidence** | Preserves OCR tokens and regions, recording confidence scores and warning codes rather than claiming clean extraction. |
+| **Scanned table uncertainty** | Requires geometric and token evidence; rejected table candidates remain readable text with warnings instead of false table structures. |
+| **Unsupported structures** | Discloses unparsed SmartArt, embedded OLE objects, or chart series rather than silently dropping them. |
+| **Bundle validation failure** | Flags the conversion as `failed`; canonical and RAG artifacts must not be accepted as valid results. |
+| **Rerun failure safety** | Clears known previous artifacts before rerun, preventing stale outputs from masking an extraction failure. |
+
+> [!NOTE]
+> *Validation-backed* means structural integrity, schema compliance, and cross-reference consistency are strictly verified. It does not claim 100% semantic omniscience across all unstructured inputs.
+
+---
+
+## Supported Formats
+
+| Input | Primary Engine | Canonical Granularity | Key Behaviors |
 |---|---|---|---|
-| DOCX | python-docx + OOXML | heading, paragraph, list item, table | Formatting, links, notes, headers/footers, merged cells |
-| XLSX/XLSM | openpyxl | sheet, blank-separated block, table, chart/image reference | Formulas, comments, merged cells, hidden-state metadata |
-| PPTX | python-pptx + OOXML | slide, group, title, paragraph, list, table, chart, image, note | Role/column reading plan, bullet inheritance, SmartArt/OLE disclosure |
-| Digital PDF | PyMuPDF + pdfplumber | page, located text block, table | Line-aware XY-cut order, bbox table insertion, de-duplication |
-| Scanned PDF | RapidOCR; Tesseract fallback | page, OCR region, table | OCR confidence and table-likelihood reporting |
-| PNG/JPEG/TIFF/BMP/WebP | RapidOCR; Tesseract fallback | OCR region, table | Direct offline image OCR |
-| CSV/TSV | Python stdlib CSV | canonical table | Encoding scoring with Traditional Chinese support |
-| JSON | Python stdlib JSON | structured block | Pretty-printed Unicode JSON |
-| EML | Python stdlib email | email, attachment | Sanitized collision-safe attachment names |
-| HTML/EPUB/RST/Org/TeX | Pandoc | structured block | Explicit failure when Pandoc is unavailable |
+| **DOCX** | python-docx + OOXML | heading, paragraph, list item, table | Formatting, links, notes, headers/footers, merged cells |
+| **XLSX / XLSM** | openpyxl | sheet, blank-separated block, table, chart/image ref | Formulas, comments, merged cells, hidden-state metadata |
+| **PPTX** | python-pptx + OOXML | slide, group, title, paragraph, list, table, chart, image, note | Role/column reading plan, bullet inheritance, SmartArt/OLE disclosure |
+| **Digital PDF** | PyMuPDF + pdfplumber | page, located text block, table | Line-aware XY-cut order, bbox table insertion, text deduplication |
+| **Scanned PDF** | RapidOCR (offline); Tesseract fallback | page, OCR region, table | OCR confidence and table-likelihood reporting |
+| **PNG / JPEG / TIFF / BMP / WebP** | RapidOCR (offline); Tesseract fallback | OCR region, table | Direct offline image OCR |
+| **CSV / TSV** | Python stdlib CSV | canonical table | Encoding scoring with Traditional Chinese Big5/CP950 support |
+| **JSON** | Python stdlib JSON | structured block | Pretty-printed Unicode JSON |
+| **EML** | Python stdlib email | email, attachment | Sanitized collision-safe attachment names |
+| **HTML / EPUB / RST / Org / TeX** | Pandoc (optional) | structured block | Explicit failure when Pandoc is unavailable |
 
-Legacy `.doc`, `.xls`, and `.ppt` files are not parsed directly. Convert them to OOXML first.
+*Legacy `.doc`, `.xls`, and `.ppt` binary files are not parsed directly. Convert them to modern OOXML formats first.*
 
-## Output bundle
+---
 
-Each conversion writes an output directory containing:
+## What You Get: Output Bundle
+
+Each conversion writes a self-contained, schema-validated directory:
+
+```mermaid
+flowchart TD
+    Input["Input Document\n(PDF, Office, Images, CSV, JSON, EML)"] --> Router["Universal File to Markdown\n(router.py)"]
+    Router --> MD["document.md\nHuman & LLM-readable Markdown"]
+    Router --> Canon["document.json\nCanonical hierarchical elements (Schema 1.0)"]
+    Router --> Chunks["chunks.jsonl\nBounded RAG chunks (≤2,000 chars)"]
+    Router --> Tables["tables/\nCanonical JSON + CSV + Merge-aware HTML"]
+    Router --> Assets["assets/\nExtracted images and attachments"]
+    Router --> Manifest["manifest.json\nSource SHA-256, timestamps & versions"]
+    Router --> Report["conversion-report.json\nEngine details, warnings & validation"]
+    Report --> Validate["Bundle Validation\n(validate_bundle.py)"]
+    Validate --> Status{"Status Model"}
+    Status -->|Pass| P["passed\nClean extraction"]
+    Status -->|Warning| W["passed_with_warnings\nUsable with disclosed caveats"]
+    Status -->|Failure| F["failed\nOutputs must not be ingested"]
+```
 
 ```text
-document.md              Human- and LLM-readable Markdown
-document.json            Canonical hierarchical elements, schema 1.0
-chunks.jsonl              Locator-rich RAG chunks, max 2,000 characters
-tables/                   Canonical JSON plus CSV and merge-aware HTML
-assets/                   Extracted images and attachments
-manifest.json             Source SHA-256, versions, timestamp, final status
-conversion-report.json   Engine details, warnings, and bundle validation
+output_dir/
+  document.md              Human- and LLM-readable Markdown
+  document.json            Canonical hierarchical elements, schema 1.0
+  chunks.jsonl              Locator-rich RAG chunks, max 2,000 characters
+  tables/                   Canonical JSON plus CSV and merge-aware HTML
+  assets/                   Extracted images and attachments
+  manifest.json             Source SHA-256, versions, timestamp, final status
+  conversion-report.json   Engine details, warnings, and bundle validation
 ```
 
-A failed rerun clears known generated artifacts first, preventing stale canonical outputs from surviving a later failure.
+---
 
-## Installation
+## Reading the Result: Status Model
 
-Supported Python: 3.10–3.12. Primary qualified runtime: Python 3.11. Python 3.13 is not currently supported.
+Always inspect `conversion-report.json` before feeding outputs to downstream LLM or RAG systems:
 
-Declared RapidOCR requirement: `rapidocr-onnxruntime>=1.4,<2`. Qualified version: `1.4.4`.
+| Status | Meaning | Action |
+|---|---|---|
+| **`passed`** | Bundle validation succeeded; schemas, locators, and tables are consistent with no detected loss. | Safe for automated ingestion. |
+| **`passed_with_warnings`** | Output is usable, but one or more uncertainties (e.g. ambiguous encoding, OCR confidence, unparsed SmartArt) were disclosed. | Ingest with awareness of logged warnings. |
+| **`failed`** | Extraction or validation failed. Known generated outputs are invalidated. | **Do not ingest** canonical or chunk outputs. |
 
-**Linux:** `libGL.so.1` may be required for OpenCV/RapidOCR. Tesseract is required when using the `pytesseract` fallback.
-
-**Windows:** the Microsoft Visual C++ runtime may be required for OpenCV. The Tesseract executable must be installed and discoverable when the fallback is used.
-
-Pandoc is an optional dependency: it is not required for the core profile and is required only for optional Pandoc-enabled routes.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-Optional system tools:
-
-- `tesseract`: Latin-script OCR fallback.
-- `pandoc`: HTML, EPUB, RST, Org, and TeX conversion paths.
-
-Check the runtime before conversion:
-
-```bash
-python scripts/capability_probe.py --json
-```
-
-The probe exits non-zero when a required Python dependency is missing. Optional system tools are reported without failing the probe.
-
-## Usage
-
-```bash
-python scripts/router.py INPUT_FILE --output OUTPUT_DIRECTORY
-```
-
-For ambiguous legacy encodings, provide an explicit codec:
-
-```bash
-python scripts/router.py input.csv --output output --encoding gb18030
-```
-
-Validate an existing bundle independently:
-
-```bash
-python scripts/validate_bundle.py OUTPUT_DIRECTORY
-```
-
-Score downstream chunk context across one or more bundles:
-
-```bash
-python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
-```
-
-The router exits non-zero when the final conversion status is `failed`.
-
-## Reading the result
-
-Always inspect `conversion-report.json`.
-
-- `passed`: conversion and bundle validation succeeded without detected loss.
-- `passed_with_warnings`: output is usable, but one or more uncertainties or unsupported structures were disclosed.
-- `failed`: canonical and RAG outputs must not be treated as valid.
-
-A successful bundle should also contain:
+A successful bundle includes:
 
 ```json
 {
+  "status": "passed",
   "bundle_validation": {
     "status": "passed"
   }
 }
 ```
 
-Typical warnings include unavailable formula results, ambiguous encoding, low OCR confidence, likely but unreconstructed scanned tables, SmartArt/OLE content not extracted, and Excel charts represented only as references.
+---
 
-## Canonical contracts
+## Public Examples
 
-Current stable release: `1.8.2`
+Explore verified showcases in the [`examples/`](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples) directory:
 
-Latest published stable release: `1.8.2`
+- [**Showcase 1: Normal Success (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — Full fidelity text and paragraph styling with canonical element hierarchy and bounded chunks.
+- [**Showcase 2: Warning & Uncertainty (CSV Big5)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-2-warning--uncertainty-disclosure-csv-with-big5-encoding) — Multi-candidate encoding scoring and explicit disclosure of ambiguous legacy encodings.
+- [**Showcase 3: Structural Fidelity (XLSX Merged Cells)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-3-structural-fidelity-xlsx-merged-cells) — Preservation of merged table geometry with `colspan`/`rowspan` HTML representations and CSV grid assets.
 
-`v1.7.1` was an unpublished integration milestone superseded by `v1.7.2`.
+---
 
-`VERSION` is the canonical current skill-version source. Skill version, schema version, bundle schema version, and report schema version are independent. A skill release does not automatically force every schema version to match the skill version. The current document/table/chunk schema version is `1.0`; see [VERSIONING.md](VERSIONING.md).
+## Known Boundaries
 
-Every canonical element has fixed fields for hierarchy, content format, engine, confidence, source locator, properties, and warnings. Canonical tables preserve merge anchors in `cells` and provide a rectangular `grid` for CSV and downstream processing.
+- **Scanned tables:** Reconstruction uses geometric heuristics; complex borderless or heavily merged scanned tables may require human review or specialized heavy models.
+- **SmartArt & OLE:** Embedded shapes and OLE objects are detected, located, and disclosed, but not expanded into vector trees.
+- **Charts:** Office charts are preserved as canonical references; plotted data series are not rendered in this release.
+- **PDF & PPTX reading order:** Uses deterministic geometric and placeholder-aware reading plans. Ambiguous visual layouts carry warnings for downstream inspection.
+- **DOCX edge cases:** Tracked revisions, deeply nested tables, and exact inline-image anchoring remain constrained.
+- **Legacy binary formats:** Binary `.doc`, `.xls`, `.ppt` files must be converted to modern OOXML formats before running.
 
-PDF/PPTX elements may include additive `properties.layout` and
-`properties.associations` metadata. The exact fields, evidence thresholds, and
-consumer rules are documented in
-[`references/layout_association_contract.md`](references/layout_association_contract.md).
-Located digital-PDF text may also include parser-derived
-`source_extraction_index`, distinct from visual reading order.
+---
 
-Chunks may include the additive `consumer_contract_version: "1.0"` projection:
-validated ancestor/section/unit/relationship/layout IDs, context budget
-accounting, and `embedding_text`. Canonical source `text` is never shortened to
-make room for context. See
-[`references/chunk_consumer_contract.md`](references/chunk_consumer_contract.md).
+## Installation & Advanced Usage
 
-JSON Schemas are stored in `schemas/`. Format-specific granularity is documented in `references/capability_matrix.md`.
+### Runtime Environment
 
-## Known boundaries
+- **Python:** 3.10–3.12 (qualified on 3.11). Python 3.13 is not supported.
+- **Offline OCR:** Bundles RapidOCR (`rapidocr-onnxruntime>=1.4,<2`, qualified on `1.4.4`). Runs offline with no PyTorch runtime or external model downloads.
+- **Linux:** `libGL.so.1` may be required for OpenCV/RapidOCR.
+- **Windows:** Microsoft Visual C++ runtime may be required for OpenCV.
+- **Optional Tools:**
+  - `tesseract`: Fallback Latin-script OCR.
+  - `pandoc`: Required only for optional markup formats (HTML, EPUB, RST, Org, TeX).
 
-- Scanned table reconstruction is geometric and heuristic; complex borderless or merged tables may require a heavier parser.
-- SmartArt and embedded OLE objects are detected and located but not expanded.
-- Excel chart objects are represented as references; plotted series are not rendered in this release.
-- Digital PDF and PPTX use deterministic geometry/placeholder-aware order; ambiguous visual intent remains warning-bearing and must be inspected.
-- DOCX tracked changes, nested tables, and exact inline-image anchoring remain limited.
-- Legacy binary Office files and round-trip conversion back to Office formats are out of scope.
+### CLI Usage
 
-## Development and release checks
+```bash
+# Basic conversion
+python scripts/router.py INPUT_FILE --output OUTPUT_DIRECTORY
+
+# Specify explicit encoding for ambiguous text
+python scripts/router.py input.csv --output output_dir --encoding gb18030
+
+# Standalone bundle validation
+python scripts/validate_bundle.py OUTPUT_DIRECTORY
+
+# Evaluate downstream chunk context score
+python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
+```
+
+---
+
+## Documentation
+
+### Using the Tool
+- [AI Skill Operating Contract](SKILL.md)
+- [Format Capability Matrix](references/capability_matrix.md)
+- [Engine Notes and Escalation Guidance](references/engine_notes.md)
+- [Examples Guide](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples)
+
+### Architecture & Contracts
+- Current stable release: `1.8.2`
+- [Chunk Consumer Contract](references/chunk_consumer_contract.md)
+- [Layout & Association Contract](references/layout_association_contract.md)
+- Canonical JSON Schemas (schemas/)
+- [Versioning Specification](VERSIONING.md)
+
+### Quality & Governance
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Support Policy](SUPPORT.md)
+- [Project Governance](GOVERNANCE.md)
+- [Release Process](RELEASING.md)
+- [Licensing Guide](docs/LICENSING.md)
+
+---
+
+## Development and Release Checks
+
+Run verification gates locally:
 
 ```bash
 python scripts/capability_probe.py --json
@@ -202,29 +255,8 @@ python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```
 
-On Windows hosts where the user temp root is inaccessible, pass a unique repository-local `--basetemp` to pytest.
-
-The full regression test suite is maintained in the source repository and is not included in the runtime release package or Agent Skill upload ZIP.
-
-Pull requests to `main` and pushes to `main` run the required GitHub Actions
-validation workflows automatically. The Release gate remains manually
-dispatched for an exact candidate commit, and the package workflow runs for
-`v*` tags. Release-specific checks are documented in `RELEASING.md` and
-`RELEASE_CHECKLIST.md`.
-
-## Project structure
-
-```text
-SKILL.md                    AI skill operating contract
-scripts/                    Router, converters, models, validation, utilities
-schemas/                    Canonical JSON Schemas
-references/                 Capability matrix and engine notes
-tests/                      Regression and integration tests
-requirements.txt            Runtime and test dependencies
-```
+---
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
-
-The license permits commercial use, modification, and redistribution subject to its terms, and includes an express contributor patent grant. Third-party dependencies retain their own licenses; see `THIRD_PARTY_NOTICES.md` and `LICENSES.md`.
+Licensed under the [Apache License 2.0](LICENSE). Commercial use, modification, and redistribution are permitted under its terms, including contributor patent grants. See `THIRD_PARTY_NOTICES.md` and `LICENSES.md` for third-party notices.
