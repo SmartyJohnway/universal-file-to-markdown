@@ -42,7 +42,7 @@ Each example demonstrates the evidence-first design: how inputs are processed in
 - **Status:** `passed` (`bundle_validation.status: passed`)
 
 ### What it proves
-- **Merged table fidelity:** Ordinary converters flatten or misalign merged cells in plain Markdown tables. Universal File to Markdown preserves merged table geometry by generating merge-aware HTML tables with `colspan="2"`:
+- **Merged table preservation:** Preserves merged table geometry by generating merge-aware HTML tables with `colspan="2"`:
   ```html
   <table>
   <tr>

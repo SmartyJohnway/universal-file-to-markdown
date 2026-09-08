@@ -55,18 +55,18 @@ python scripts/validate_bundle.py ./output_bundle
 
 ## 為什麼選擇本專案？(Why This Project?)
 
-一般的轉換工具通常只輸出單一 `.md` 檔案就結束。如果表格排版跑掉、OCR 辨識錯誤或編碼發生亂碼，後續程式或 AI 無從得知轉換品質。
+當文件轉換用於 RAG、AI Agent 讀取或自動化流程時，單純輸出 Markdown 無法直接反映轉換產物是否值得信賴。
 
 Universal File to Markdown 將文件轉換視為**具備稽核證據的工程流程**：
 
-| 需求項目 | 一般 Markdown 轉換工具 | Universal File to Markdown |
-|---|---|---|
-| **主要輸出** | 單純的 `document.md` | `document.md` 加上通過 Schema 驗證的 canonical bundle |
-| **可信度與品質** | 只要程式沒 crash 就視為成功 | `conversion-report.json` 明確區分 `passed` / `passed_with_warnings` / `failed` |
-| **來源回溯** | 無 | 精確標註 bounding box、頁碼、工作表、投影片與 shape 定位 |
-| **RAG 與 AI 接手** | 粗糙的純文字切分 | 上限 2,000 字元的受限 chunks，附帶階層脈絡與 ancestor ID |
-| **複雜表格** | 合併儲存格被壓扁或排版錯亂 | 保留結構幾何，產出含 `rowspan`/`colspan` 的 HTML 與 CSV 資產 |
-| **不確定性處理** | 默默遺失內容或產出亂碼 | 明確發出 warning，揭露編碼候選分數與未解析結構 |
+| 能力項目 | Universal File to Markdown 提供的具體能力 |
+|---|---|
+| **主要輸出** | `document.md` 外加通過 Schema 驗證的 canonical bundle（`document.json`、`chunks.jsonl`、`tables/`、`manifest.json`） |
+| **品質與信心度** | 明確的 `conversion-report.json`，提供 `passed` / `passed_with_warnings` / `failed` 與 bundle 驗證結果 |
+| **來源回溯** | 在可取得時提供 bounding box、頁碼、工作表、投影片與 shape 定位 |
+| **RAG 與 AI 接手** | 上限 2,000 字元的受限 chunks，附帶階層脈絡與 ancestor ID |
+| **合併表格** | 保留結構幾何，產出具備 `rowspan`/`colspan` 的 HTML 表格、canonical JSON 與 CSV 資產 |
+| **不確定性揭露** | 明確發出 warning，揭露候選編碼評分與未解析結構 |
 
 ---
 
@@ -76,7 +76,7 @@ Universal File to Markdown 將文件轉換視為**具備稽核證據的工程流
 
 | 狀況 | 轉換器處理方式 |
 |---|---|
-| **文字編碼有歧義** | 列出所有可能的編碼候選與分數（例如 Big5 vs CP950），在 Markdown 頂部標註並發出警告。 |
+| **文字編碼有歧義** | 提供候選編碼評分（例如 Big5 vs CP950），在 Markdown 頂部標註並發出警告。 |
 | **OCR 信心度不足** | 保留 OCR 文字與區域，同時記錄信心分數與 warning 程式碼，不假裝完美辨識。 |
 | **掃描表格證據不足** | 必須同時具備幾何線段與文字標記證據；若不充分則保留為純文字並標註警告，避免產出錯誤表格結構。 |
 | **不支援的複合結構** | 明確揭露未展開的 SmartArt、內嵌 OLE 物件或圖表資料序列，不默默吞掉內容。 |
@@ -98,7 +98,7 @@ Universal File to Markdown 將文件轉換視為**具備稽核證據的工程流
 | **數位 PDF** | PyMuPDF + pdfplumber | page, 定位文字 block, table | 行級 XY-cut 排序、bbox 表格插入、文字去重 |
 | **掃描 PDF** | RapidOCR（離線）；Tesseract fallback | page, OCR 區域, table | OCR 信心度評估與表格可能性分析 |
 | **PNG / JPEG / TIFF / BMP / WebP** | RapidOCR（離線）；Tesseract fallback | OCR 區域, table | 原生離線圖片 OCR |
-| **CSV / TSV** | Python stdlib CSV | canonical table | 編碼評分機制，完整支援繁體中文 Big5/CP950 |
+| **CSV / TSV** | Python stdlib CSV | canonical table | 提供 Big5/CP950 候選評分與編碼歧義揭露 |
 | **JSON** | Python stdlib JSON | structured block | 美化縮排與 Unicode 格式化 |
 | **EML** | Python stdlib email | email, 附件 | 檔名清理與避免附件名稱衝突 |
 | **HTML / EPUB / RST / Org / TeX** | Pandoc（選用） | structured block | 未安裝 Pandoc 時明確報錯，不假裝支援 |
@@ -123,7 +123,7 @@ flowchart TD
     Router --> Report["conversion-report.json\n引擎細節、警告與驗證結果"]
     Report --> Validate["輸出包驗證\n(validate_bundle.py)"]
     Validate --> Status{"狀態模型"}
-    Status -->|通過| P["passed\n無損驗證通過"]
+    Status -->|通過| P["passed\n結構與 Bundle 驗證通過"]
     Status -->|警告| W["passed_with_warnings\n可用但存在已知不確定性"]
     Status -->|失敗| F["failed\n輸出不得採用"]
 ```
@@ -147,7 +147,7 @@ output_dir/
 
 | 狀態碼 | 意義 | 建議處置 |
 |---|---|---|
-| **`passed`** | Bundle 驗證成功，schema、定位與表格皆一致且未發現遺失。 | 可安全地進行自動化處理。 |
+| **`passed`** | Bundle 驗證成功，schema、定位與表格皆一致且未發現遺失。 | 可進入後續處理流程；是否需要人工覆核仍依使用情境與下游政策決定。 |
 | **`passed_with_warnings`** | 輸出可以使用，但包含明確揭露的不確定性（如編碼歧義、OCR 信心度不足或未解析的 SmartArt）。 | 接受輸出並納入警告紀錄評估。 |
 | **`failed`** | 轉換或驗證失敗。已生成的產物已被標記為無效。 | **不得採用** canonical 或 chunk 產物。 |
 
@@ -168,7 +168,7 @@ output_dir/
 
 在 [`examples/`](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples) 目錄中可找到經實際驗證的範例：
 
-- [**範例 1: 正常轉換 (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — 完整保留粗斜體等文字樣式，產出完整的 canonical 階層與 bounded chunks。
+- [**範例 1: 正常轉換 (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — 保留粗體與斜體文字樣式，產出對應的 canonical 階層與 bounded chunks。
 - [**範例 2: 警告與不確定性揭露 (CSV Big5)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-2-warning--uncertainty-disclosure-csv-with-big5-encoding) — 多重候選編碼評分，明確揭露舊式編碼歧義而非硬猜。
 - [**範例 3: 結構保真度 (XLSX 合併儲存格)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-3-structural-fidelity-xlsx-merged-cells) — 保留合併儲存格結構，生成具備 `colspan`/`rowspan` 的 HTML 表格與對應 CSV/JSON 資產。
 

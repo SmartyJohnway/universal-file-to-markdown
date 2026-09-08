@@ -54,28 +54,28 @@ python scripts/validate_bundle.py ./output_bundle
 
 ## Why Universal File to Markdown?
 
-Most document converters generate a standalone `.md` file and stop there. If tables collapse, OCR misrecognizes text, or character encodings produce mojibake, consumers have no automated way to know.
+When document conversion is used for RAG, AI agent ingestion, or automated workflows, plain Markdown alone does not indicate whether conversion artifacts are trustworthy.
 
 Universal File to Markdown approaches document conversion as an **auditable, evidence-first pipeline**:
 
-| What you need | Standard Markdown Converter | Universal File to Markdown |
-|---|---|---|
-| **Primary Output** | Plain `document.md` | `document.md` plus schema-validated canonical bundle |
-| **Trust & Confidence** | Assumed success unless process crashes | `conversion-report.json` with explicit `passed` / `passed_with_warnings` / `failed` status |
-| **Source Provenance** | None | Bounding boxes, page numbers, sheet names, slide numbers, and shape locators |
-| **RAG & Agent Ingestion** | Ad-hoc text splitting | Bounded RAG chunks (≤2,000 chars) with hierarchical context and ancestor IDs |
-| **Complex Tables** | Merged cells flattened or corrupted | Preserves merge geometry with HTML `rowspan`/`colspan` plus CSV assets |
-| **Failure Disclosure** | Silent loss or garbage text | Explicit warnings, ambiguity candidates, and unextracted structure disclosures |
+| Capability | What Universal File to Markdown Provides |
+|---|---|
+| **Primary Output** | `document.md` plus a schema-validated canonical bundle (`document.json`, `chunks.jsonl`, `tables/`, `manifest.json`) |
+| **Quality & Confidence** | Explicit `conversion-report.json` reporting `passed`, `passed_with_warnings`, or `failed` with bundle validation |
+| **Source Provenance** | Bounding boxes, page numbers, sheet names, slide numbers, and shape locators where available |
+| **RAG & Agent Ingestion** | Bounded RAG chunks (hard limit of 2,000 characters) with hierarchical context and ancestor IDs |
+| **Merged Tables** | Merge-aware HTML tables preserving `rowspan`/`colspan` alongside canonical table JSON and CSV assets |
+| **Uncertainty & Disclosure** | Explicit warnings, scored encoding candidates, and unextracted structure disclosures |
 
 ---
 
 ## Failure-aware by Design
 
-The project never treats `document.md` alone as proof of conversion success. When content is ambiguous or unsupported, the system discloses uncertainty explicitly:
+The project does not treat `document.md` alone as proof of conversion success. When content is ambiguous or unsupported, the system discloses uncertainty explicitly:
 
 | Condition | Converter Behavior |
 |---|---|
-| **Ambiguous text encoding** | Discloses all plausible candidates and scores (e.g. Big5 vs CP950); annotates Markdown and warns downstream consumers. |
+| **Ambiguous text encoding** | Discloses scored encoding candidates (e.g. Big5 vs CP950); annotates Markdown and warns downstream consumers. |
 | **Low OCR confidence** | Preserves OCR tokens and regions, recording confidence scores and warning codes rather than claiming clean extraction. |
 | **Scanned table uncertainty** | Requires geometric and token evidence; rejected table candidates remain readable text with warnings instead of false table structures. |
 | **Unsupported structures** | Discloses unparsed SmartArt, embedded OLE objects, or chart series rather than silently dropping them. |
@@ -146,7 +146,7 @@ Always inspect `conversion-report.json` before feeding outputs to downstream LLM
 
 | Status | Meaning | Action |
 |---|---|---|
-| **`passed`** | Bundle validation succeeded; schemas, locators, and tables are consistent with no detected loss. | Safe for automated ingestion. |
+| **`passed`** | Bundle validation succeeded; schemas, locators, and tables are consistent with no detected loss. | Eligible for downstream ingestion, subject to the consumer's review policy. |
 | **`passed_with_warnings`** | Output is usable, but one or more uncertainties (e.g. ambiguous encoding, OCR confidence, unparsed SmartArt) were disclosed. | Ingest with awareness of logged warnings. |
 | **`failed`** | Extraction or validation failed. Known generated outputs are invalidated. | **Do not ingest** canonical or chunk outputs. |
 
@@ -167,7 +167,7 @@ A successful bundle includes:
 
 Explore verified showcases in the [`examples/`](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples) directory:
 
-- [**Showcase 1: Normal Success (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — Full fidelity text and paragraph styling with canonical element hierarchy and bounded chunks.
+- [**Showcase 1: Normal Success (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — Preserves bold and italic formatting with canonical element hierarchy and bounded chunks.
 - [**Showcase 2: Warning & Uncertainty (CSV Big5)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-2-warning--uncertainty-disclosure-csv-with-big5-encoding) — Multi-candidate encoding scoring and explicit disclosure of ambiguous legacy encodings.
 - [**Showcase 3: Structural Fidelity (XLSX Merged Cells)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-3-structural-fidelity-xlsx-merged-cells) — Preservation of merged table geometry with `colspan`/`rowspan` HTML representations and CSV grid assets.
 
