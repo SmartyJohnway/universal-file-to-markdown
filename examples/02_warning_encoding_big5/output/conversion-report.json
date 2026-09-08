@@ -1,0 +1,88 @@
+{
+  "source_file": "D:\\Antigravity-Workspace\\examples\\02_warning_encoding_big5\\input\\big5.csv",
+  "file_type": "csv",
+  "status": "passed_with_warnings",
+  "engine": "csv_native",
+  "warnings": [
+    {
+      "code": "ENCODING_AMBIGUOUS",
+      "candidates": [
+        {
+          "encoding": "big5",
+          "score": 1.0
+        },
+        {
+          "encoding": "cp950",
+          "score": 1.0
+        },
+        {
+          "encoding": "gb18030",
+          "score": 0.917
+        },
+        {
+          "encoding": "utf-16-be",
+          "score": 0.222
+        }
+      ],
+      "message": "More than one text encoding decoded this file with a similar plausibility score. The top candidate was used, but if the output looks wrong, this file's encoding could not be determined with high confidence - check the encoding_candidates list and consider re-specifying it manually."
+    }
+  ],
+  "details": {
+    "status": "passed",
+    "engine": "csv_native",
+    "encoding_used": "big5",
+    "encoding_ambiguous": true,
+    "encoding_candidates": [
+      {
+        "encoding": "big5",
+        "score": 1.0
+      },
+      {
+        "encoding": "cp950",
+        "score": 1.0
+      },
+      {
+        "encoding": "gb18030",
+        "score": 0.917
+      },
+      {
+        "encoding": "utf-16-be",
+        "score": 0.222
+      }
+    ],
+    "encoding_user_selected": false,
+    "warnings": [],
+    "row_count": 2,
+    "max_column_count": 2
+  },
+  "skill_version": "1.8.2",
+  "schema_version": "1.0",
+  "schema_versions": {
+    "document": "1.0",
+    "table": "1.0",
+    "chunk": "1.0"
+  },
+  "bundle_validation": {
+    "status": "passed",
+    "errors": [],
+    "warnings": [],
+    "counts": {
+      "elements": 2,
+      "chunks": 1,
+      "tables": 1
+    }
+  },
+  "bundle_validation_status": "passed",
+  "quality_risk_assessment": {
+    "recommended": false,
+    "priority": "none",
+    "reason_codes": [],
+    "targets": [],
+    "policy_status": "not_needed"
+  },
+  "ai_review_recommended": false,
+  "ai_review_recommendation_status": "not_needed",
+  "ai_review_request_status": "not_generated_not_recommended",
+  "ai_review_status": "not_provided",
+  "readable_projection_status": "not_generated"
+}

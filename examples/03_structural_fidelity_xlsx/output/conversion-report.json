@@ -1,0 +1,80 @@
+{
+  "source_file": "D:\\Antigravity-Workspace\\examples\\03_structural_fidelity_xlsx\\input\\xlsx_merged.xlsx",
+  "file_type": "xlsx",
+  "status": "passed",
+  "engine": "openpyxl_custom",
+  "warnings": [],
+  "details": {
+    "engine": "openpyxl_custom",
+    "renderers_used": [
+      "html_table_with_span"
+    ],
+    "sheets": [
+      {
+        "name": "Sheet",
+        "merged_ranges": 1,
+        "engine": "html_table_with_span",
+        "hidden": false,
+        "formula_cells": 0,
+        "formula_cached_values_missing": 0,
+        "comments": 0,
+        "blocks": 1
+      }
+    ],
+    "total_merged_ranges": 1,
+    "merged_ranges_rendered": 1,
+    "hidden_sheets": [],
+    "hidden_rows_or_columns_present": false,
+    "formula_cells": 0,
+    "formula_cached_values_available": 0,
+    "formula_cached_values_missing": 0,
+    "formula_cached_values_missing_cells": [],
+    "defined_names": [],
+    "comments_found": 0,
+    "charts_found": 0,
+    "images_found": 0,
+    "media_extracted": 0
+  },
+  "skill_version": "1.8.2",
+  "schema_version": "1.0",
+  "schema_versions": {
+    "document": "1.0",
+    "table": "1.0",
+    "chunk": "1.0"
+  },
+  "bundle_validation": {
+    "status": "passed",
+    "errors": [],
+    "warnings": [],
+    "counts": {
+      "elements": 3,
+      "chunks": 1,
+      "tables": 1
+    }
+  },
+  "bundle_validation_status": "passed",
+  "quality_risk_assessment": {
+    "recommended": true,
+    "priority": "medium",
+    "reason_codes": [
+      "MERGED_TABLE_GEOMETRY_PRESENT"
+    ],
+    "targets": [
+      {
+        "target_type": "table",
+        "target_id": "table-s001-b001",
+        "source_locator": {
+          "sheet": "Sheet",
+          "cell_range": "A1:B2",
+          "context": "sheet:Sheet"
+        }
+      }
+    ],
+    "policy_status": "recommended"
+  },
+  "ai_review_recommended": true,
+  "ai_review_recommendation_status": "recommended",
+  "ai_review_request_status": "generated",
+  "ai_review_status": "not_provided",
+  "readable_projection_status": "not_generated"
+}

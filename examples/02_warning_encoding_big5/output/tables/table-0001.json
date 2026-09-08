@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "id": "table-0001",
+  "source_format": "csv",
+  "source_locator": {
+    "format": "csv",
+    "row_start": 1,
+    "row_end": 2,
+    "context": "csv"
+  },
+  "dimensions": {
+    "rows": 2,
+    "columns": 2
+  },
+  "cells": [
+    {
+      "row": 0,
+      "column": 0,
+      "value": "名稱",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": true,
+      "confidence": null,
+      "source_locator": null
+    },
+    {
+      "row": 0,
+      "column": 1,
+      "value": "數量",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": true,
+      "confidence": null,
+      "source_locator": null
+    },
+    {
+      "row": 1,
+      "column": 0,
+      "value": "鋼管",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": false,
+      "confidence": null,
+      "source_locator": null
+    },
+    {
+      "row": 1,
+      "column": 1,
+      "value": "10",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": false,
+      "confidence": null,
+      "source_locator": null
+    }
+  ],
+  "grid": [
+    [
+      "名稱",
+      "數量"
+    ],
+    [
+      "鋼管",
+      "10"
+    ]
+  ],
+  "confidence": null,
+  "engine": "csv_native",
+  "merged_cells_present": false,
+  "merged_cells_flattened_in_csv": false,
+  "merged_cells": [],
+  "cell_blocks": [],
+  "source_dimensions": null,
+  "properties": {}
+}

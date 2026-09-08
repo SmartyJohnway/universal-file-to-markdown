@@ -1,0 +1,53 @@
+{
+  "source_file": "D:\\Antigravity-Workspace\\examples\\01_normal_docx\\input\\docx_basic.docx",
+  "file_type": "docx",
+  "status": "passed",
+  "engine": "python-docx_custom",
+  "warnings": [],
+  "details": {
+    "tables_found": 0,
+    "merged_cells_found": 0,
+    "nested_tables_found": 0,
+    "media_extracted": 0,
+    "images_anchored_inline": 0,
+    "footnotes_found": 0,
+    "endnotes_found": 0,
+    "metadata": {
+      "creator": "python-docx",
+      "created": "2000-01-01T00:00:00Z",
+      "modified": "2000-01-01T00:00:00Z"
+    },
+    "status": "passed",
+    "engine": "python-docx_custom"
+  },
+  "skill_version": "1.8.2",
+  "schema_version": "1.0",
+  "schema_versions": {
+    "document": "1.0",
+    "table": "1.0",
+    "chunk": "1.0"
+  },
+  "bundle_validation": {
+    "status": "passed",
+    "errors": [],
+    "warnings": [],
+    "counts": {
+      "elements": 2,
+      "chunks": 1,
+      "tables": 0
+    }
+  },
+  "bundle_validation_status": "passed",
+  "quality_risk_assessment": {
+    "recommended": false,
+    "priority": "none",
+    "reason_codes": [],
+    "targets": [],
+    "policy_status": "not_needed"
+  },
+  "ai_review_recommended": false,
+  "ai_review_recommendation_status": "not_needed",
+  "ai_review_request_status": "not_generated_not_recommended",
+  "ai_review_status": "not_provided",
+  "readable_projection_status": "not_generated"
+}
