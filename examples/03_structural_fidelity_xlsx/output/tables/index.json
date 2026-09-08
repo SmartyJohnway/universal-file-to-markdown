@@ -1,0 +1,19 @@
+[
+  {
+    "id": "table-s001-b001",
+    "source_format": "xlsx",
+    "source_locator": {
+      "sheet": "Sheet",
+      "cell_range": "A1:B2",
+      "context": "sheet:Sheet"
+    },
+    "rows": 2,
+    "cols": 2,
+    "has_merged_cells": true,
+    "assets": {
+      "csv": "table-s001-b001.csv",
+      "html": "table-s001-b001.html",
+      "json": "table-s001-b001.json"
+    }
+  }
+]

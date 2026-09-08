@@ -1,0 +1,20 @@
+[
+  {
+    "id": "table-0001",
+    "source_format": "csv",
+    "source_locator": {
+      "format": "csv",
+      "row_start": 1,
+      "row_end": 2,
+      "context": "csv"
+    },
+    "rows": 2,
+    "cols": 2,
+    "has_merged_cells": false,
+    "assets": {
+      "csv": "table-0001.csv",
+      "html": "table-0001.html",
+      "json": "table-0001.json"
+    }
+  }
+]

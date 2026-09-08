@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "id": "table-s001-b001",
+  "source_format": "xlsx",
+  "source_locator": {
+    "sheet": "Sheet",
+    "cell_range": "A1:B2",
+    "context": "sheet:Sheet"
+  },
+  "dimensions": {
+    "rows": 2,
+    "columns": 2
+  },
+  "cells": [
+    {
+      "row": 0,
+      "column": 0,
+      "value": "Header",
+      "rowspan": 1,
+      "colspan": 2,
+      "is_header": true,
+      "confidence": null,
+      "source_locator": null
+    },
+    {
+      "row": 1,
+      "column": 0,
+      "value": "A",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": false,
+      "confidence": null,
+      "source_locator": null
+    },
+    {
+      "row": 1,
+      "column": 1,
+      "value": "1",
+      "rowspan": 1,
+      "colspan": 1,
+      "is_header": false,
+      "confidence": null,
+      "source_locator": null
+    }
+  ],
+  "grid": [
+    [
+      "Header",
+      ""
+    ],
+    [
+      "A",
+      "1"
+    ]
+  ],
+  "confidence": null,
+  "engine": "openpyxl_custom",
+  "merged_cells_present": true,
+  "merged_cells_flattened_in_csv": true,
+  "merged_cells": [],
+  "cell_blocks": [],
+  "source_dimensions": null,
+  "properties": {}
+}

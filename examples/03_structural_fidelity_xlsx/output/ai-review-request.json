@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "request_id": "ai-review-request-d7d3a82b4cf5e16f",
+  "source_sha256": "d7d3a82b4cf5e16fcc3d9e8f39603ab444523868eb13ffb00e31bc35a919643b",
+  "skill_version": "1.8.2",
+  "canonical_bundle_fingerprint": "e416209ef47ef6d7de0580767dfb7c4dd5cf22bbe65b7051596096762f8f1214",
+  "review_scope": "readable_projection_only",
+  "instructions": {
+    "preserve_facts": true,
+    "preserve_numbers": true,
+    "preserve_urls": true,
+    "preserve_table_ids": true,
+    "preserve_source_order": true,
+    "do_not_modify_canonical": true
+  },
+  "reason_codes": [
+    "MERGED_TABLE_GEOMETRY_PRESENT"
+  ],
+  "targets": [
+    {
+      "target_type": "table",
+      "target_id": "table-s001-b001",
+      "reason_codes": [
+        "MERGED_TABLE_GEOMETRY_PRESENT"
+      ],
+      "source_locator": {
+        "sheet": "Sheet",
+        "cell_range": "A1:B2",
+        "context": "sheet:Sheet"
+      },
+      "canonical": {
+        "dimensions": {
+          "rows": 2,
+          "columns": 2
+        },
+        "grid": [
+          [
+            "Header",
+            ""
+          ],
+          [
+            "A",
+            "1"
+          ]
+        ],
+        "merged_cells": [],
+        "cell_blocks": []
+      },
+      "faithful_markdown": "| Header |  |\n| --- | --- |\n| A | 1 |"
+    }
+  ],
+  "allowed_operations": [
+    "add_non-factual_section_spacing",
+    "annotate_uncertain_structure",
+    "improve_heading_readability",
+    "reduce_duplicate_visual_labels",
+    "render_table_cell_links",
+    "render_table_cell_lists"
+  ],
+  "prohibited_operations": [
+    "invent_content",
+    "remove_source_content",
+    "change_numbers",
+    "change_dates",
+    "change_urls",
+    "change table geometry",
+    "merge unrelated source sections",
+    "rewrite canonical JSON",
+    "change provenance"
+  ],
+  "truncation": []
+}

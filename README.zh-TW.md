@@ -1,190 +1,248 @@
 # Universal File to Markdown
 
-[English](README.md) · [變更紀錄](CHANGELOG.zh-TW.md)
+[![vskill VERIFIED](https://verified-skill.com/api/v1/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown/badge)](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown)
+[![Latest Release](https://img.shields.io/github/v/release/SmartyJohnway/universal-file-to-markdown?color=blue)](https://github.com/SmartyJohnway/universal-file-to-markdown/releases/latest)
+[![CI Tests](https://github.com/SmartyJohnway/universal-file-to-markdown/actions/workflows/test.yml/badge.svg)](https://github.com/SmartyJohnway/universal-file-to-markdown/actions/workflows/test.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python: 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](requirements.txt)
 
-這是一套以原文正確性、內容完整性、來源可追溯與 AI 可接手性為優先的文件擷取技能，可將支援的檔案轉換成 Markdown，以及供 AI 分析、RAG、稽核與後續自動化使用的 schema 驗證輸出包。
+[English](README.md) · [變更紀錄](CHANGELOG.zh-TW.md) · [Releases](https://github.com/SmartyJohnway/universal-file-to-markdown/releases)
 
-本專案重視透明度與可追溯性，不會只把 `document.md` 視為成功證據。每次轉換還會產出品質報告、來源 manifest、canonical elements、受限長度 chunks、表格資產與 bundle 驗證結果。
+這是一套以原文正確性、內容完整性、來源可追溯與 AI 可接手性為優先的文件擷取技能，可將 PDF、掃描文件、DOCX、XLSX/XLSM、PPTX、CSV/TSV、JSON、EML 與 Pandoc markup 格式轉換為 Markdown，以及供 AI Agent、RAG 與自動化工作流程使用的 schema 驗證輸出包。
 
-## 文件索引
+> **Not just Markdown. Know whether the conversion can be trusted.**  
+> 不只是轉出 Markdown，更能清楚掌握轉換是否值得信賴。
 
-- [English README](README.md)
-- [繁體中文 README](README.zh-TW.md)
-- [English changelog](CHANGELOG.md)
-- [繁體中文變更紀錄](CHANGELOG.zh-TW.md)
-- [AI 技能操作合約](SKILL.md)
-- [版本說明](VERSIONING.md)
-- [格式能力矩陣](references/capability_matrix.md)
-- [引擎說明與升級指引](references/engine_notes.md)
-- [Chunk consumer contract](references/chunk_consumer_contract.md)
-- [貢獻指南](CONTRIBUTING.md)
-- [安全政策](SECURITY.md)
-- [支援政策](SUPPORT.md)
-- [治理方式](GOVERNANCE.md)
-- [發布流程](RELEASING.md)
-- [v1.8.2 發行檢查清單](RELEASE_CHECKLIST_v1.8.2.md)
-- [授權說明](docs/LICENSING.md)
+*Local-first · 驗證把關 · 來源可追溯 · 明確揭露不確定性*
 
-## 主要特色
+---
 
-- 支援 PDF、掃描圖片、DOCX、XLSX/XLSM、PPTX、CSV/TSV、JSON、EML，以及 Pandoc 可處理的 markup 格式。
-- 採用輕量結構解析器與離線 OCR，不需要 PyTorch runtime，也不需在執行時下載外部模型。
-- 針對繁體中文 Big5/CP950 編碼提供候選評分與歧義揭露。
-- Office 合併儲存格可輸出保留 rowspan/colspan 的 HTML。
-- 混合型 PDF 會逐頁區分 digital 與 scanned 路徑。
-- 產出 canonical 階層元素，並在可取得時保留頁碼、工作表、投影片、shape、表格與 bbox 定位。
-- 對 PDF 與 PPTX 套用 deterministic column/role-aware 閱讀計畫，並在 canonical element 記錄 additive layout hints。
-- 只有 caption 前綴、幾何或 OOXML relationship 提供強證據時才建立關聯。
-- RAG chunks 另提供經驗證、只含 ID 的 consumer context projection；來源與 embedding view 都具有 2,000 字元硬上限。
-- 對不支援或低信心內容明確警告，不以 silent success 掩蓋資訊遺失。
-- 驗證 schema、階層、chunk 參照、表格尺寸、資產與整體 bundle 一致性。
+## 快速開始 (Quick Start)
 
-## 支援格式
+### 1. 安裝為 Agent Skill
 
-| 輸入 | 主要引擎 | Canonical 粒度 | 重要行為 |
+本專案已在 **vSkill** 平台發布並通過 source-verified 驗證：
+
+```bash
+npx vskill@latest install smartyjohnway/universal-file-to-markdown/universal-file-to-markdown
+```
+
+- [在 vSkill 上查看](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown)
+- [查看即時驗證與安全性報告](https://verified-skill.com/skills/smartyjohnway/universal-file-to-markdown/universal-file-to-markdown/security)
+
+### 2. 本地端執行 (Run Locally)
+
+需要 Python 3.10–3.12 環境（主要合格驗證版本為 Python 3.11）。
+
+```bash
+git clone https://github.com/SmartyJohnway/universal-file-to-markdown.git
+cd universal-file-to-markdown
+
+python -m venv .venv
+source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+python -m pip install -r requirements.txt
+python scripts/capability_probe.py --json
+
+# 執行檔案轉換
+python scripts/router.py path/to/document.pdf --output ./output_bundle
+
+# 驗證輸出包完整性
+python scripts/validate_bundle.py ./output_bundle
+```
+
+---
+
+## 為什麼選擇本專案？(Why This Project?)
+
+當文件轉換用於 RAG、AI Agent 讀取或自動化流程時，單純輸出 Markdown 無法直接反映轉換產物是否值得信賴。
+
+Universal File to Markdown 將文件轉換視為**具備稽核證據的工程流程**：
+
+| 能力項目 | Universal File to Markdown 提供的具體能力 |
+|---|---|
+| **主要輸出** | `document.md` 外加通過 Schema 驗證的 canonical bundle（`document.json`、`chunks.jsonl`、`tables/`、`manifest.json`） |
+| **品質與信心度** | 明確的 `conversion-report.json`，提供 `passed` / `passed_with_warnings` / `failed` 與 bundle 驗證結果 |
+| **來源回溯** | 在可取得時提供 bounding box、頁碼、工作表、投影片與 shape 定位 |
+| **RAG 與 AI 接手** | 上限 2,000 字元的受限 chunks，附帶階層脈絡與 ancestor ID |
+| **合併表格** | 保留結構幾何，產出具備 `rowspan`/`colspan` 的 HTML 表格、canonical JSON 與 CSV 資產 |
+| **不確定性揭露** | 明確發出 warning，揭露候選編碼評分與未解析結構 |
+
+---
+
+## 具備失敗感知架構 (Failure-aware by Design)
+
+本專案不會把單純產生 `document.md` 視為成功的證據。當遇到不確定或不支援的內容時，系統會明確揭露：
+
+| 狀況 | 轉換器處理方式 |
+|---|---|
+| **文字編碼有歧義** | 提供候選編碼評分（例如 Big5 vs CP950），在 Markdown 頂部標註並發出警告。 |
+| **OCR 信心度不足** | 保留 OCR 文字與區域，同時記錄信心分數與 warning 程式碼，不假裝完美辨識。 |
+| **掃描表格證據不足** | 必須同時具備幾何線段與文字標記證據；若不充分則保留為純文字並標註警告，避免產出錯誤表格結構。 |
+| **不支援的複合結構** | 明確揭露未展開的 SmartArt、內嵌 OLE 物件或圖表資料序列，不默默吞掉內容。 |
+| **Bundle 驗證未通過** | 標記為 `failed`；canonical 與 RAG chunks 不得被視為有效結果。 |
+| **重新執行失敗防護** | 重新轉換前會先清理已知的既有產物，避免先前成功的舊檔案在本次失敗時造成誤判。 |
+
+> [!NOTE]
+> *Validation-backed*（驗證把關）代表嚴格檢查結構完整性、schema 一致性與相互參照。這並不代表對所有非結構化文字具備 100% 語意全知能力。
+
+---
+
+## 支援格式 (Supported Formats)
+
+| 輸入格式 | 主要解析引擎 | Canonical 元素粒度 | 重要處理行為 |
 |---|---|---|---|
-| DOCX | python-docx + OOXML | heading、paragraph、list item、table | 粗斜體、連結、註記、頁首頁尾、合併儲存格 |
-| XLSX/XLSM | openpyxl | sheet、空白分隔 block、table、chart/image reference | 公式、註解、合併儲存格、隱藏狀態 metadata |
-| PPTX | python-pptx + OOXML | slide、group、title、paragraph、list、table、chart、image、note | role/column 閱讀計畫、bullet inheritance、SmartArt/OLE 揭露 |
-| 數位 PDF | PyMuPDF + pdfplumber | page、定位文字 block、table | line-aware XY-cut 排序、bbox 表格插入與文字去重 |
-| 掃描 PDF | RapidOCR；Tesseract fallback | page、OCR region、table | OCR confidence 與 table likelihood |
-| PNG/JPEG/TIFF/BMP/WebP | RapidOCR；Tesseract fallback | OCR region、table | 直接離線圖片 OCR |
-| CSV/TSV | Python stdlib CSV | canonical table | UTF-8 優先，搭配繁體中文編碼評分 |
-| JSON | Python stdlib JSON | structured block | Unicode JSON 美化輸出 |
-| EML | Python stdlib email | email、attachment | 附件檔名清理與避免撞名 |
-| HTML/EPUB/RST/Org/TeX | Pandoc | structured block | Pandoc 不存在時明確失敗 |
+| **DOCX** | python-docx + OOXML | heading, paragraph, list item, table | 粗斜體、超連結、註解、頁首頁尾、合併儲存格 |
+| **XLSX / XLSM** | openpyxl | sheet, 空白分隔 block, table, 圖表/圖片參照 | 公式、註解、合併儲存格、隱藏狀態 metadata |
+| **PPTX** | python-pptx + OOXML | slide, group, title, paragraph, list, table, 圖片, 備忘稿 | role/column 閱讀計畫、清單符號繼承、SmartArt/OLE 揭露 |
+| **數位 PDF** | PyMuPDF + pdfplumber | page, 定位文字 block, table | 行級 XY-cut 排序、bbox 表格插入、文字去重 |
+| **掃描 PDF** | RapidOCR（離線）；Tesseract fallback | page, OCR 區域, table | OCR 信心度評估與表格可能性分析 |
+| **PNG / JPEG / TIFF / BMP / WebP** | RapidOCR（離線）；Tesseract fallback | OCR 區域, table | 原生離線圖片 OCR |
+| **CSV / TSV** | Python stdlib CSV | canonical table | 提供 Big5/CP950 候選評分與編碼歧義揭露 |
+| **JSON** | Python stdlib JSON | structured block | 美化縮排與 Unicode 格式化 |
+| **EML** | Python stdlib email | email, 附件 | 檔名清理與避免附件名稱衝突 |
+| **HTML / EPUB / RST / Org / TeX** | Pandoc（選用） | structured block | 未安裝 Pandoc 時明確報錯，不假裝支援 |
 
-`.doc`、`.xls`、`.ppt` 等舊式二進位 Office 格式不直接解析，請先轉為 OOXML 後再執行。
+*舊式 `.doc`、`.xls`、`.ppt` 等二進位格式不直接支援，請先轉為 OOXML 現代格式。*
 
-## 輸出包
+---
 
-每次轉換會產出以下目錄內容：
+## 輸出包架構 (What You Get)
+
+每次轉換會產生自包含且通過 Schema 驗證的輸出資料夾：
+
+```mermaid
+flowchart TD
+    Input["輸入文件\n(PDF, Office, 圖片, CSV, JSON, EML)"] --> Router["Universal File to Markdown\n(router.py)"]
+    Router --> MD["document.md\n供人與 LLM 閱讀的 Markdown"]
+    Router --> Canon["document.json\nCanonical 階層元素 (Schema 1.0)"]
+    Router --> Chunks["chunks.jsonl\n受限長度 RAG chunks (≤2,000 字元)"]
+    Router --> Tables["tables/\nCanonical JSON + CSV + 合併結構 HTML"]
+    Router --> Assets["assets/\n擷取的圖片與附件"]
+    Router --> Manifest["manifest.json\n來源 SHA-256、時間戳記與版本"]
+    Router --> Report["conversion-report.json\n引擎細節、警告與驗證結果"]
+    Report --> Validate["輸出包驗證\n(validate_bundle.py)"]
+    Validate --> Status{"狀態模型"}
+    Status -->|通過| P["passed\n結構與 Bundle 驗證通過"]
+    Status -->|警告| W["passed_with_warnings\n可用但存在已知不確定性"]
+    Status -->|失敗| F["failed\n輸出不得採用"]
+```
 
 ```text
-document.md              供人與 LLM 閱讀的 Markdown
-document.json            Canonical 階層元素，schema 1.0
-chunks.jsonl              含定位資訊的 RAG chunks，最長 2,000 字元
-tables/                   Canonical JSON、CSV 與保留合併結構的 HTML
-assets/                   擷取的圖片與附件
-manifest.json             來源 SHA-256、版本、時間與最終狀態
-conversion-report.json   引擎細節、警告與 bundle 驗證結果
+output_dir/
+  document.md              供人與 LLM 閱讀的 Markdown
+  document.json            Canonical 階層元素，schema 1.0
+  chunks.jsonl              含定位資訊的 RAG chunks，最長 2,000 字元
+  tables/                   Canonical JSON、CSV 與保留合併結構的 HTML
+  assets/                   擷取的圖片與附件
+  manifest.json             來源 SHA-256、版本、時間與最終狀態
+  conversion-report.json   引擎細節、警告與 bundle 驗證結果
 ```
 
-重新執行時只會清除已知產物；若後續轉換失敗，不會留下前一次成功執行的過期 canonical outputs。
+---
 
-## 安裝
+## 如何判讀結果：狀態模型 (Status Model)
 
-支援的 Python：3.10–3.12。主要合格驗證 runtime：Python 3.11。Python 3.13：目前不支援。
+將產物交付給下游 LLM 或 RAG 系統前，務必先檢查 `conversion-report.json`：
 
-宣告的 RapidOCR requirement：`rapidocr-onnxruntime>=1.4,<2`。合格驗證版本：`1.4.4`。
+| 狀態碼 | 意義 | 建議處置 |
+|---|---|---|
+| **`passed`** | Bundle 驗證成功，schema、定位與表格皆一致且未發現遺失。 | 可進入後續處理流程；是否需要人工覆核仍依使用情境與下游政策決定。 |
+| **`passed_with_warnings`** | 輸出可以使用，但包含明確揭露的不確定性（如編碼歧義、OCR 信心度不足或未解析的 SmartArt）。 | 接受輸出並納入警告紀錄評估。 |
+| **`failed`** | 轉換或驗證失敗。已生成的產物已被標記為無效。 | **不得採用** canonical 或 chunk 產物。 |
 
-**Linux：** OpenCV/RapidOCR 可能需要 `libGL.so.1`；使用 `pytesseract` fallback 時需要 Tesseract。
-
-**Windows：** OpenCV 可能需要 Microsoft Visual C++ runtime；使用 fallback 時，必須安裝且系統可找到 Tesseract executable。
-
-Pandoc 是選用 dependency：core profile 不需要，只有選用的 Pandoc-enabled routes 需要。
-
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-選配系統工具：
-
-- `tesseract`：作為 Latin script OCR fallback。
-- `pandoc`：處理 HTML、EPUB、RST、Org 與 TeX 路徑。
-
-轉換前先檢查執行環境：
-
-```bash
-python scripts/capability_probe.py --json
-```
-
-若缺少必要 Python dependency，probe 會以非零狀態碼結束；選配系統工具缺少時只會列出，不會使 probe 失敗。
-
-## 使用方式
-
-```bash
-python scripts/router.py INPUT_FILE --output OUTPUT_DIRECTORY
-```
-
-若舊式文字編碼判定有歧義，可明確指定 codec：
-
-```bash
-python scripts/router.py input.csv --output output --encoding gb18030
-```
-
-也可獨立驗證既有輸出包：
-
-```bash
-python scripts/validate_bundle.py OUTPUT_DIRECTORY
-```
-
-可對一個或多個 bundle 量測 downstream chunk context：
-
-```bash
-python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
-```
-
-最終轉換狀態為 `failed` 時，router 會以非零狀態碼結束。
-
-## 如何判讀結果
-
-每次都應檢查 `conversion-report.json`。
-
-- `passed`：轉換與 bundle validation 成功，且未偵測到資訊遺失。
-- `passed_with_warnings`：輸出可用，但存在已明確揭露的不確定性或不支援結構。
-- `failed`：不得把 canonical 或 RAG 輸出視為有效結果。
-
-成功的 bundle 應包含：
+驗證通過的輸出包報告包含：
 
 ```json
 {
+  "status": "passed",
   "bundle_validation": {
     "status": "passed"
   }
 }
 ```
 
-常見警告包括公式快取值不存在、編碼歧義、OCR confidence 偏低、疑似但未重建的掃描表格、SmartArt/OLE 未解析，以及 Excel chart 僅以 reference 表示。
+---
 
-## Canonical contracts
+## 公開範例展示 (Public Examples)
 
-目前 stable release：`1.8.2`
+在 [`examples/`](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples) 目錄中可找到經實際驗證的範例：
 
-最新已發布 stable release：`1.8.2`
+- [**範例 1: 正常轉換 (DOCX)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-1-normal-success-docx) — 保留粗體與斜體文字樣式，產出對應的 canonical 階層與 bounded chunks。
+- [**範例 2: 警告與不確定性揭露 (CSV Big5)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-2-warning--uncertainty-disclosure-csv-with-big5-encoding) — 多重候選編碼評分，明確揭露舊式編碼歧義而非硬猜。
+- [**範例 3: 結構保真度 (XLSX 合併儲存格)**](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples#showcase-3-structural-fidelity-xlsx-merged-cells) — 保留合併儲存格結構，生成具備 `colspan`/`rowspan` 的 HTML 表格與對應 CSV/JSON 資產。
 
-`v1.7.1` 是未發布的整合里程碑，已由 `v1.7.2` 取代。
+---
 
-`VERSION` 是目前技能版本的 canonical source。技能版本、schema 版本、bundle schema 版本與 report schema 版本是各自獨立的合約；技能發布不會自動要求每個 schema 版本都與技能版本相同。目前 document/table/chunk schema 版本為 `1.0`；請參閱 [VERSIONING.md](VERSIONING.md)。
+## 已知邊界 (Known Boundaries)
 
-所有 canonical element 都具有固定的階層、content format、engine、confidence、source locator、properties 與 warnings 欄位。Canonical table 以 `cells` 保留 merge anchors，並提供矩形 `grid` 供 CSV 與後續處理使用。
+- **掃描表格：** 採用幾何 heuristics 重建；複雜無框線或重度合併的表格可能需要人工檢查或專業重型模型。
+- **SmartArt 與 OLE：** 會定位並揭露，但不會展開為向量物件樹。
+- **圖表：** Office 圖表保留為 canonical reference，本版本不會渲染圖表資料序列。
+- **PDF 與 PPTX 閱讀順序：** 採用 deterministic 幾何與預留位置排序計畫。若視覺排版仍具歧義會附帶 warning。
+- **DOCX 邊界：** 追蹤修訂（tracked revisions）、深層巢狀表格與精準行內圖片錨定仍受限。
+- **舊式二進位格式：** `.doc`、`.xls`、`.ppt` 必須先轉換為 OOXML 現代格式後再行處理。
 
-PDF/PPTX element 可包含 additive `properties.layout` 與
-`properties.associations` metadata；確切欄位、證據門檻與 consumer 規則請見
-[`references/layout_association_contract.md`](references/layout_association_contract.md)。
-已定位的 digital-PDF 文字也可包含 parser-derived
-`source_extraction_index`，與視覺閱讀順序分開。
+---
 
-Chunk 可包含 additive `consumer_contract_version: "1.0"` projection，包括
-經驗證的 ancestor／section／unit／relationship／layout ID、context budget
-帳務與 `embedding_text`。Canonical source `text` 不會為了加入 context 而被截短；
-詳見 [`references/chunk_consumer_contract.md`](references/chunk_consumer_contract.md)。
+## 安裝與進階使用 (Installation & Details)
 
-JSON Schemas 位於 `schemas/`；各格式的 element 粒度與限制記錄於 `references/capability_matrix.md`。
+### 執行環境
 
-## 已知邊界
+- **Python：** 3.10–3.12（官方驗證基準：3.11）。不支援 Python 3.13。
+- **離線 OCR：** 內建 RapidOCR (`rapidocr-onnxruntime>=1.4,<2`，驗證版本 `1.4.4`)。完全離線運作，不需 PyTorch 亦不需連網下載模型。
+- **Linux：** OpenCV/RapidOCR 可能需要 `libGL.so.1`。
+- **Windows：** OpenCV 可能需要 Microsoft Visual C++ runtime。
+- **選用工具：**
+  - `tesseract`：作為 Latin-script OCR 的 fallback 選項。
+  - `pandoc`：僅在處理非核心 markup 格式（HTML、EPUB、RST、Org、TeX）時需要。
 
-- 掃描表格重建採用幾何與 heuristic 方法，複雜無框線或大量合併儲存格的表格可能需要較重型解析器。
-- SmartArt 與 embedded OLE 會被偵測與定位，但不會展開內容。
-- Excel chart 目前以 canonical reference 表示，不會重建繪圖 series。
-- Digital PDF 與 PPTX 採 deterministic geometry/placeholder-aware 排序；若視覺意圖仍有歧義，會保留 warning，必須人工檢查。
-- DOCX tracked changes、nested tables 與精確 inline-image anchoring 仍有限制。
-- 舊式二進位 Office 與轉回 Office 格式不在目前範圍內。
+### 命令列指令
 
-## 開發與發布檢查
+```bash
+# 基本轉換指令
+python scripts/router.py INPUT_FILE --output OUTPUT_DIRECTORY
+
+# 針對歧義文字指定明確編碼
+python scripts/router.py input.csv --output output_dir --encoding gb18030
+
+# 獨立執行輸出包驗證
+python scripts/validate_bundle.py OUTPUT_DIRECTORY
+
+# 計算 downstream chunk context 分數
+python scripts/score_chunk_context.py OUTPUT_DIRECTORY [OUTPUT_DIRECTORY ...]
+```
+
+---
+
+## 文件索引 (Documentation)
+
+### 使用指南
+- [AI 技能操作合約 (SKILL.md)](SKILL.md)
+- [格式能力矩陣 (Capability Matrix)](references/capability_matrix.md)
+- [解析引擎說明與升級指引 (Engine Notes)](references/engine_notes.md)
+- [公開範例導覽 (Examples Guide)](https://github.com/SmartyJohnway/universal-file-to-markdown/tree/main/examples)
+
+### 架構與合約
+- 目前 stable release：`1.8.2`
+- [Chunk 介接合約 (Chunk Consumer Contract)](references/chunk_consumer_contract.md)
+- [排版與關聯分析合約 (Layout Contract)](references/layout_association_contract.md)
+- Canonical JSON Schemas (schemas/)
+- [版本規格說明 (Versioning Specification)](VERSIONING.md)
+
+### 專案品質與治理
+- [貢獻指南 (CONTRIBUTING.md)](CONTRIBUTING.md)
+- [安全政策 (SECURITY.md)](SECURITY.md)
+- [支援政策 (SUPPORT.md)](SUPPORT.md)
+- [治理規範 (GOVERNANCE.md)](GOVERNANCE.md)
+- [發布流程 (RELEASING.md)](RELEASING.md)
+- [授權指南 (docs/LICENSING.md)](docs/LICENSING.md)
+
+---
+
+## 開發與發布檢查 (Development Checks)
+
+可在本地端執行下列驗證檢查：
 
 ```bash
 python scripts/capability_probe.py --json
@@ -198,28 +256,8 @@ python -m pytest tests/ -q
 python -m compileall -q scripts tests
 ```
 
-若 Windows 主機的使用者 temp root 無法存取，請為 pytest 指定 repository 內每次唯一的 `--basetemp`。
+---
 
-完整的迴歸測試套件維持於原始程式碼儲存庫（source repository）中，不包含在 runtime release package 或 Agent Skill 上傳 ZIP 內。
+## 專案授權 (License)
 
-對 `main` 的 pull request 與 push 會自動執行必要的 GitHub Actions
-validation workflow。Release gate 仍須對精確 candidate commit 手動 dispatch；
-package workflow 則在 `v*` tag 時執行。發布專用檢查請參考 `RELEASING.md` 與
-`RELEASE_CHECKLIST.md`。
-
-## 專案結構
-
-```text
-SKILL.md                    AI skill 操作合約
-scripts/                    Router、converters、models、validation 與 utilities
-schemas/                    Canonical JSON Schemas
-references/                 Capability matrix 與 engine notes
-tests/                      Regression 與 integration tests
-requirements.txt            Runtime 與測試 dependencies
-```
-
-## 授權
-
-本專案採用 [Apache License 2.0](LICENSE)。
-
-此授權允許商業使用、修改與再散布，但須遵守授權條款，並包含明確的 contributor patent grant。第三方 dependencies 仍適用各自授權，請參考 `THIRD_PARTY_NOTICES.md` 與 `LICENSES.md`。
+本專案採用 [Apache License 2.0](LICENSE)。在遵守授權條款的前提下，允許商業使用、修改與再散布，並包含明確的貢獻者專利授權條款。第三方相依套件適用其各自授權，請參閱 `THIRD_PARTY_NOTICES.md` 與 `LICENSES.md`。

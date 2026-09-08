@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "skill_version": "1.8.2",
+  "schema_versions": {
+    "document": "1.0",
+    "table": "1.0",
+    "chunk": "1.0"
+  },
+  "source_file": "xlsx_merged.xlsx",
+  "source_sha256": "d7d3a82b4cf5e16fcc3d9e8f39603ab444523868eb13ffb00e31bc35a919643b",
+  "file_type": "xlsx",
+  "converted_at": "2026-09-08T05:49:25.520902+00:00",
+  "status": "passed"
+}
